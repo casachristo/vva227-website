@@ -1,0 +1,80 @@
+---
+/**
+ * A visible marker for content the chapter must confirm before launch.
+ *
+ * The legacy site contradicted itself in a dozen places — two emails for the
+ * same treasurer, two meeting days, two founding dates. Rather than silently
+ * picking a winner and presenting a guess as fact, every unresolved item is
+ * rendered here in plain sight and mirrored into REVIEW.md.
+ *
+ * These are review furniture. They come out before the site goes live.
+ */
+interface Props {
+  /** Short label for what needs deciding, e.g. "Meeting day". */
+  topic?: string;
+}
+
+const { topic } = Astro.props;
+---
+
+<aside class="review" role="note">
+  <p class="review__tag">
+    <span aria-hidden="true">?</span>
+    Needs the chapter&rsquo;s confirmation{topic ? ` — ${topic}` : ''}
+  </p>
+  <div class="review__body"><slot /></div>
+</aside>
+
+<style>
+  .review {
+    margin-block: var(--s-5);
+    padding: var(--s-4) var(--s-5);
+    border: 1px dashed var(--c-border-strong);
+    border-inline-start: 3px solid var(--c-gold);
+    border-radius: var(--r-md);
+    background: color-mix(in srgb, var(--c-gold) 6%, var(--c-surface));
+    font-size: var(--t-sm);
+    color: var(--c-ink-soft);
+  }
+
+  .review__tag {
+    display: flex;
+    align-items: center;
+    gap: var(--s-2);
+    font-weight: 700;
+    font-size: var(--t-xs);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: #7a5a1c;
+    margin-block-end: var(--s-2);
+  }
+
+  .review__tag span {
+    display: grid;
+    place-items: center;
+    inline-size: 1.15rem;
+    block-size: 1.15rem;
+    flex: none;
+    border-radius: 50%;
+    background: var(--c-gold);
+    color: #fff;
+    font-size: 0.75rem;
+  }
+
+  .review__body :global(p + p) {
+    margin-block-start: var(--s-3);
+  }
+
+  /* Slotted content carries the CALLER's scope attribute, not this component's,
+     so a `.review ul ul` rule written in a page compiles to a selector the
+     .review element can never match. These live here, behind :global, which is
+     the only place they apply. The global reset zeroes list margins, so without
+     them every review note's items run together. */
+  .review__body :global(li + li) {
+    margin-block-start: var(--s-2);
+  }
+
+  .review__body :global(ul ul) {
+    margin-block: var(--s-2);
+  }
+</style>

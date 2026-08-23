@@ -1,0 +1,294 @@
+---
+/**
+ * Join the Chapter.
+ *
+ * Consolidates four legacy pages. The membership pitch was split across
+ * "Membership" (three sentences and no next step), "VVA 227 Chapter membership"
+ * (a pasted recruiting email telling the reader to complete "the attached
+ * application", which was attached to nothing), "Membership Invitation" (filed
+ * as a child of Fairfax Court), and the application PDF itself — which lived in
+ * the sidebar of a page about restoring a memorial plaque in Maryland.
+ *
+ * Bill Lynch's own words are kept where they are better than anything a
+ * redesign would write.
+ */
+import PageLayout from '../../layouts/PageLayout.astro';
+import MeetingCard from '../../components/MeetingCard.astro';
+import Card from '../../components/Card.astro';
+import CardGrid from '../../components/CardGrid.astro';
+import ReviewNote from '../../components/ReviewNote.astro';
+import ContactList from '../../components/ContactList.astro';
+import events from '../../data/events.json';
+---
+
+<PageLayout
+  title="Join the Chapter"
+  description="Membership in VVA Chapter 227 is open to anyone who served during the Vietnam era. Life membership is $50, once, with no further dues."
+  eyebrow="Membership"
+  lede="Life membership is $50. You pay it once and never again. In-country service is not required."
+>
+  <!-- ---------- Eligibility ---------- -->
+  <section class="stack">
+    <h2>Who can join</h2>
+    <p>
+      Membership is open to any service member who served during the Vietnam era. Where you served does not matter.
+      As the chapter&rsquo;s membership director puts it:
+    </p>
+    <blockquote>
+      <p>
+        It does not matter whether they served in-country or elsewhere. Someone had to keep the bullets flowing and
+        the Russians out of Europe. We have two members who served on missile crews in Germany. Admiral Zumwalt,
+        deceased, was a member even after he moved to North Carolina. Our ranks range from privates to a three-star
+        general and admiral.
+      </p>
+      <cite>Bill Lynch, membership director</cite>
+    </blockquote>
+    <p>
+      The chapter itself serves more broadly than it recruits: it helps homeless and needy veterans across Northern
+      Virginia, not only Vietnam veterans.
+    </p>
+  </section>
+
+  <!-- ---------- Cost and benefits ---------- -->
+  <section class="stack">
+    <h2>What it costs, and what you get</h2>
+    <div class="price">
+      <p class="price__amount">$50</p>
+      <p class="price__label">Life membership &mdash; a single payment, no additional fees ever</p>
+    </div>
+
+    <ul class="benefits">
+      <li><strong>The VVA Veteran</strong> — the national magazine, mailed to you</li>
+      <li>A weekly email from VVA National with links to key veteran resources</li>
+      <li><strong>The Journey</strong> — the chapter newsletter</li>
+      <li>Nine dinner meetings a year with a speaker, open to spouses and guests</li>
+      <li>A vote in chapter elections at the April annual meeting</li>
+    </ul>
+  </section>
+
+  <!-- ---------- How to join ---------- -->
+  <section class="stack">
+    <h2>How to join</h2>
+    <ol class="steps">
+      <li>
+        <h3>Fill in the application</h3>
+        <p>
+          <a class="doc" href="/docs/vva227-membership-application.pdf">
+            Download the membership application <span>PDF</span>
+          </a>
+        </p>
+      </li>
+      <li>
+        <h3>Add payment</h3>
+        <p>
+          Enclose a check made out to <strong>Vietnam Veterans of America</strong>, or fill in the credit card
+          section on the application itself.
+        </p>
+      </li>
+      <li>
+        <h3>Include a copy of your DD214</h3>
+        <p>You may black out your Social Security number.</p>
+      </li>
+      <li>
+        <h3>Mail it to the membership director</h3>
+        <p>He processes the application and tracks it through VVA headquarters.</p>
+      </li>
+    </ol>
+
+    <ReviewNote topic="Where applications are mailed">
+      <p>
+        The current site publishes a board member&rsquo;s <strong>home street address</strong> as the public mail-to
+        for applications, and prints it with a malformed ZIP+4. That address is not reproduced here.
+      </p>
+      <p>
+        The chapter should decide whether to keep using a private home address or route applications to the P.O. box
+        in Arlington. Whichever it chooses, the correct address goes in this step.
+      </p>
+    </ReviewNote>
+
+    <ReviewNote topic="Application form date">
+      The only application on the site is titled &ldquo;revised 2018&rdquo; and its filename carries a Windows
+      duplicate suffix. Please confirm it is still the current VVA form.
+    </ReviewNote>
+
+    <h3 class="contact-heading">Questions</h3>
+    <ContactList only={['membership']} />
+  </section>
+
+  <!-- ---------- Meetings ---------- -->
+  <section class="stack">
+    <h2>Come to a meeting first</h2>
+    <p>
+      You are welcome at a meeting before you join anything. Come for dinner, hear the speaker, and see whether the
+      room suits you.
+    </p>
+    <MeetingCard showReview={false} />
+  </section>
+
+  <!-- ---------- Where to find us ---------- -->
+  <section class="stack">
+    <h2>Where to find us</h2>
+    <p>Chapter members staff tables out in the community through the year.</p>
+    <CardGrid min="18rem">
+      {
+        events.outreach.map((item) => (
+          <Card title={item.title}>
+            <p>{item.description}</p>
+          </Card>
+        ))
+      }
+      <Card title="Associates of VVA" href="/join/avva" eyebrow="For family and friends">
+        <p>
+          Not a veteran, or a spouse who wants in? AVVA membership is open to anyone who works toward the same goals.
+        </p>
+      </Card>
+    </CardGrid>
+  </section>
+</PageLayout>
+
+<style>
+  section + section {
+    margin-block-start: var(--s-8);
+  }
+
+  h2 {
+    margin-block-end: var(--s-4);
+  }
+
+  blockquote {
+    margin: 0;
+    padding-inline-start: var(--s-5);
+    border-inline-start: 3px solid var(--c-gold);
+    font-family: var(--font-serif);
+    font-size: var(--t-lg);
+    line-height: 1.5;
+    color: var(--c-ink-soft);
+    max-width: var(--w-prose);
+  }
+
+  blockquote cite {
+    display: block;
+    margin-block-start: var(--s-3);
+    font-family: var(--font-sans);
+    font-size: var(--t-sm);
+    font-style: normal;
+    color: var(--c-ink-faint);
+  }
+
+  p {
+    max-width: var(--w-prose);
+  }
+
+  /* ---- Price ---- */
+
+  .price {
+    display: flex;
+    align-items: baseline;
+    gap: var(--s-4);
+    flex-wrap: wrap;
+    padding: var(--s-5) var(--s-6);
+    background: var(--c-primary-tint);
+    border-radius: var(--r-lg);
+  }
+
+  .price__amount {
+    font-family: var(--font-serif);
+    font-size: var(--t-3xl);
+    font-weight: 700;
+    line-height: 1;
+    color: var(--c-primary-dark);
+  }
+
+  .price__label {
+    font-size: var(--t-lg);
+    color: var(--c-primary-dark);
+  }
+
+  .benefits {
+    max-width: var(--w-prose);
+    padding-inline-start: var(--s-5);
+  }
+
+  .benefits li + li {
+    margin-block-start: var(--s-2);
+  }
+
+  /* ---- Steps ---- */
+
+  .steps {
+    counter-reset: step;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    max-width: var(--w-prose);
+  }
+
+  .steps > li {
+    position: relative;
+    counter-increment: step;
+    padding-inline-start: var(--s-8);
+    padding-block-end: var(--s-5);
+    border-inline-start: 2px solid var(--c-border);
+    margin-inline-start: 1.1rem;
+  }
+
+  .steps > li:last-child {
+    border-inline-start-color: transparent;
+    padding-block-end: 0;
+  }
+
+  .steps > li::before {
+    content: counter(step);
+    position: absolute;
+    inset-inline-start: -1.15rem;
+    inset-block-start: 0;
+    display: grid;
+    place-items: center;
+    inline-size: 2.25rem;
+    block-size: 2.25rem;
+    border-radius: 50%;
+    background: var(--c-primary);
+    color: #fff;
+    font-family: var(--font-serif);
+    font-weight: 700;
+  }
+
+  .steps h3 {
+    font-size: var(--t-lg);
+    line-height: 2.25rem;
+  }
+
+  .steps p {
+    margin-block-start: var(--s-2);
+  }
+
+  .doc {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--s-3);
+    padding: var(--s-3) var(--s-5);
+    background: var(--c-surface);
+    border: 1px solid var(--c-border-strong);
+    border-radius: var(--r-md);
+    font-weight: 700;
+    text-decoration: none;
+    color: var(--c-ink);
+  }
+
+  .doc:hover {
+    border-color: var(--c-primary);
+    background: var(--c-primary-tint);
+    color: var(--c-primary-dark);
+  }
+
+  .doc span {
+    font-size: 0.6875rem;
+    letter-spacing: 0.06em;
+    color: var(--c-ink-faint);
+  }
+
+  .contact-heading {
+    margin-block-start: var(--s-6);
+    margin-block-end: var(--s-4);
+  }
+</style>

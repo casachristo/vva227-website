@@ -1,0 +1,45 @@
+---
+/**
+ * Standard interior page: document shell + page masthead + a content well.
+ *
+ * `width` picks the measure. Long-form pages (by-laws, annual letters, the
+ * namesake story) use "prose" so lines stay around 68 characters; pages built
+ * from cards and grids use "content".
+ */
+import BaseLayout from './BaseLayout.astro';
+import PageHeader from '../components/PageHeader.astro';
+
+interface Props {
+  title: string;
+  description: string;
+  eyebrow?: string;
+  /** Heading shown on the page; defaults to `title`. */
+  heading?: string;
+  lede?: string;
+  width?: 'prose' | 'content';
+  image?: string;
+}
+
+const { title, description, eyebrow, heading, lede, width = 'content', image } = Astro.props;
+---
+
+<BaseLayout title={title} description={description} image={image}>
+  <PageHeader eyebrow={eyebrow} title={heading ?? title} lede={lede} />
+  <div class:list={['body', `body--${width}`]}>
+    <div class:list={['container', width === 'prose' && 'container--prose']}>
+      <slot />
+    </div>
+  </div>
+</BaseLayout>
+
+<style>
+  .body {
+    padding-block: var(--s-7);
+  }
+
+  /* Long-form pages get a slightly tighter top so the standfirst and the first
+     paragraph read as one block. */
+  .body--prose {
+    padding-block-start: var(--s-6);
+  }
+</style>

@@ -1,0 +1,180 @@
+---
+/**
+ * Dean K. Phillips — the chapter's namesake.
+ *
+ * The legacy site had a page called "becoming a memorial chapter" that told the
+ * story of restoring his plaque in 2006 and NEVER SAID WHO HE WAS. No rank
+ * detail, no service history, no account of how the chapter came to bear his
+ * name. The chapter's own identity was missing from its website.
+ *
+ * The biography below is transcribed from the bronze plaque the chapter itself
+ * commissioned and installed at Fort Meade — a primary source, and the most
+ * authoritative one available.
+ */
+import PageLayout from '../../layouts/PageLayout.astro';
+import Figure from '../../components/Figure.astro';
+import ReviewNote from '../../components/ReviewNote.astro';
+import site from '../../data/site.json';
+---
+
+<PageLayout
+  title="Captain Dean K. Phillips"
+  description="The chapter is named for Captain Dean K. Phillips — 101st Airborne in Vietnam, author of the Vietnam Era Veterans' Readjustment Assistance Act, and an early force behind the Vietnam Veterans Memorial."
+  eyebrow="About"
+  lede="Chapter 227 is a memorial chapter. This is the man it remembers."
+  image="/images/phillips-plaque.jpg"
+>
+  <div class="lede-block">
+    <p class="dates">7 June 1943 &ndash; 22 August 1985</p>
+  </div>
+
+  <div class="split">
+    <div class="split__text">
+      <h2>Who he was</h2>
+      <p>
+        From December 1967 to November 1968, Dean K. Phillips served with bravery and distinction in the 101st
+        Airborne Division in South Vietnam.
+      </p>
+      <p>
+        Afterward, as a member of the Army Reserve 11th Special Forces Group at Fort Meade, he shared his combat
+        experience and leadership with a new generation of soldiers.
+      </p>
+      <p>
+        He became an early advocate for Vietnam veteran health and economic issues. He was responsible for the
+        <strong> Vietnam Era Veterans&rsquo; Readjustment Assistance Act of 1974</strong>, and was instrumental in
+        obtaining federal government approval for the <strong>Vietnam Veterans Memorial</strong> &mdash; The Wall
+        that chapter members now gather at every Memorial Day.
+      </p>
+      <p class="source">
+        Transcribed from the bronze plaque at the Captain Dean K. Phillips Parachute Drop Zone, Fort Meade,
+        Maryland, commissioned by this chapter.
+      </p>
+    </div>
+
+    <Figure
+      src="/images/phillips-plaque.jpg"
+      alt="A bronze plaque set in stone reading: Captain Dean K. Phillips Parachute Drop Zone, born June 7 1943, died August 22 1985, followed by his service with the 101st Airborne Division and his work on veterans legislation and the Vietnam Veterans Memorial."
+      caption="The plaque at the drop zone that bears his name."
+      maxWidth="100%"
+    />
+  </div>
+
+  <ReviewNote topic="How the chapter took his name">
+    <p>
+      Captain Phillips died on 22 August 1985, about four weeks after the fifteen founders met at the Fort Myer NCO
+      Club on 24 July 1985. The current website never explains how or when the chapter chose to carry his name, or
+      what connection its founders had to him.
+    </p>
+    <p>
+      Someone in the chapter knows this story. It belongs on this page, in their words &mdash; it is the single most
+      compelling piece of writing the chapter could publish, and it is currently nowhere.
+    </p>
+  </ReviewNote>
+
+  <section class="stack">
+    <h2>The drop zone, and the plaque</h2>
+    <p>
+      A former parachute drop zone at Fort Meade, Maryland is dedicated to Captain Phillips. The land is now part of
+      the U.S. Fish and Wildlife Service&rsquo;s Patuxent Research Refuge &mdash; North Tract.
+    </p>
+    <p>
+      In response to questions about who Captain Phillips was, a park volunteer searched the internet and found the
+      chapter&rsquo;s website. After an email inquiry, Len Ignatowski and Joe Celesnik went to inspect the drop zone
+      and found a deteriorated plaque. The chapter voted to fund its renovation.
+    </p>
+    <p>
+      Environmental and park regulations meant replacing the damaged, corroding original with a larger bronze
+      plaque, carrying more personal information about the man it honored. Special thanks went to Alex Bigler, a
+      retired Marine officer and owner of the National Trust Foundry, who took a personal interest in the
+      inscription and the casting.
+    </p>
+    <p>
+      Len Ignatowski and Joe Celesnik &mdash; both Vietnam War veterans &mdash; installed the new plaque on
+      <strong> 26 August 2006</strong>. Diane Ignatowski and Sharon Celesnik of the chapter&rsquo;s AVVA, and Esther
+      Woodworth, a refuge volunteer, were also there.
+    </p>
+
+    <Figure
+      src="/images/phillips-plaque-installation.jpg"
+      alt="Two men kneeling on either side of the newly installed Dean K. Phillips plaque beneath a tree at the drop zone, with a small American flag planted in the grass in front of it."
+      caption="Len Ignatowski and Joe Celesnik at the newly installed plaque, 26 August 2006."
+      credit="Photograph courtesy of the chapter."
+    />
+
+    <p>
+      Ms. Helen Phillips, Captain Phillips&rsquo;s mother, telephoned Len Ignatowski to express her sincere
+      appreciation for the new plaque, and for the photographs of it and of the memorial site that were sent to her.
+    </p>
+
+    <blockquote>
+      <p>The plaque installation fulfills our commitment to &ldquo;{site.motto}.&rdquo;</p>
+    </blockquote>
+  </section>
+</PageLayout>
+
+<style>
+  .lede-block {
+    margin-block-end: var(--s-6);
+  }
+
+  .dates {
+    font-family: var(--font-serif);
+    font-size: var(--t-xl);
+    color: var(--c-ink-faint);
+    letter-spacing: 0.01em;
+  }
+
+  .split {
+    display: grid;
+    grid-template-columns: 1.1fr 0.9fr;
+    align-items: start;
+    gap: var(--s-7);
+  }
+
+  h2 {
+    margin-block-end: var(--s-4);
+  }
+
+  p + p {
+    margin-block-start: var(--s-4);
+  }
+
+  section {
+    margin-block-start: var(--s-8);
+  }
+
+  section p,
+  section :global(.figure) {
+    max-width: var(--w-prose);
+  }
+
+  section :global(.figure) {
+    margin-block: var(--s-6);
+  }
+
+  .source {
+    margin-block-start: var(--s-5);
+    padding-block-start: var(--s-4);
+    border-block-start: 1px solid var(--c-border);
+    font-size: var(--t-sm);
+    color: var(--c-ink-faint);
+  }
+
+  blockquote {
+    max-width: var(--w-prose);
+    margin: var(--s-6) 0 0;
+    padding-inline-start: var(--s-5);
+    border-inline-start: 3px solid var(--c-gold);
+    font-family: var(--font-serif);
+    font-size: var(--t-lg);
+    font-style: italic;
+    color: var(--c-ink-soft);
+  }
+
+  @media (max-width: 56rem) {
+    .split {
+      grid-template-columns: 1fr;
+      gap: var(--s-5);
+    }
+  }
+</style>

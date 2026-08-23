@@ -1,0 +1,109 @@
+---
+/**
+ * A closing prompt. Used at the foot of a page to send the reader somewhere
+ * useful rather than to a dead end — the legacy site had pages, like the empty
+ * "Christmas Party" page, with no onward link at all.
+ */
+interface Props {
+  title: string;
+  primary: { label: string; href: string };
+  secondary?: { label: string; href: string };
+  tone?: 'green' | 'clay';
+}
+
+const { title, primary, secondary, tone = 'green' } = Astro.props;
+---
+
+<aside class:list={['cta', `cta--${tone}`]}>
+  <div class="cta__text">
+    <h2 class="cta__title">{title}</h2>
+    <p class="cta__body"><slot /></p>
+  </div>
+  <div class="cta__actions">
+    <a class="btn btn--solid" href={primary.href}>{primary.label}</a>
+    {secondary && <a class="btn btn--ghost" href={secondary.href}>{secondary.label}</a>}
+  </div>
+</aside>
+
+<style>
+  .cta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--s-5);
+    margin-block-start: var(--s-8);
+    padding: var(--s-6);
+    border-radius: var(--r-lg);
+    color: #fff;
+  }
+
+  .cta--green {
+    background: var(--c-primary);
+  }
+
+  .cta--clay {
+    background: var(--c-accent-dark);
+  }
+
+  .cta__text {
+    max-width: 46ch;
+  }
+
+  .cta__title {
+    color: #fff;
+    font-size: var(--t-xl);
+  }
+
+  .cta__body {
+    margin-block-start: var(--s-2);
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 1rem;
+    line-height: 1.6;
+  }
+
+  .cta__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--s-3);
+  }
+
+  .btn {
+    display: inline-block;
+    padding: var(--s-3) var(--s-5);
+    border-radius: var(--r-md);
+    font-weight: 700;
+    font-size: 1rem;
+    text-decoration: none;
+    white-space: nowrap;
+    transition: background var(--dur) var(--ease), color var(--dur) var(--ease);
+  }
+
+  .btn--solid {
+    background: #fff;
+    color: var(--c-primary-dark);
+  }
+
+  .cta--clay .btn--solid {
+    color: var(--c-accent-dark);
+  }
+
+  .btn--solid:hover {
+    background: var(--c-surface-sunken);
+    color: var(--c-primary-dark);
+  }
+
+  .btn--ghost {
+    border: 2px solid rgba(255, 255, 255, 0.6);
+    color: #fff;
+  }
+
+  .btn--ghost:hover {
+    background: rgba(255, 255, 255, 0.12);
+    color: #fff;
+  }
+
+  .cta :global(:focus-visible) {
+    outline-color: #fff;
+  }
+</style>

@@ -1,0 +1,23 @@
+---
+/**
+ * Responsive card grid. `min` sets the narrowest a card may get before the
+ * grid drops a column, so no breakpoints are hard-coded anywhere.
+ */
+interface Props {
+  min?: string;
+}
+
+const { min = '17rem' } = Astro.props;
+---
+
+<div class="grid" style={`--card-min: ${min}`}>
+  <slot />
+</div>
+
+<style>
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(var(--card-min), 100%), 1fr));
+    gap: var(--s-5);
+  }
+</style>

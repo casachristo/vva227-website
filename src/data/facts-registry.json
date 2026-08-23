@@ -1,0 +1,634 @@
+{
+  "_doc": "Coverage registry. Each entry is an atomic fact that MUST be present in the built HTML, plus the literal strings that prove it. tests/invariants/migration-coverage.test.ts fails the build if any confirmed fact disappears from dist/. `origin` says where the fact came from: \"legacy-site\" for the facts recovered from vva227.org, its PDFs and the Fort Meade plaque, which is what MIGRATION coverage means and what the ratchet on that count protects; \"chapter-supplied\" for facts that arrived later from the chapter or its members and were never on the old site. The two are reported separately so a growing total can never disguise a legacy fact that was dropped. Assertions deliberately avoid apostrophes and quotes, which HTML-entity encoding would mangle.",
+  "facts": [
+    {
+      "id": "org-phone",
+      "origin": "legacy-site",
+      "fact": "Chapter phone number",
+      "assert": ["703-850-3498"],
+      "source": "site-wide footer"
+    },
+    {
+      "id": "org-address",
+      "origin": "legacy-site",
+      "fact": "Chapter mailing address",
+      "assert": ["P.O. Box 5653", "Arlington", "22205"],
+      "source": "site-wide footer"
+    },
+    {
+      "id": "org-facebook",
+      "origin": "legacy-site",
+      "fact": "Chapter Facebook page",
+      "assert": ["facebook.com/VVA227"],
+      "source": "site-wide footer"
+    },
+    {
+      "id": "org-founded",
+      "origin": "legacy-site",
+      "fact": "Founded 24 July 1985 at the Fort Myer NCO Club by about fifteen people",
+      "assert": ["24 July 1985", "Fort Myer NCO Club", "fifteen"],
+      "source": "chapter-history"
+    },
+    {
+      "id": "org-incorporated",
+      "origin": "legacy-site",
+      "fact": "Incorporated as a Virginia non-profit in January 1986",
+      "assert": ["January 1986"],
+      "source": "chapter-history"
+    },
+    {
+      "id": "org-motto",
+      "origin": "legacy-site",
+      "fact": "Founding motto",
+      "assert": ["Never Again Will One Generation of Veterans Abandon Another"],
+      "source": "site-wide"
+    },
+    {
+      "id": "org-mission",
+      "origin": "legacy-site",
+      "fact": "Chapter mission statement",
+      "assert": ["serve military veterans, their families, our community and our country"],
+      "source": "The Journey masthead"
+    },
+    {
+      "id": "crisis-line",
+      "origin": "legacy-site",
+      "fact": "Veterans Crisis Line: dial 988 then press 1",
+      "assert": ["988", "Veterans Crisis Line"],
+      "source": "site-wide banner"
+    },
+    {
+      "id": "crisis-text",
+      "origin": "legacy-site",
+      "fact": "Veterans Crisis Line text number",
+      "assert": ["838255"],
+      "source": "crisis banner"
+    },
+
+    {
+      "id": "meeting-cadence",
+      "origin": "legacy-site",
+      "fact": "Membership meetings are on the third Thursday, nine times a year",
+      "assert": ["Third Thursday", "Nine meetings a year"],
+      "source": "VVA-227-Chapter-membership / Monthly-Meetings"
+    },
+    {
+      "id": "meeting-venue",
+      "origin": "legacy-site",
+      "fact": "Meetings are held at American Legion Post 177, 3939 Oak Street, Fairfax",
+      "assert": ["American Legion Post 177", "3939 Oak Street", "Fairfax"],
+      "source": "Ceremonies-and-Parties / 2021-year-in-review"
+    },
+    {
+      "id": "meeting-times",
+      "origin": "legacy-site",
+      "fact": "Cash bar 5:30, dinner 6:15, meeting 7:00",
+      "assert": ["5:30 pm", "6:15 pm", "7:00 pm"],
+      "source": "Ceremonies-and-Parties"
+    },
+    {
+      "id": "meeting-open",
+      "origin": "legacy-site",
+      "fact": "Anyone is welcome at meetings, including spouses",
+      "assert": ["Anyone is welcome"],
+      "source": "VVA-227-Chapter-membership"
+    },
+
+    {
+      "id": "membership-eligibility",
+      "origin": "legacy-site",
+      "fact": "Open to any service member who served during the Vietnam era; in-country service not required",
+      "assert": ["served during the Vietnam era", "in-country"],
+      "source": "Membership / VVA-227-Chapter-membership"
+    },
+    {
+      "id": "membership-price",
+      "origin": "legacy-site",
+      "fact": "VVA life membership is $50 with no additional fees ever",
+      "assert": ["$50", "no additional fees ever"],
+      "source": "VVA-227-Chapter-membership"
+    },
+    {
+      "id": "membership-avva-price",
+      "origin": "legacy-site",
+      "fact": "AVVA membership is $100 a year",
+      "assert": ["$100"],
+      "source": "Membership"
+    },
+    {
+      "id": "membership-dd214",
+      "origin": "legacy-site",
+      "fact": "Applications need a check to Vietnam Veterans of America and a copy of the DD214, SSN may be blacked out",
+      "assert": ["DD214", "Vietnam Veterans of America", "black out"],
+      "source": "VVA-227-Chapter-membership"
+    },
+    {
+      "id": "membership-magazine",
+      "origin": "legacy-site",
+      "fact": "Members receive the national magazine The VVA Veteran",
+      "assert": ["The VVA Veteran"],
+      "source": "VVA-227-Chapter-membership"
+    },
+    {
+      "id": "membership-zumwalt",
+      "origin": "legacy-site",
+      "fact": "Admiral Zumwalt remained a member after moving to North Carolina; ranks run from privates to a three-star general",
+      "assert": ["Zumwalt", "three-star general"],
+      "source": "VVA-227-Chapter-membership"
+    },
+
+    {
+      "id": "impact-2024",
+      "origin": "legacy-site",
+      "fact": "2024: over $39,700 in direct support, 418 members, 17th largest nationally",
+      "assert": ["$39,700", "418", "17th"],
+      "source": "2024-year-in-review"
+    },
+    {
+      "id": "impact-2023-total",
+      "origin": "legacy-site",
+      "fact": "2023 itemized veteran support totaled $33,068",
+      "assert": ["$33,068"],
+      "source": "Veteran-and-Family-Support-Funds"
+    },
+    {
+      "id": "impact-2023-lines",
+      "origin": "legacy-site",
+      "fact": "2023 line items: veterans in need, VASH back to school, VASH holiday cards, Wounded Warrior, treatment docket, Adopt a Soldier, Lamb Center",
+      "assert": ["$13,059", "$6,600", "$8,375", "$3,000", "$1,000", "$250", "$784"],
+      "source": "Veteran-and-Family-Support-Funds"
+    },
+    {
+      "id": "impact-2022",
+      "origin": "legacy-site",
+      "fact": "2022: $31,000 in direct support, 359 members",
+      "assert": ["$31,000", "359"],
+      "source": "2022-year-in-review"
+    },
+    {
+      "id": "impact-2021",
+      "origin": "legacy-site",
+      "fact": "2021: about $28,000 provided, 349 members",
+      "assert": ["$28,000", "349"],
+      "source": "2021-year-in-review"
+    },
+    {
+      "id": "impact-2020",
+      "origin": "legacy-site",
+      "fact": "2020: about $25,000 provided, 329 members, 22nd nationally",
+      "assert": ["$25,000", "329", "22nd"],
+      "source": "2020-year-in-review"
+    },
+    {
+      "id": "impact-largest-va",
+      "origin": "legacy-site",
+      "fact": "Largest VVA chapter in Virginia",
+      "assert": ["largest VVA chapter in Virginia"],
+      "source": "annual letters"
+    },
+
+    {
+      "id": "program-vash",
+      "origin": "legacy-site",
+      "fact": "VASH is about half of chapter funds, sustained over ten years, cards distributed twice a year",
+      "assert": ["VA Supportive Housing", "twice a year"],
+      "source": "Support-to-VA-VASH"
+    },
+    {
+      "id": "program-scholarships",
+      "origin": "legacy-site",
+      "fact": "Scholarships for needy Northern Virginia students since 1985, extended to summer English classes",
+      "assert": ["scholarships", "English"],
+      "source": "chapter-history / Community-Outreach"
+    },
+    {
+      "id": "program-speakers",
+      "origin": "legacy-site",
+      "fact": "Members have shared Tour of Duty experiences since 1987",
+      "assert": ["Tour of Duty", "1987"],
+      "source": "Community-Outreach"
+    },
+    {
+      "id": "program-speaker-venues",
+      "origin": "legacy-site",
+      "fact": "Speaking venues include The Wall, Arlington and Fairfax schools, GMU, NOVA, Trinity and Maryland",
+      "assert": [
+        "Vietnam Veterans Memorial",
+        "George Mason University",
+        "Northern Virginia Community College",
+        "Trinity College",
+        "University of Maryland"
+      ],
+      "source": "Community-Outreach"
+    },
+    {
+      "id": "program-lamb-center",
+      "origin": "legacy-site",
+      "fact": "The Lamb Center in Fairfax is a day shelter supported by chapter AVVA members",
+      "assert": ["Lamb Center"],
+      "source": "AVVA-Chapter-membership"
+    },
+    {
+      "id": "program-mitre",
+      "origin": "legacy-site",
+      "fact": "MITRE Corporation care package partnership",
+      "assert": ["MITRE"],
+      "source": "2024-year-in-review"
+    },
+    {
+      "id": "program-suits",
+      "origin": "legacy-site",
+      "fact": "Suits for Veterans provided over 150 donated suits to Walter Reed and Bethesda",
+      "assert": ["Suits for Veterans", "Walter Reed"],
+      "source": "accomplishments sheet"
+    },
+    {
+      "id": "program-kickstart",
+      "origin": "legacy-site",
+      "fact": "Operation Kick-Start gives $25 to each new homeless veteran resident at Compassion House",
+      "assert": ["Operation Kick-Start", "Compassion House"],
+      "source": "accomplishments sheet"
+    },
+    {
+      "id": "program-writers",
+      "origin": "legacy-site",
+      "fact": "The chapter funds the Memorial Day Writers Project tent at The Wall",
+      "assert": ["Memorial Day Writers"],
+      "source": "The Journey September 2019"
+    },
+
+    {
+      "id": "vetcenter-address",
+      "origin": "legacy-site",
+      "fact": "Alexandria Vet Center address",
+      "assert": ["6940 South Kings Highway", "Alexandria, VA 22310"],
+      "source": "Alexandria-Vet-Center"
+    },
+    {
+      "id": "vetcenter-phone",
+      "origin": "legacy-site",
+      "fact": "Alexandria Vet Center phone and fax",
+      "assert": ["(703) 360-8633", "(703) 360-6143"],
+      "source": "Alexandria-Vet-Center"
+    },
+    {
+      "id": "vetcenter-hours",
+      "origin": "legacy-site",
+      "fact": "Alexandria Vet Center hours",
+      "assert": ["8:00 am to 4:30 pm", "Monday through Friday"],
+      "source": "Alexandria-Vet-Center"
+    },
+    {
+      "id": "vetcenter-landmark",
+      "origin": "legacy-site",
+      "fact": "Located at the intersection of South Kings Highway and Telegraph Road",
+      "assert": ["Telegraph Road"],
+      "source": "Alexandria-Vet-Center"
+    },
+
+    {
+      "id": "court-docket",
+      "origin": "legacy-site",
+      "fact": "Fairfax County Veterans Treatment Docket, chapter mentors led by Don Sutherland",
+      "assert": ["Veterans Treatment Docket", "Don Sutherland"],
+      "source": "Fairfax-Court"
+    },
+    {
+      "id": "court-videos",
+      "origin": "legacy-site",
+      "fact": "Two Justice For Vets videos were published on the legacy Fairfax Court page",
+      "assert": ["bQYd6Zn47AQ", "q984FI1tcN4"],
+      "source": "Fairfax-Court"
+    },
+
+    {
+      "id": "give-check",
+      "origin": "legacy-site",
+      "fact": "Checks go to the chapter P.O. box",
+      "assert": ["By check"],
+      "source": "Donation"
+    },
+    {
+      "id": "give-paypal",
+      "origin": "legacy-site",
+      "fact": "PayPal handle",
+      "assert": ["paypal.me/VVA227"],
+      "source": "Donation"
+    },
+    {
+      "id": "give-cash",
+      "origin": "legacy-site",
+      "fact": "Cash collection box at monthly meetings plus the 50/50 drawing",
+      "assert": ["50/50 drawing"],
+      "source": "Cash-and-Check-Donations-to-the-chapter"
+    },
+    {
+      "id": "give-vehicles",
+      "origin": "legacy-site",
+      "fact": "Vehicles for Veterans is Car Donation Foundation tax-exempt program; free towing, receipt within 15 days",
+      "assert": ["Vehicles for Veterans", "Car Donation Foundation", "15 days"],
+      "source": "Donation"
+    },
+    {
+      "id": "give-goods",
+      "origin": "legacy-site",
+      "fact": "VVA Pickup collects used clothes and household goods",
+      "assert": ["VVA Pickup"],
+      "source": "Donation"
+    },
+    {
+      "id": "give-goods-items",
+      "origin": "legacy-site",
+      "fact": "Items wanted for pickup",
+      "assert": ["Clothing and shoes", "Baby items", "Microwaves"],
+      "source": "Donation"
+    },
+    {
+      "id": "give-treasurer-duties",
+      "origin": "legacy-site",
+      "fact": "Treasurer duties: budget, receipts, disbursement, IRS forms",
+      "assert": ["annual budget", "IRS forms"],
+      "source": "Donation"
+    },
+
+    {
+      "id": "namesake-dates",
+      "origin": "legacy-site",
+      "fact": "Captain Dean K. Phillips born 7 June 1943, died 22 August 1985",
+      "assert": ["1943", "1985", "Dean K. Phillips"],
+      "source": "plaque at Fort Meade"
+    },
+    {
+      "id": "namesake-service",
+      "origin": "legacy-site",
+      "fact": "Served with the 101st Airborne Division in South Vietnam, December 1967 to November 1968",
+      "assert": ["101st Airborne", "1967", "1968"],
+      "source": "plaque at Fort Meade"
+    },
+    {
+      "id": "namesake-legislation",
+      "origin": "legacy-site",
+      "fact": "Responsible for the Vietnam Era Veterans Readjustment Assistance Act of 1974 and instrumental in the Vietnam Veterans Memorial",
+      "assert": ["Readjustment Assistance Act", "1974"],
+      "source": "plaque at Fort Meade"
+    },
+    {
+      "id": "namesake-plaque",
+      "origin": "legacy-site",
+      "fact": "Plaque installed 26 August 2006 by Len Ignatowski and Joe Celesnik at the Patuxent Research Refuge",
+      "assert": ["26 August 2006", "Len Ignatowski", "Joe Celesnik", "Patuxent Research Refuge"],
+      "source": "becoming-a-memorial-chapter"
+    },
+    {
+      "id": "namesake-foundry",
+      "origin": "legacy-site",
+      "fact": "Alex Bigler of the National Trust Foundry handled the inscription and casting",
+      "assert": ["Alex Bigler", "National Trust Foundry"],
+      "source": "becoming-a-memorial-chapter"
+    },
+    {
+      "id": "namesake-mother",
+      "origin": "legacy-site",
+      "fact": "Helen Phillips, his mother, called to express her appreciation",
+      "assert": ["Helen Phillips"],
+      "source": "becoming-a-memorial-chapter"
+    },
+
+    {
+      "id": "avva-national",
+      "origin": "legacy-site",
+      "fact": "AVVA has 10,400 members nationally, is non-partisan and is not an auxiliary",
+      "assert": ["10,400", "non-partisan"],
+      "source": "AVVA-Chapter-membership"
+    },
+    {
+      "id": "avva-activities",
+      "origin": "legacy-site",
+      "fact": "AVVA funds the Lamb Center, sends condolence and get-well cards, staffs the greeting table",
+      "assert": ["condolence", "greeting table"],
+      "source": "AVVA-Chapter-membership"
+    },
+
+    {
+      "id": "officers-roster",
+      "origin": "legacy-site",
+      "fact": "Chapter officers as published on the legacy site",
+      "assert": ["Jay Kalner", "Len Ignatowski", "Bob Tecklenburg", "Chuck Harris", "Bruce I. Waxman"],
+      "source": "Chapter-Officers"
+    },
+    {
+      "id": "directors-roster",
+      "origin": "legacy-site",
+      "fact": "Board of directors as published on the legacy site",
+      "assert": ["Bill Lynch", "Stan Derr", "Tom Stryer", "George Jones", "Bob Pezold"],
+      "source": "Chapter-Officers"
+    },
+
+    {
+      "id": "bylaws-annual-meeting",
+      "origin": "legacy-site",
+      "fact": "The annual meeting is held in April to elect officers and directors",
+      "assert": ["Annual meeting", "April"],
+      "source": "Chapter-227-By-Laws"
+    },
+    {
+      "id": "bylaws-board-size",
+      "origin": "legacy-site",
+      "fact": "Board of not fewer than 3 and not more than 20, two-year terms",
+      "assert": ["no more than 20", "two years"],
+      "source": "Chapter-227-By-Laws"
+    },
+    {
+      "id": "bylaws-quorum",
+      "origin": "legacy-site",
+      "fact": "Membership quorum is 5 percent; board quorum is two-thirds",
+      "assert": ["5% of members", "two-thirds"],
+      "source": "Chapter-227-By-Laws"
+    },
+    {
+      "id": "bylaws-roberts",
+      "origin": "legacy-site",
+      "fact": "Proceedings governed by Roberts Rules of Order",
+      "assert": ["Rules of Order"],
+      "source": "Chapter-227-By-Laws"
+    },
+    {
+      "id": "bylaws-ratified",
+      "origin": "legacy-site",
+      "fact": "By-laws last ratified 15 October 2020",
+      "assert": ["15 October 2020"],
+      "source": "Chapter-227-By-Laws"
+    },
+
+    {
+      "id": "publications-journey",
+      "origin": "legacy-site",
+      "fact": "The chapter newsletter is called The Journey, subtitled Just In Time",
+      "assert": ["The Journey", "Just In Time"],
+      "source": "Newsletter / The Journey masthead"
+    },
+    {
+      "id": "publications-policy",
+      "origin": "legacy-site",
+      "fact": "Newsletter published monthly except July and August, ten issues a year",
+      "assert": ["ten issues a year"],
+      "source": "Chapter-Publications"
+    },
+    {
+      "id": "publications-minuteman",
+      "origin": "legacy-site",
+      "fact": "The Minuteman Alert is the chapter email channel",
+      "assert": ["Minuteman Alert"],
+      "source": "Chapter-Publications"
+    },
+    {
+      "id": "publications-disclaimer",
+      "origin": "legacy-site",
+      "fact": "Required disclaimer that bylined articles reflect the authors opinions alone",
+      "assert": ["reflect the opinions solely of their authors", "VVA Virginia State Council"],
+      "source": "Chapter-Publications"
+    },
+    {
+      "id": "publications-state-paper",
+      "origin": "legacy-site",
+      "fact": "The chapter is featured quarterly in the Virginia Vietnam Veteran",
+      "assert": ["Virginia Vietnam Veteran"],
+      "source": "chapter-history"
+    },
+    {
+      "id": "publications-archive",
+      "origin": "legacy-site",
+      "fact": "The Journey archive spans 2017 to November 2024",
+      "assert": ["November 2024", "January 2017"],
+      "source": "Newsletter"
+    },
+
+    {
+      "id": "events-memorial-day",
+      "origin": "legacy-site",
+      "fact": "Memorial Day and Veterans Day observances: brunch, wreath, The Wall, potluck",
+      "assert": ["wreath", "potluck"],
+      "source": "chapter-history"
+    },
+    {
+      "id": "events-social",
+      "origin": "legacy-site",
+      "fact": "Annual picnic in June or July, awards banquet in June, holiday party in December",
+      "assert": ["picnic", "awards banquet", "Holiday party"],
+      "source": "chapter-history"
+    },
+    {
+      "id": "events-anniversary",
+      "origin": "legacy-site",
+      "fact": "The October meeting is the chapter anniversary dinner",
+      "assert": ["Anniversary dinner"],
+      "source": "Ceremonies-and-Parties"
+    },
+    {
+      "id": "events-mission-bbq",
+      "origin": "legacy-site",
+      "fact": "Chapter teams staff four Mission BBQ restaurants on veteran free-sandwich days",
+      "assert": ["Mission BBQ"],
+      "source": "Working-with-Mission-bbq"
+    },
+    {
+      "id": "events-tank-farm",
+      "origin": "legacy-site",
+      "fact": "The chapter exhibits at the National Museum of Americans in Wartime open house",
+      "assert": ["Americans in Wartime", "20,000"],
+      "source": "Marketing-at-the-American-wartime-tank-farm"
+    },
+    {
+      "id": "events-pow-chair",
+      "origin": "legacy-site",
+      "fact": "The POW/MIA chair at Nationals Park, dedicated 18 September 2015, 92,000 unaccounted for",
+      "assert": ["Nationals Park", "92,000"],
+      "source": "chapter photographs"
+    },
+    {
+      "id": "events-versace",
+      "origin": "legacy-site",
+      "fact": "The chapter funded repairs to the Captain Rocky Versace memorial in Alexandria",
+      "assert": ["Versace"],
+      "source": "The Journey September 2019"
+    },
+    {
+      "id": "speakers-2024",
+      "origin": "legacy-site",
+      "fact": "2024 speaker roster",
+      "assert": ["Donut Dollie", "Berlin Airlift", "David Rodriguez"],
+      "source": "2024-year-in-review"
+    },
+
+    {
+      "id": "national-vva",
+      "origin": "legacy-site",
+      "fact": "VVA founded 1978, over 90,000 members in over 700 chapters, congressionally chartered",
+      "assert": ["congressionally chartered"],
+      "source": "home page meta description"
+    },
+    {
+      "id": "service-branches",
+      "origin": "legacy-site",
+      "fact": "Links to the eight uniformed services",
+      "assert": ["army.mil", "navy.mil", "af.mil", "spaceforce.mil", "uscg.mil", "usphs.gov"],
+      "source": "site-wide"
+    },
+    {
+      "id": "nvvvf-name",
+      "origin": "chapter-supplied",
+      "fact": "The chapter created the Northern Virginia Vietnam Veterans Foundation, abbreviated NVVVF",
+      "assert": ["Northern Virginia Vietnam Veterans Foundation", "NVVVF"],
+      "source": "One Year Later - NVVVF member newsletter, supplied 2026"
+    },
+    {
+      "id": "nvvvf-founded",
+      "origin": "chapter-supplied",
+      "fact": "The Foundation was created in June 2025, in the chapter fortieth year",
+      "assert": ["June 2025"],
+      "source": "One Year Later - NVVVF member newsletter, supplied 2026"
+    },
+    {
+      "id": "nvvvf-status",
+      "origin": "chapter-supplied",
+      "fact": "The Foundation is a 501(c)(3) with EIN 33-2320012",
+      "assert": ["501(c)(3)", "33-2320012"],
+      "source": "One Year Later - NVVVF member newsletter, supplied 2026"
+    },
+    {
+      "id": "nvvvf-mailing",
+      "origin": "chapter-supplied",
+      "fact": "Checks to the Foundation go to PO Box 2111, Reston, VA 20195",
+      "assert": ["PO Box 2111", "Reston", "20195"],
+      "source": "One Year Later - NVVVF member newsletter, supplied 2026"
+    },
+    {
+      "id": "nvvvf-committee",
+      "origin": "chapter-supplied",
+      "fact": "Chapter 227 volunteers run the Financial Assistance Committee, which documents and verifies each request",
+      "assert": ["Financial Assistance Committee"],
+      "source": "One Year Later - NVVVF member newsletter, supplied 2026"
+    },
+    {
+      "id": "nvvvf-creditor-rule",
+      "origin": "chapter-supplied",
+      "fact": "Assistance is paid to the creditor and never handed directly to the veteran",
+      "assert": ["never handed directly to the veteran"],
+      "source": "One Year Later - NVVVF member newsletter, supplied 2026"
+    },
+    {
+      "id": "nvvvf-volunteer",
+      "origin": "chapter-supplied",
+      "fact": "Both organizations are all-volunteer with no paid staff",
+      "assert": ["No salaries", "community volunteers working together"],
+      "source": "One Year Later - NVVVF member newsletter, supplied 2026"
+    },
+    {
+      "id": "nvvvf-referrals",
+      "origin": "chapter-supplied",
+      "fact": "Requests reach the chapter as referrals from partner agencies",
+      "assert": ["Virginia Department of Veterans Services", "Veterans Treatment Docket mentors"],
+      "source": "One Year Later - NVVVF member newsletter, supplied 2026"
+    }
+  ]
+}

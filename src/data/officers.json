@@ -1,0 +1,45 @@
+{
+  "_doc": "Chapter leadership as published on the legacy site. Names only — no personal phone numbers or home addresses. The legacy roster carries no date and its cross-references suggest it was last revised around 2022-23, so `asOf` is null on purpose and the page says so plainly rather than presenting a possibly-stale roster as current.",
+  "asOf": null,
+  "reviewRequired": "The chapter must confirm the current officers, directors and committee chairs before this page goes live. Publishing a stale roster is worse than publishing none.",
+  "officers": [
+    { "role": "President", "name": "Jay Kalner" },
+    { "role": "Vice President", "name": "Len Ignatowski" },
+    { "role": "Secretary", "name": "Bob Tecklenburg" },
+    { "role": "Treasurer", "name": "Charles “Chuck” Harris" },
+    { "role": "Immediate Past President", "name": "Bruce I. Waxman" }
+  ],
+  "directors": [
+    { "name": "Ralph “Andy” Bender", "branch": "Air Force" },
+    { "name": "Tom Brown", "branch": "Air Force" },
+    { "name": "Thomas Davis Jr.", "branch": "Navy" },
+    { "name": "Stan Derr", "branch": null },
+    { "name": "Don Drunsic", "branch": null },
+    { "name": "Bill Dumsick", "branch": null },
+    { "name": "Scott Hurley", "branch": null },
+    { "name": "George Jones", "branch": null },
+    { "name": "Gerald “Jerry” Krueger", "branch": null },
+    { "name": "Bill Lynch", "branch": null },
+    { "name": "Bob Pezold", "branch": null },
+    { "name": "Tom Stryer", "branch": null },
+    { "name": "Don Sutherland", "branch": null },
+    { "name": "Dennis Stephens", "branch": null },
+    { "name": "Norm Williamson", "branch": null }
+  ],
+  "committees": [
+    { "role": "Membership", "name": "Bill Lynch" },
+    { "role": "Newsletter editor", "name": "Len Ignatowski" },
+    { "role": "Web manager", "name": "Stan Derr" },
+    { "role": "AVVA representative", "name": "Diane Ignatowski" },
+    { "role": "Guest speakers", "name": "Jay Kalner" },
+    { "role": "School speakers panel", "name": "Tom Stryer" },
+    { "role": "Sergeant at arms", "name": "George Jones" },
+    { "role": "Welcome Home Vietnam Vets", "name": "Dick Weaver" },
+    {
+      "role": "Fairfax Fair and 50th anniversary",
+      "name": "Bob Tecklenburg",
+      "review": "The legacy site spells this “anniversity” and never says which 50th. The chapter's own 50th falls in 2035, so this is probably the Vietnam War 50th Commemoration."
+    }
+  ],
+  "notable": "The chapter's ranks have run from privates to a three-star general and an admiral. Admiral Zumwalt remained a member after moving to North Carolina."
+}

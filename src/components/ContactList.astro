@@ -1,0 +1,105 @@
+---
+/**
+ * Role-based contacts.
+ *
+ * Renders from contacts.json, honoring each entry's `status`:
+ *   ok        → publish the address
+ *   conflict  → publish NEITHER candidate; say so, and route to the chapter line
+ *   missing   → say plainly that it is missing rather than inventing one
+ *
+ * This is the honest rendering of a site that published two different emails
+ * for the same treasurer and ended one contact sentence mid-air.
+ */
+import contacts from '../data/contacts.json';
+import site from '../data/site.json';
+
+interface Props {
+  /** Restrict to specific role ids, in order. Defaults to all. */
+  only?: string[];
+}
+
+const { only } = Astro.props;
+const roles = only
+  ? only.map((id) => contacts.roles.find((r) => r.id === id)).filter((r): r is (typeof contacts.roles)[number] => Boolean(r))
+  : contacts.roles;
+---
+
+<ul class="contacts">
+  {
+    roles.map((role) => (
+      <li class="contact">
+        <p class="contact__role">{role.label}</p>
+        {role.person && <p class="contact__person">{role.person}</p>}
+
+        {role.status === 'ok' && (
+          <p class="contact__reach">
+            {role.email && <a href={`mailto:${role.email}`}>{role.email}</a>}
+            {role.email && role.phone && <br />}
+            {role.phone && <a href={`tel:${role.phone.replace(/-/g, '')}`}>{role.phone}</a>}
+          </p>
+        )}
+
+        {role.status === 'conflict' && (
+          <p class="contact__flag">
+            Two different addresses are published for this role on the current site, so neither is shown here.
+            Call the chapter on <a href={`tel:${site.phone.replace(/-/g, '')}`}>{site.phone}</a> in the meantime.
+          </p>
+        )}
+
+        {role.status === 'missing' && (
+          <p class="contact__flag">
+            No contact details were ever published for this role. Call the chapter on{' '}
+            <a href={`tel:${site.phone.replace(/-/g, '')}`}>{site.phone}</a>.
+          </p>
+        )}
+      </li>
+    ))
+  }
+</ul>
+
+<style>
+  .contacts {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(16rem, 100%), 1fr));
+    gap: var(--s-4);
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .contact {
+    padding: var(--s-4) var(--s-5);
+    background: var(--c-surface);
+    border: 1px solid var(--c-border);
+    border-radius: var(--r-md);
+  }
+
+  .contact__role {
+    font-size: var(--t-xs);
+    font-weight: 700;
+    letter-spacing: var(--tracking-caps);
+    text-transform: uppercase;
+    color: var(--c-accent-dark);
+  }
+
+  .contact__person {
+    margin-block-start: var(--s-1);
+    font-family: var(--font-serif);
+    font-size: var(--t-lg);
+    font-weight: 600;
+  }
+
+  .contact__reach {
+    margin-block-start: var(--s-2);
+    font-size: 1rem;
+    line-height: 1.7;
+    word-break: break-word;
+  }
+
+  .contact__flag {
+    margin-block-start: var(--s-2);
+    font-size: var(--t-sm);
+    line-height: 1.55;
+    color: var(--c-ink-faint);
+  }
+</style>

@@ -1,0 +1,88 @@
+---
+/**
+ * The Veterans Crisis Line, pinned to the top of every page.
+ *
+ * On the legacy site this sat below a rotating carousel, near the fold. For a
+ * site whose most urgent visitor may be in crisis, it belongs above everything
+ * else and it belongs on every page, not just the home page.
+ *
+ * Styled serious rather than alarming: this is permanent furniture, not an
+ * error state, and it must not read as a page-level warning.
+ */
+import site from '../data/site.json';
+
+const { crisis } = site;
+---
+
+<aside class="crisis" aria-label={crisis.label}>
+  <div class="crisis__inner">
+    <span class="crisis__label">{crisis.label}</span>
+    <a class="crisis__action" href={`tel:${crisis.tel}`}>
+      <strong>{crisis.instruction}</strong>
+    </a>
+    <span class="crisis__sep" aria-hidden="true">·</span>
+    <span class="crisis__text">
+      Text <a href={`sms:${crisis.textNumber}`}>{crisis.textNumber}</a>
+    </span>
+    <a class="crisis__more" href={crisis.url} rel="noopener">Chat online</a>
+  </div>
+</aside>
+
+<style>
+  .crisis {
+    background: var(--c-crisis);
+    color: var(--c-crisis-ink);
+    font-size: var(--t-sm);
+  }
+
+  .crisis__inner {
+    max-width: var(--w-wide);
+    margin-inline: auto;
+    padding: var(--s-2) var(--gutter);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: var(--s-2) var(--s-3);
+    justify-content: center;
+  }
+
+  .crisis__label {
+    font-weight: 700;
+    letter-spacing: var(--tracking-caps);
+    text-transform: uppercase;
+    font-size: var(--t-xs);
+  }
+
+  .crisis a {
+    color: var(--c-crisis-ink);
+    text-decoration-thickness: 0.1em;
+  }
+
+  .crisis a:hover {
+    color: var(--c-crisis-ink);
+    text-decoration-thickness: 0.16em;
+  }
+
+  .crisis__action strong {
+    font-weight: 700;
+  }
+
+  .crisis__sep,
+  .crisis__text {
+    opacity: 0.85;
+  }
+
+  .crisis :global(:focus-visible) {
+    outline-color: #fff;
+  }
+
+  /* On the narrowest phones the secondary routes drop away so the primary
+     instruction — dial 988, press 1 — is never pushed onto a third line. */
+  @media (max-width: 30rem) {
+    .crisis__sep,
+    .crisis__text,
+    .crisis__more {
+      display: none;
+    }
+  }
+</style>

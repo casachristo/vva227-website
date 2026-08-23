@@ -1,0 +1,151 @@
+---
+/**
+ * When and where the chapter meets.
+ *
+ * This is the single most important fact on the site and the legacy version
+ * never stated it in one place: the day was contradicted across two pages, the
+ * street address appeared only inside a stale anniversary-dinner announcement,
+ * and the calendar rendered an empty grid. It exists exactly once, here, and
+ * every page that needs it renders this component.
+ */
+import { mapUrl, addressLine } from '../lib/format';
+import events from '../data/events.json';
+import ReviewNote from './ReviewNote.astro';
+
+interface Props {
+  /** Suppress the review flag where it would be repetitive. */
+  showReview?: boolean;
+  compact?: boolean;
+}
+
+const { showReview = true, compact = false } = Astro.props;
+const { meeting } = events;
+const venue = meeting.venue;
+const address = addressLine([venue.street, venue.city, venue.state]);
+---
+
+<div class:list={['meet', compact && 'meet--compact']}>
+  <div class="meet__when">
+    <p class="eyebrow">Membership meetings</p>
+    <p class="meet__cadence">{meeting.cadence}</p>
+    <p class="meet__months">{meeting.monthsNote}</p>
+  </div>
+
+  <div class="meet__detail">
+    <div>
+      <h3 class="meet__h">Where</h3>
+      <address class="meet__address">
+        <strong>{venue.name}</strong><br />
+        {address}
+      </address>
+      <a class="meet__map" href={mapUrl(venue.mapQuery)} rel="noopener">Get directions</a>
+    </div>
+
+    <div>
+      <h3 class="meet__h">Running order</h3>
+      <ul class="meet__times">
+        {
+          meeting.schedule.map((row) => (
+            <li>
+              <span class="meet__time">{row.time}</span>
+              <span>{row.what}</span>
+            </li>
+          ))
+        }
+      </ul>
+    </div>
+  </div>
+
+  <p class="meet__welcome">{meeting.welcome}</p>
+</div>
+
+{showReview && <ReviewNote topic="Meeting day and times">{meeting.review}</ReviewNote>}
+
+<style>
+  .meet {
+    display: grid;
+    gap: var(--s-5);
+    padding: var(--s-6);
+    background: var(--c-surface);
+    border: 1px solid var(--c-border);
+    border-block-start: 4px solid var(--c-primary);
+    border-radius: var(--r-lg);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .meet__cadence {
+    font-family: var(--font-serif);
+    font-size: var(--t-xl);
+    font-weight: 600;
+    line-height: 1.2;
+    color: var(--c-primary-dark);
+    margin-block-start: var(--s-2);
+  }
+
+  .meet__months {
+    color: var(--c-ink-faint);
+    font-size: 1rem;
+  }
+
+  .meet__detail {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(14rem, 100%), 1fr));
+    gap: var(--s-5);
+    padding-block-start: var(--s-5);
+    border-block-start: 1px solid var(--c-border);
+  }
+
+  .meet__h {
+    font-family: var(--font-sans);
+    font-size: var(--t-xs);
+    font-weight: 700;
+    letter-spacing: var(--tracking-caps);
+    text-transform: uppercase;
+    color: var(--c-ink-faint);
+    margin-block-end: var(--s-2);
+  }
+
+  .meet__address {
+    font-style: normal;
+    line-height: 1.6;
+  }
+
+  .meet__map {
+    display: inline-block;
+    margin-block-start: var(--s-2);
+    font-weight: 600;
+    font-size: 1rem;
+  }
+
+  .meet__times {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    font-size: 1rem;
+  }
+
+  .meet__times li {
+    display: flex;
+    gap: var(--s-3);
+    line-height: 1.7;
+  }
+
+  .meet__time {
+    flex: none;
+    inline-size: 4.5rem;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    color: var(--c-ink);
+  }
+
+  .meet__welcome {
+    padding-block-start: var(--s-4);
+    border-block-start: 1px solid var(--c-border);
+    color: var(--c-ink-soft);
+    font-size: 1rem;
+  }
+
+  .meet--compact {
+    padding: var(--s-5);
+  }
+</style>

@@ -1,0 +1,182 @@
+---
+/**
+ * Get Help — the first nav slot.
+ *
+ * On the legacy site the page carrying this responsibility ("Veteran and Family
+ * Support") had a body consisting of exactly one link. The three resources a
+ * struggling veteran would actually want were filed under three unrelated
+ * sections: the Vet Center under "Community Support", the Treatment Docket
+ * under a top-level item called "Fairfax Court", and the chapter's own
+ * financial assistance under a page called "Chapter 227 Key Mission".
+ *
+ * The single biggest content gap on the whole site surfaces here: nowhere does
+ * it say how a veteran actually ASKS for help. That is flagged, not invented.
+ */
+import PageLayout from '../../layouts/PageLayout.astro';
+import Card from '../../components/Card.astro';
+import CardGrid from '../../components/CardGrid.astro';
+import ReviewNote from '../../components/ReviewNote.astro';
+import ContactList from '../../components/ContactList.astro';
+import { currency } from '../../lib/format';
+import site from '../../data/site.json';
+import impact from '../../data/impact.json';
+
+const latest = impact.years[0];
+
+const helpWith = [
+  'Rent and mortgage payments',
+  'Utility bills',
+  'Car payments and car repairs',
+  'Medical expenses',
+  'Back-to-school costs for children',
+  'Holiday gifts for families',
+];
+---
+
+<PageLayout
+  title="Get Help"
+  description="Chapter 227 provides direct financial assistance to veterans and their families in Northern Virginia, and can refer you to counseling, housing and treatment court support."
+  eyebrow="For veterans and families"
+  lede="If you served, and things are tight, the chapter may be able to help — and if we cannot, we probably know who can."
+>
+  <!-- Crisis first, before anything else on the page. -->
+  <section class="urgent">
+    <h2 class="urgent__title">If you are in crisis right now</h2>
+    <p class="urgent__body">
+      Call the <strong>Veterans Crisis Line</strong> — dial <a href="tel:988">988</a>, then press <strong>1</strong>.
+      You can also text <a href="sms:838255">838255</a> or
+      <a href={site.crisis.url} rel="noopener">chat online</a>. It is staffed 24 hours a day, every day, by people
+      who understand. You do not need to be enrolled in VA care.
+    </p>
+  </section>
+
+  <section class="stack">
+    <h2>What the chapter can help with</h2>
+    <p>
+      Chapter 227 gives money directly to veterans and their families in Northern Virginia. This is not a loan and it
+      is not a grant program with forms and a review board — it is one veteran organization deciding to cover
+      something that has to be covered. In {latest.year} the chapter paid out {currency(latest.totalSupport)} this way.
+    </p>
+
+    <ul class="pills">
+      {helpWith.map((item) => <li>{item}</li>)}
+    </ul>
+
+    <p class="muted">
+      The chapter has also paid for things that fit no category at all — a security deposit that let a veteran move
+      into his own apartment, and cancer treatment costs for the wife of an Army Ranger.
+    </p>
+
+    <ReviewNote topic="How to ask for help">
+      <p>
+        <strong>The current website never explains how a veteran actually requests assistance.</strong> It describes
+        what the chapter pays for and how much it spent, but gives no intake route — no form, no phone number for
+        assistance specifically, and no named person to ask.
+      </p>
+      <p>
+        This is the most consequential gap found in the whole content audit. The chapter needs to decide who takes
+        these requests and how, and that route belongs at the top of this page.
+      </p>
+      <p>
+        A Foundation newsletter forwarded to the site in 2026 describes the program differently from this page. It
+        says requests arrive as <strong>referrals</strong> from partner agencies &mdash; the Virginia Department of
+        Veterans Services, county veterans offices, Veterans Treatment Docket mentors, the VFW and the American
+        Legion; that a <strong>Financial Assistance Committee</strong> documents and verifies each one; and that
+        payment goes to the landlord, utility company or repair shop, <strong>never to the veteran in cash</strong>.
+        This page says close to the opposite in two places: that the chapter gives money directly to veterans and
+        their families, and that this is not a grant program with forms and a review board.
+      </p>
+      <p>
+        Both descriptions cannot be right, and that newsletter is a fundraising appeal rather than the
+        chapter&rsquo;s intake policy &mdash; so this page has not been rewritten around it. The chapter needs to
+        confirm which description is correct, and in particular
+        <strong>whether a veteran with no caseworker may ask the chapter directly</strong>. If a partner referral
+        is required, this page must say so plainly and name the first door to knock on.
+        <a href="/give/nvvvf">About the Foundation &rarr;</a>
+      </p>
+    </ReviewNote>
+
+    <h3>Ask the chapter</h3>
+    <p>
+      Until a dedicated intake route exists, the chapter&rsquo;s general line is the way in.
+    </p>
+    <ContactList only={['general', 'treatment-court']} />
+  </section>
+
+  <section class="stack">
+    <h2>Other places that can help</h2>
+    <CardGrid min="18rem">
+      <Card title="Alexandria Vet Center" href="/get-help/vet-center" eyebrow="Counseling">
+        <p>
+          Free, confidential counseling for combat veterans and their families — readjustment, PTSD, bereavement.
+          Open weekdays, with evening and weekend appointments on request.
+        </p>
+      </Card>
+      <Card title="Veterans Treatment Court" href="/get-help/treatment-court" eyebrow="Legal">
+        <p>
+          If you are facing charges in Fairfax County connected to addiction or PTSD, the Veterans Treatment Docket
+          offers treatment and a veteran mentor rather than a jail sentence.
+        </p>
+      </Card>
+      <Card title="The Lamb Center" eyebrow="Food, clothing, shelter">
+        <p>
+          A day shelter in Fairfax for homeless men and women, many of them veterans, providing clothing, food and
+          daily necessities. The chapter&rsquo;s AVVA members collect for it at every monthly meeting.
+        </p>
+      </Card>
+      <Card title="VA Supportive Housing (VASH)" href="/programs" eyebrow="Housing">
+        <p>
+          About half of everything the chapter spends goes to families in the VASH program, through preloaded debit
+          cards distributed by VASH caseworkers at Christmas and back-to-school.
+        </p>
+      </Card>
+    </CardGrid>
+  </section>
+</PageLayout>
+
+<style>
+  .urgent {
+    margin-block-end: var(--s-7);
+    padding: var(--s-5) var(--s-6);
+    background: color-mix(in srgb, var(--c-crisis) 7%, var(--c-surface));
+    border: 1px solid color-mix(in srgb, var(--c-crisis) 28%, var(--c-border));
+    border-inline-start: 4px solid var(--c-crisis);
+    border-radius: var(--r-md);
+  }
+
+  .urgent__title {
+    font-size: var(--t-lg);
+    color: var(--c-crisis);
+  }
+
+  .urgent__body {
+    margin-block-start: var(--s-3);
+    max-width: 62ch;
+  }
+
+  section + section {
+    margin-block-start: var(--s-8);
+  }
+
+  .pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--s-2);
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .pills li {
+    padding: var(--s-2) var(--s-4);
+    background: var(--c-primary-tint);
+    border-radius: 100px;
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--c-primary-dark);
+  }
+
+  h3 {
+    margin-block-start: var(--s-6);
+  }
+</style>

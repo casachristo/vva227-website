@@ -1,0 +1,279 @@
+---
+/**
+ * Chapter Documents — internal record-keeping, two clicks from the front page.
+ *
+ * Consolidates the by-laws, board minutes, and the publication policy, which
+ * the legacy site published TWICE under different titles ("Members Information"
+ * and "Chapter Publications") with ~90% identical text and two different email
+ * addresses for the same editor.
+ *
+ * The by-laws are summarized rather than reproduced. The legacy full text has a
+ * duplicated ARTICLE IV, no ARTICLE V at all, and a clause marked "[OBSOLETE]"
+ * — republishing a defective governing document as if it were current would be
+ * worse than linking to a clean copy the chapter re-issues.
+ */
+import PageLayout from '../../layouts/PageLayout.astro';
+import DocumentArchive from '../../components/DocumentArchive.astro';
+import ReviewNote from '../../components/ReviewNote.astro';
+import newsletter from '../../data/newsletter.json';
+
+const bylaws = [
+  { term: 'Annual meeting', detail: 'Held in April, to elect officers and directors.' },
+  {
+    term: 'Board of directors',
+    detail: 'No fewer than 3 and no more than 20, including the President, Vice President, Secretary and Treasurer. Terms run two years, with no limit on the number of terms.',
+  },
+  {
+    term: 'Board meetings',
+    detail: 'At least four a year, and between one day and one month before the annual chapter meeting.',
+  },
+  {
+    term: 'Quorum',
+    detail: 'Membership quorum is 5% of members, decisions by simple majority of those present. Board quorum is two-thirds of the whole board, rounded up.',
+  },
+  {
+    term: 'Notice periods',
+    detail: '30 to 50 days for the annual meeting, at least 10 days for special meetings, at least 5 days for board meetings.',
+  },
+  {
+    term: 'Attendance',
+    detail: 'A director absent from three consecutive board meetings without the board’s consent is considered resigned, as is a member not in good standing on dues.',
+  },
+  { term: 'Presidential vacancy', detail: 'Filled by the Vice President for the unexpired term.' },
+  {
+    term: 'Executive committee',
+    detail: 'The four officers plus one additional director selected by the board.',
+  },
+  {
+    term: 'Nominating committee',
+    detail: 'Three members elected at the annual meeting, quorum of two, slate delivered one month before the annual meeting.',
+  },
+  { term: 'Fidelity bond', detail: 'Check-signing officers must obtain one unless excused by the National Board.' },
+  {
+    term: 'AVVA representation',
+    detail: 'The elected AVVA representative sits on the board as a non-voting special advisor, entitled to be heard on all matters.',
+  },
+  { term: 'Procedure', detail: 'Governed by Robert’s Rules of Order, latest revision.' },
+  {
+    term: 'Amendments',
+    detail: 'Require two-thirds of the chapter board present, then ratification at the next general membership meeting by two-thirds of those present.',
+  },
+];
+
+const policy = [
+  {
+    title: 'The Journey',
+    body: 'The chapter newsletter, published monthly except July and August — ten issues a year. The editor decides content, consulting the President as necessary. The newsletter is not a channel for members to express opinions on an issue.',
+  },
+  {
+    title: 'The Minuteman Alert',
+    body: 'Email announcements to members. A refused alert may be appealed to the board, whose decision is final.',
+  },
+  {
+    title: 'The website',
+    body: 'Unlike the newsletter, the website IS a channel for members to express opinions. Submitted articles must not contain offensive, obscene or libelous language; disputes escalate from the manager to the President to the board.',
+  },
+  {
+    title: 'Attribution',
+    body: 'The source of any article or photograph submitted shall be noted. Bylined articles carry a disclaimer that they reflect the author’s opinions alone.',
+  },
+];
+---
+
+<PageLayout
+  title="Chapter Documents"
+  description="By-laws, board meeting minutes and the publication policy of VVA Chapter 227."
+  eyebrow="About"
+  lede="Governance papers and internal records. Useful if you are a member, a board candidate, or checking how the chapter is run."
+>
+  <!-- ---------- By-laws ---------- -->
+  <section>
+    <h2>By-laws</h2>
+    <p class="intro">
+      The chapter&rsquo;s by-laws were last ratified on <strong>15 October 2020</strong>, signed by Jay Kalner as
+      President. Earlier ratifications were signed by John P. Clark in May 1986 and Louis M. James in December 1993.
+    </p>
+
+    <dl class="terms">
+      {
+        bylaws.map((row) => (
+          <div class="term">
+            <dt>{row.term}</dt>
+            <dd>{row.detail}</dd>
+          </div>
+        ))
+      }
+    </dl>
+
+    <ReviewNote topic="The by-laws text needs re-issuing">
+      <p>
+        The full text as published on the current site has structural defects: <strong>ARTICLE IV appears
+        twice</strong>, <strong>there is no ARTICLE V</strong>, one clause is marked &ldquo;[OBSOLETE]&rdquo; in the
+        body, and there are numerous typographical errors.
+      </p>
+      <p>
+        Rather than reproduce a defective governing document, the provisions above summarize it. The chapter should
+        supply a clean, current copy — ideally as a signed PDF — to publish in full.
+      </p>
+    </ReviewNote>
+  </section>
+
+  <!-- ---------- Minutes ---------- -->
+  <section>
+    <h2>Board meeting minutes</h2>
+    <DocumentArchive
+      files={newsletter.minutes.files.map((f) => f.file)}
+      baseUrl={newsletter.minutes.baseUrl}
+      label="Board meeting minutes archive"
+    />
+    <p class="note muted">{newsletter.minutes.note}</p>
+
+    <ReviewNote topic="Minutes archive">
+      Only two sets of minutes are online, both from 2024. The current site says older minutes are &ldquo;available
+      upon request&rdquo; behind a link whose address is malformed, so the request cannot actually be made. The
+      chapter should decide whether minutes are public, members-only, or off the website — and either way, supply a
+      working route.
+    </ReviewNote>
+  </section>
+
+  <!-- ---------- Publication policy ---------- -->
+  <section>
+    <h2>Publication policy</h2>
+    <p class="intro">
+      The chapter communicates with members, AVVA members and selected guests through three channels, each with its
+      own rules.
+    </p>
+
+    <ul class="policy">
+      {
+        policy.map((item) => (
+          <li>
+            <h3>{item.title}</h3>
+            <p>{item.body}</p>
+          </li>
+        ))
+      }
+    </ul>
+
+    <ReviewNote topic="Policy conflicts">
+      <p>
+        This policy was published on two separate pages of the current site with nearly identical text and{' '}
+        <strong>two different email addresses for the same newsletter editor</strong>. One of them is wrong.
+      </p>
+      <p>
+        The policy also commits to ten issues a year — a commitment the newsletter has not met since 2023 — and
+        mandates a disclaimer that appeared nowhere on the site. That disclaimer now runs in the footer of every
+        page.
+      </p>
+    </ReviewNote>
+  </section>
+
+  <!-- ---------- Treasurer ---------- -->
+  <section>
+    <h2>Duties of the chapter treasurer</h2>
+    <ol class="duties">
+      <li>Prepare the annual budget and monitor its execution.</li>
+      <li>Receive and deposit all receipts.</li>
+      <li>Disburse funds based on guidance from the officers and the board.</li>
+      <li>Prepare and submit IRS forms for non-profits.</li>
+    </ol>
+    <p class="note muted">
+      On the current site this list sat on the donation page, between the instructions for giving a car and the
+      instructions for giving a sofa.
+    </p>
+  </section>
+</PageLayout>
+
+<style>
+  section + section {
+    margin-block-start: var(--s-8);
+  }
+
+  h2 {
+    margin-block-end: var(--s-4);
+  }
+
+  h3 {
+    font-size: var(--t-lg);
+  }
+
+  .intro {
+    max-width: var(--w-prose);
+    margin-block-end: var(--s-5);
+  }
+
+  .note {
+    margin-block-start: var(--s-4);
+    max-width: var(--w-prose);
+    font-size: var(--t-sm);
+  }
+
+  /* ---- Definition list ---- */
+
+  .terms {
+    margin: 0;
+  }
+
+  .term {
+    display: grid;
+    grid-template-columns: 14rem 1fr;
+    gap: var(--s-5);
+    padding-block: var(--s-4);
+    border-block-start: 1px solid var(--c-border);
+  }
+
+  .term dt {
+    font-weight: 700;
+    color: var(--c-primary-dark);
+  }
+
+  .term dd {
+    margin: 0;
+    font-size: 1rem;
+    line-height: 1.6;
+    color: var(--c-ink-soft);
+  }
+
+  /* ---- Policy ---- */
+
+  .policy {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(18rem, 100%), 1fr));
+    gap: var(--s-5);
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .policy li {
+    padding: var(--s-5);
+    background: var(--c-surface);
+    border: 1px solid var(--c-border);
+    border-radius: var(--r-lg);
+  }
+
+  .policy p {
+    margin-block-start: var(--s-3);
+    font-size: 1rem;
+    line-height: 1.6;
+    color: var(--c-ink-soft);
+  }
+
+  /* ---- Duties ---- */
+
+  .duties {
+    max-width: var(--w-prose);
+    padding-inline-start: var(--s-5);
+  }
+
+  .duties li + li {
+    margin-block-start: var(--s-2);
+  }
+
+  @media (max-width: 48rem) {
+    .term {
+      grid-template-columns: 1fr;
+      gap: var(--s-2);
+    }
+  }
+</style>

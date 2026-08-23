@@ -1,0 +1,343 @@
+---
+/**
+ * Site header: identity, primary navigation, and one give call to action.
+ *
+ * The navigation is FLAT — six sections, no dropdowns. The legacy site nested
+ * four levels deep behind hover menus, which is unusable on a touch screen and
+ * hid the two things the chapter most needs people to find. Sub-pages are
+ * surfaced by their section landing page instead.
+ *
+ * The mobile menu is a native <details> disclosure, so it works with zero
+ * JavaScript and is keyboard- and screen-reader-accessible for free.
+ */
+import { NAV, CONTACT_ITEM, isActive } from '../lib/nav';
+import site from '../data/site.json';
+
+const pathname = Astro.url.pathname;
+const items = [...NAV, CONTACT_ITEM];
+---
+
+<header class="header no-print">
+  <div class="header__bar">
+    <a class="brand" href="/">
+      <span class="brand__mark" aria-hidden="true">227</span>
+      {/*
+        Two lockups, exactly one displayed at a time. `display: none` removes
+        the hidden one from the accessibility tree too, so a screen reader
+        always announces precisely one name for this link.
+
+        The long form wrapped to four lines on a 390px screen, which made the
+        sticky header swallow half the viewport before any content appeared.
+      */}
+      <span class="brand__text">
+        <span class="brand__name">Vietnam Veterans of America</span>
+        <span class="brand__chapter">{site.memorialName} &middot; {site.region}</span>
+      </span>
+      <span class="brand__short">VVA Chapter 227</span>
+    </a>
+
+    <nav class="nav nav--desktop" aria-label="Main">
+      <ul class="nav__list">
+        {
+          items.map((item) => (
+            <li>
+              <a
+                href={item.href}
+                class="nav__link"
+                aria-current={isActive(item.href, pathname) ? 'page' : undefined}
+              >
+                {item.label}
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+    </nav>
+
+    <a class="give-cta" href="/give">Donate</a>
+
+    <details class="menu">
+      <summary class="menu__toggle" aria-label="Menu">
+        <span class="menu__bars" aria-hidden="true"></span>
+        <span class="menu__word">Menu</span>
+      </summary>
+      <nav class="menu__panel" aria-label="Main, mobile">
+        <ul>
+          {
+            items.map((item) => (
+              <li>
+                <a href={item.href} aria-current={isActive(item.href, pathname) ? 'page' : undefined}>
+                  {item.label}
+                </a>
+                {item.children && (
+                  <ul class="menu__sub">
+                    {item.children.map((child) => (
+                      <li>
+                        <a href={child.href}>{child.label}</a>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </li>
+            ))
+          }
+        </ul>
+      </nav>
+    </details>
+  </div>
+</header>
+
+<style>
+  .header {
+    background: var(--c-surface);
+    border-bottom: 1px solid var(--c-border);
+    position: sticky;
+    top: 0;
+    z-index: 50;
+  }
+
+  .header__bar {
+    max-width: var(--w-wide);
+    margin-inline: auto;
+    padding: var(--s-3) var(--gutter);
+    display: flex;
+    align-items: center;
+    gap: var(--s-4);
+  }
+
+  /* ---- Brand ---- */
+
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: var(--s-3);
+    text-decoration: none;
+    color: var(--c-ink);
+    margin-inline-end: auto;
+  }
+
+  .brand__mark {
+    display: grid;
+    place-items: center;
+    inline-size: 2.75rem;
+    block-size: 2.75rem;
+    flex: none;
+    border-radius: 50%;
+    background: var(--c-primary);
+    color: #fff;
+    font-family: var(--font-serif);
+    font-weight: 700;
+    font-size: 1.0625rem;
+    letter-spacing: 0.01em;
+  }
+
+  .brand__text {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.2;
+  }
+
+  .brand__name {
+    font-family: var(--font-serif);
+    font-weight: 600;
+    font-size: 1.0625rem;
+  }
+
+  .brand__chapter {
+    font-size: var(--t-xs);
+    color: var(--c-ink-faint);
+  }
+
+  /* Compact lockup, shown only on narrow screens (see the breakpoint below). */
+  .brand__short {
+    display: none;
+    font-family: var(--font-serif);
+    font-weight: 600;
+    font-size: 1.0625rem;
+    line-height: 1.2;
+  }
+
+  /* ---- Desktop nav ---- */
+
+  .nav__list {
+    display: flex;
+    align-items: center;
+    gap: var(--s-1);
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .nav__link {
+    display: block;
+    padding: var(--s-2) var(--s-3);
+    border-radius: var(--r-md);
+    color: var(--c-ink-soft);
+    font-size: 1rem;
+    font-weight: 600;
+    text-decoration: none;
+    white-space: nowrap;
+    transition: background var(--dur) var(--ease), color var(--dur) var(--ease);
+  }
+
+  .nav__link:hover {
+    background: var(--c-primary-tint);
+    color: var(--c-primary-dark);
+  }
+
+  .nav__link[aria-current='page'] {
+    color: var(--c-primary-dark);
+    background: var(--c-primary-tint);
+  }
+
+  /* ---- Give CTA ---- */
+
+  .give-cta {
+    flex: none;
+    padding: var(--s-2) var(--s-5);
+    border-radius: var(--r-md);
+    background: var(--c-accent);
+    color: #fff;
+    font-weight: 700;
+    font-size: 1rem;
+    text-decoration: none;
+    transition: background var(--dur) var(--ease);
+  }
+
+  .give-cta:hover {
+    background: var(--c-accent-dark);
+    color: #fff;
+  }
+
+  /* ---- Mobile disclosure ---- */
+
+  .menu {
+    display: none;
+    position: relative;
+  }
+
+  .menu__toggle {
+    display: flex;
+    align-items: center;
+    gap: var(--s-2);
+    padding: var(--s-2) var(--s-3);
+    border: 1px solid var(--c-border-strong);
+    border-radius: var(--r-md);
+    font-weight: 600;
+    font-size: 1rem;
+    cursor: pointer;
+    list-style: none;
+  }
+
+  .menu__toggle::-webkit-details-marker {
+    display: none;
+  }
+
+  .menu__bars,
+  .menu__bars::before,
+  .menu__bars::after {
+    display: block;
+    inline-size: 1.125rem;
+    block-size: 2px;
+    background: var(--c-ink);
+    content: '';
+  }
+
+  .menu__bars {
+    position: relative;
+  }
+
+  .menu__bars::before {
+    position: absolute;
+    inset-block-start: -6px;
+  }
+
+  .menu__bars::after {
+    position: absolute;
+    inset-block-start: 6px;
+  }
+
+  .menu__panel {
+    position: absolute;
+    inset-inline-end: 0;
+    inset-block-start: calc(100% + var(--s-2));
+    min-inline-size: 15rem;
+    padding: var(--s-3);
+    background: var(--c-surface);
+    border: 1px solid var(--c-border);
+    border-radius: var(--r-lg);
+    box-shadow: var(--shadow-lg);
+  }
+
+  .menu__panel ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .menu__panel a {
+    display: block;
+    padding: var(--s-2) var(--s-3);
+    border-radius: var(--r-sm);
+    color: var(--c-ink);
+    font-weight: 600;
+    text-decoration: none;
+  }
+
+  .menu__panel a:hover,
+  .menu__panel a[aria-current='page'] {
+    background: var(--c-primary-tint);
+    color: var(--c-primary-dark);
+  }
+
+  .menu__sub a {
+    padding-inline-start: var(--s-5);
+    font-weight: 400;
+    font-size: 1rem;
+    color: var(--c-ink-soft);
+  }
+
+  /* ---- Breakpoint ---- */
+
+  @media (max-width: 68rem) {
+    .nav--desktop {
+      display: none;
+    }
+    .menu {
+      display: block;
+    }
+  }
+
+  /* Below this width the full chapter name cannot sit on one or two lines
+     alongside the Donate button and the menu toggle, so swap in the compact
+     lockup and shrink the mark. */
+  @media (max-width: 46rem) {
+    .header__bar {
+      gap: var(--s-3);
+      padding-block: var(--s-2);
+    }
+    .brand__text {
+      display: none;
+    }
+    .brand__short {
+      display: block;
+    }
+    .brand__mark {
+      inline-size: 2.25rem;
+      block-size: 2.25rem;
+      font-size: 0.9375rem;
+    }
+  }
+
+  @media (max-width: 26rem) {
+    .brand__short {
+      font-size: 0.9375rem;
+    }
+    .give-cta {
+      padding-inline: var(--s-4);
+    }
+    .menu__word {
+      display: none;
+    }
+  }
+</style>

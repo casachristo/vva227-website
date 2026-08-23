@@ -1,0 +1,33 @@
+{
+  "name": "vva227-refresh",
+  "type": "module",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Website refresh mock for VVA Dean K. Phillips Memorial Chapter 227",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "check": "astro check",
+    "test": "astro build && vitest run",
+    "test:unit": "vitest run tests/unit",
+    "test:feature": "vitest run tests/feature",
+    "test:integration": "vitest run tests/integration",
+    "test:invariants": "vitest run tests/invariants",
+    "test:contracts": "vitest run tests/contracts",
+    "test:security": "vitest run tests/security",
+    "test:system": "playwright test",
+    "deploy": "astro build && wrangler pages deploy dist --project-name=vva227-refresh --branch=main --commit-dirty=true"
+  },
+  "dependencies": {
+    "@fontsource/source-sans-3": "^5.2.5",
+    "@fontsource/source-serif-4": "^5.2.5",
+    "astro": "^5.13.2"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.55.0",
+    "cheerio": "^1.1.2",
+    "vitest": "^3.2.4",
+    "wrangler": "^4.33.1"
+  }
+}

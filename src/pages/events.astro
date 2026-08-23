@@ -1,0 +1,256 @@
+---
+/**
+ * Events & Meetings.
+ *
+ * Consolidates seven legacy pages. A visitor asking "when do you meet?" had to
+ * assemble the answer from Monthly-Meetings ("9 general meetings every Thursday
+ * evening"), VVA-227-Chapter-membership ("the 3rd Thursday of almost every
+ * month"), Ceremonies-and-Parties (which held the only published street address
+ * and times, inside a stale anniversary-dinner announcement), chapter-history
+ * (the annual traditions), an empty page titled Christmas-Party, and a live
+ * Calendar page that rendered a grid with zero events in it.
+ */
+import PageLayout from '../layouts/PageLayout.astro';
+import MeetingCard from '../components/MeetingCard.astro';
+import Figure from '../components/Figure.astro';
+import ReviewNote from '../components/ReviewNote.astro';
+import CallToAction from '../components/CallToAction.astro';
+import events from '../data/events.json';
+
+const speakers2024 = [
+  'David Welker, CIA historian — the CIA in the Vietnam War',
+  'Lt. Col. Randy Jones, US Army (ret.) — the US Military Mission in East Germany',
+  'Peggy Kelly, American Red Cross “Donut Dollie”',
+  'Rachel Thompson, George C. Marshall International Center — the 1948 Berlin Airlift',
+  'John Schwarz, USS Houston Survivors’ Association',
+  'Dan Moore, chapter member — his memoir “Whatever Cause We Have”',
+  'Gen. David Rodriguez, US Army (ret.) — anniversary dinner',
+  'Bob Dunn, former US Army MP — his sentry dog, Duke',
+];
+---
+
+<PageLayout
+  title="Events & Meetings"
+  description="Chapter 227 meets on the third Thursday of the month at American Legion Post 177 in Fairfax. Dinner at 6:15, meeting and guest speaker at 7:00."
+  eyebrow="Events"
+  lede="Nine dinner meetings a year, each with a speaker worth turning out for, plus the observances and gatherings that make up the chapter's year."
+>
+  <!-- ---------- Meetings ---------- -->
+  <section>
+    <h2>When and where we meet</h2>
+    <MeetingCard />
+  </section>
+
+  <!-- ---------- Speakers ---------- -->
+  <section class="stack">
+    <h2>The speakers are the draw</h2>
+    <p>
+      The chapter deliberately books speakers who bring people out — a tactic its president credits with much of the
+      membership growth. Recent guests have included the captain of the USS Cole, an F-16 pilot who launched on
+      9/11, a NASA program executive, and the head coach of the Washington Commanders.
+    </p>
+    <h3>2024 speakers</h3>
+    <ul class="speakers">
+      {speakers2024.map((s) => <li>{s}</li>)}
+    </ul>
+    <ReviewNote topic="Upcoming speakers">
+      The current site publishes no upcoming meetings or speakers — its calendar page renders an empty grid for the
+      current month. A chapter that meets nine times a year should be showing the next date and the next speaker
+      here.
+    </ReviewNote>
+  </section>
+
+  <!-- ---------- Annual rhythm ---------- -->
+  <section class="stack">
+    <h2>The chapter year</h2>
+    <p>Beyond the monthly meetings, the calendar has a shape that has held for decades.</p>
+    <ol class="year">
+      {
+        events.annual.map((item) => (
+          <li>
+            <p class="year__month">{item.month}</p>
+            <div>
+              <h3>{item.title}</h3>
+              <p>{item.description}</p>
+              {item.review && <p class="year__flag">Needs confirmation: {item.review}</p>}
+            </div>
+          </li>
+        ))
+      }
+    </ol>
+  </section>
+
+  <!-- ---------- Remembrance ---------- -->
+  <section class="stack">
+    <h2>Remembrance</h2>
+    <div class="split">
+      <div>
+        <p>
+          On 18 September 2015 the chapter and the Washington Nationals dedicated the POW/MIA chair at Nationals
+          Park — a single seat that stays empty at every home game. Its plaque reads &ldquo;You Are Not
+          Forgotten&rdquo;, and records that more than 92,000 American service members have been unaccounted for
+          since the First World War.
+        </p>
+        <p>
+          Members also gather at The Wall on Memorial Day and Veterans Day, joining other veterans organizations to
+          pay homage, and have funded repairs to the Captain Rocky Versace Plaza and Vietnam Veterans Memorial in
+          Alexandria, which honors a Medal of Honor recipient executed in captivity in 1965.
+        </p>
+      </div>
+      <Figure
+        src="/images/pow-chair-dedication.jpg"
+        alt="Five Chapter 227 members standing on either side of a black POW/MIA chair and its bronze dedication plaque in the stands at Nationals Park."
+        caption="The POW/MIA chair dedication at Nationals Park."
+        maxWidth="100%"
+      />
+    </div>
+  </section>
+
+  <!-- ---------- Out in the community ---------- -->
+  <section class="stack">
+    <h2>Out in the community</h2>
+    <ul class="outreach">
+      {
+        events.outreach.map((item) => (
+          <li>
+            <h3>{item.title}</h3>
+            <p>{item.description}</p>
+            {item.review && <p class="year__flag">Needs confirmation: {item.review}</p>}
+          </li>
+        ))
+      }
+    </ul>
+  </section>
+
+  <CallToAction
+    title="Come to the next one"
+    primary={{ label: 'Join the chapter', href: '/join' }}
+    secondary={{ label: 'Read The Journey', href: '/events/news' }}
+  >
+    You do not have to be a member and you do not have to call ahead. Anyone is welcome, including spouses.
+  </CallToAction>
+</PageLayout>
+
+<style>
+  section + section {
+    margin-block-start: var(--s-9);
+  }
+
+  h2 {
+    margin-block-end: var(--s-5);
+  }
+
+  h3 {
+    font-size: var(--t-lg);
+  }
+
+  p {
+    max-width: var(--w-prose);
+  }
+
+  p + p {
+    margin-block-start: var(--s-4);
+  }
+
+  /* ---- Speakers ---- */
+
+  .speakers {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(20rem, 100%), 1fr));
+    gap: var(--s-2) var(--s-5);
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .speakers li {
+    padding-inline-start: var(--s-4);
+    border-inline-start: 2px solid var(--c-border-strong);
+    font-size: 1rem;
+    line-height: 1.5;
+  }
+
+  /* ---- Year ---- */
+
+  .year {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .year > li {
+    display: grid;
+    grid-template-columns: 9rem 1fr;
+    gap: var(--s-5);
+    padding-block: var(--s-5);
+    border-block-start: 1px solid var(--c-border);
+  }
+
+  .year__month {
+    font-family: var(--font-sans);
+    font-size: var(--t-xs);
+    font-weight: 700;
+    letter-spacing: var(--tracking-caps);
+    text-transform: uppercase;
+    color: var(--c-accent-dark);
+  }
+
+  .year h3 + p {
+    margin-block-start: var(--s-2);
+    color: var(--c-ink-soft);
+    font-size: 1rem;
+  }
+
+  .year__flag {
+    margin-block-start: var(--s-2);
+    font-size: var(--t-sm);
+    color: #7a5a1c;
+  }
+
+  /* ---- Outreach ---- */
+
+  .outreach {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(20rem, 100%), 1fr));
+    gap: var(--s-5);
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .outreach li {
+    padding: var(--s-5);
+    background: var(--c-surface);
+    border: 1px solid var(--c-border);
+    border-radius: var(--r-lg);
+  }
+
+  .outreach p {
+    margin-block-start: var(--s-3);
+    font-size: 1rem;
+    color: var(--c-ink-soft);
+  }
+
+  /* ---- Split ---- */
+
+  .split {
+    display: grid;
+    grid-template-columns: 1.1fr 0.9fr;
+    align-items: start;
+    gap: var(--s-6);
+  }
+
+  .split p {
+    max-width: none;
+  }
+
+  @media (max-width: 56rem) {
+    .split {
+      grid-template-columns: 1fr;
+    }
+    .year > li {
+      grid-template-columns: 1fr;
+      gap: var(--s-2);
+    }
+  }
+</style>

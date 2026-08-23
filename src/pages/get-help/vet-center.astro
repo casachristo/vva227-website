@@ -1,0 +1,188 @@
+---
+/**
+ * Alexandria Vet Center — a referral page.
+ *
+ * Migrated from a page filed under "Community Support", where a veteran looking
+ * for counseling would never have found it. Two defects from the legacy page
+ * are fixed here: "Click for Directions with Google Maps" was plain text with
+ * no link at all, and the VA link pointed at www1.va.gov/directory/guide/
+ * facility.asp, which has been retired for years.
+ */
+import PageLayout from '../../layouts/PageLayout.astro';
+import { mapUrl } from '../../lib/format';
+
+const center = {
+  name: 'Alexandria Vet Center',
+  street: '6940 South Kings Highway #204',
+  city: 'Alexandria, VA 22310',
+  landmark: 'At the intersection of South Kings Highway and Telegraph Road',
+  phone: '(703) 360-8633',
+  fax: '(703) 360-6143',
+  hours: '8:00 am to 4:30 pm, Monday through Friday',
+};
+---
+
+<PageLayout
+  title="Alexandria Vet Center"
+  description="Contact details, hours and directions for the Alexandria Vet Center, which provides free counseling to combat veterans and their families."
+  eyebrow="Get help"
+  lede="Vet Centers provide free, confidential counseling to combat veterans and their families. You do not need to be enrolled in VA health care, and nothing said there goes into your VA medical record."
+  width="prose"
+>
+  <div class="card">
+    <h2 class="card__name">{center.name}</h2>
+
+    <address class="card__address">
+      {center.street}<br />
+      {center.city}
+    </address>
+    <p class="card__landmark">{center.landmark}</p>
+
+    <p class="card__links">
+      <a class="btn" href={mapUrl(`${center.street}, ${center.city}`)} rel="noopener">Get directions</a>
+      <a class="btn btn--ghost" href={`tel:${center.phone.replace(/\D/g, '')}`}>Call {center.phone}</a>
+    </p>
+
+    <dl class="card__meta">
+      <div>
+        <dt>Phone</dt>
+        <dd><a href={`tel:${center.phone.replace(/\D/g, '')}`}>{center.phone}</a></dd>
+      </div>
+      <div>
+        <dt>Fax</dt>
+        <dd>{center.fax}</dd>
+      </div>
+      <div>
+        <dt>Hours</dt>
+        <dd>{center.hours}</dd>
+      </div>
+    </dl>
+
+    <p class="card__note">
+      Vet Centers will provide services outside normal working hours and at weekends on request, to better serve
+      veterans and their family members.
+    </p>
+  </div>
+
+  <h2>What a Vet Center does</h2>
+  <p>
+    Vet Centers are run by the VA but sit apart from VA hospitals and clinics. They offer readjustment counseling,
+    bereavement counseling for families, help with military sexual trauma, and referrals into wider VA care. Services
+    are free, and they extend to family members as well as to the veteran.
+  </p>
+
+  <h2>Find another Vet Center</h2>
+  <p>
+    If Alexandria is not convenient, the VA maintains a national directory of every Vet Center and their
+    counselors.
+  </p>
+  <p>
+    <a href="https://www.va.gov/find-locations/?facilityType=vet_center" rel="noopener">
+      Search the VA Vet Center locator &rarr;
+    </a>
+  </p>
+</PageLayout>
+
+<style>
+  .card {
+    padding: var(--s-6);
+    background: var(--c-surface);
+    border: 1px solid var(--c-border);
+    border-block-start: 4px solid var(--c-primary);
+    border-radius: var(--r-lg);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .card__name {
+    font-size: var(--t-xl);
+  }
+
+  .card__address {
+    margin-block-start: var(--s-4);
+    font-style: normal;
+    font-size: var(--t-lg);
+    line-height: 1.5;
+  }
+
+  .card__landmark {
+    margin-block-start: var(--s-2);
+    font-size: 1rem;
+    color: var(--c-ink-faint);
+  }
+
+  .card__links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--s-3);
+    margin-block-start: var(--s-5);
+  }
+
+  .btn {
+    display: inline-block;
+    padding: var(--s-3) var(--s-5);
+    border-radius: var(--r-md);
+    background: var(--c-primary);
+    color: #fff;
+    font-weight: 700;
+    font-size: 1rem;
+    text-decoration: none;
+  }
+
+  .btn:hover {
+    background: var(--c-primary-dark);
+    color: #fff;
+  }
+
+  .btn--ghost {
+    background: transparent;
+    border: 2px solid var(--c-primary);
+    color: var(--c-primary-dark);
+  }
+
+  .btn--ghost:hover {
+    background: var(--c-primary-tint);
+    color: var(--c-primary-dark);
+  }
+
+  .card__meta {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(11rem, 100%), 1fr));
+    gap: var(--s-4);
+    margin-block-start: var(--s-6);
+    padding-block-start: var(--s-5);
+    border-block-start: 1px solid var(--c-border);
+  }
+
+  .card__meta dt {
+    font-size: var(--t-xs);
+    font-weight: 700;
+    letter-spacing: var(--tracking-caps);
+    text-transform: uppercase;
+    color: var(--c-ink-faint);
+  }
+
+  .card__meta dd {
+    margin: var(--s-1) 0 0;
+    font-size: 1rem;
+  }
+
+  .card__note {
+    margin-block-start: var(--s-5);
+    padding-block-start: var(--s-4);
+    border-block-start: 1px solid var(--c-border);
+    font-size: 1rem;
+    color: var(--c-ink-soft);
+  }
+
+  h2 {
+    margin-block-start: var(--s-7);
+  }
+
+  h2 + p {
+    margin-block-start: var(--s-4);
+  }
+
+  p + p {
+    margin-block-start: var(--s-4);
+  }
+</style>

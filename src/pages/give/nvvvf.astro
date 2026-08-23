@@ -1,0 +1,340 @@
+---
+/**
+ * The Foundation.
+ *
+ * This page exists because a chapter member forwarded the site a Foundation
+ * newsletter, "One Year Later", and a ready-made HTML section drafted from it
+ * by that member's own AI assistant. The material is genuinely valuable — it is
+ * the first thing anywhere on this site that explains how emergency aid
+ * actually reaches a veteran — and it is also the only page here whose source
+ * is neither the legacy vva227.org, its PDFs, nor the Fort Meade plaque.
+ *
+ * Three deliberate departures from the section as it was drafted:
+ *
+ *   1. NONE of the Foundation's figures are published. Every quantitative claim
+ *      in the newsletter is contradicted by another claim in the same
+ *      newsletter — 92 helped or 84, $101,598 disbursed or $169,000, over the
+ *      same period. The drafted section picked one side of each and printed it
+ *      as fact. Both readings are shown in the ReviewNote instead, which is
+ *      what this site does with every other figure that disagrees with itself.
+ *      src/lib/nvvvf.ts REJECTS a data file that carries a winner, so this is
+ *      structural rather than a convention someone can forget.
+ *
+ *   2. The word "reimburse" does not appear. The drafted section says the
+ *      Foundation reimburses the chapter for grants already paid; the
+ *      newsletter it summarizes says the Foundation "raises and stewards" and
+ *      the chapter pays. Those are different statements to a donor, so the
+ *      newsletter's own wording stands and the discrepancy is flagged.
+ *
+ *   3. Both calls to action point at the chapter. The drafted section made
+ *      "Donate at nvvvf.org" the primary button on the chapter's own site;
+ *      which organization the chapter's website should ask for money is the
+ *      chapter's decision, not a drafting one.
+ *
+ * nvvvf.org is printed as text, not linked, because the newsletter says the
+ * site was still to go live. buildNvvvfView() turns it into a link the moment
+ * `url.confirmedLive` becomes true — one edit, no markup change.
+ */
+import PageLayout from '../../layouts/PageLayout.astro';
+import Figure from '../../components/Figure.astro';
+import ReviewNote from '../../components/ReviewNote.astro';
+import CallToAction from '../../components/CallToAction.astro';
+import { validateNvvvf, buildNvvvfView } from '../../lib/nvvvf';
+import { addressLine } from '../../lib/format';
+import raw from '../../data/nvvvf.json';
+import site from '../../data/site.json';
+
+// A malformed data file fails the BUILD, naming the key — the same contract
+// src/content.config.ts gives Markdown frontmatter.
+const nvvvf = validateNvvvf(raw);
+const view = buildNvvvfView(nvvvf);
+
+const chapterAddress = site.mailingAddress;
+const chapterPostal = [
+  site.shortName,
+  chapterAddress.line1,
+  addressLine([chapterAddress.city, `${chapterAddress.state} ${chapterAddress.zip}`]),
+];
+---
+
+<PageLayout
+  title="The Foundation"
+  description="Chapter 227 created the Northern Virginia Vietnam Veterans Foundation in June 2025 — a 501(c)(3) that raises money for emergency assistance, while the chapter verifies each request and pays the creditor directly."
+  eyebrow="Ways to give"
+  heading={view.fullName}
+  lede="In June 2025 the chapter created a separate charity to raise money for one thing: getting a veteran past a sudden financial emergency before it becomes a permanent one."
+>
+  <!-- ---------- What it is ---------- -->
+  <section class="stack">
+    <h2>What it is</h2>
+    <p>{nvvvf.founded.detail}</p>
+    <p>{nvvvf.purpose.crisisFrame}</p>
+    <p>
+      The Foundation is a <strong>separate corporation</strong> from the chapter. It has its own board, its own
+      mailing address and its own tax status. What it funds is one chapter program &mdash; emergency financial
+      assistance to veterans and their families.
+    </p>
+  </section>
+
+  <!-- ---------- Who does what ---------- -->
+  <section class="stack">
+    <h2>Who does what</h2>
+    <p><strong>{nvvvf.division.foundation}</strong></p>
+    <p><strong>{nvvvf.division.chapter}</strong> {nvvvf.division.committee}</p>
+    <p>
+      {nvvvf.division.creditorRule} That is the same reasoning as the chapter&rsquo;s
+      <a href="/programs">VASH program</a>, where cards go out through caseworkers rather than from the chapter to
+      the family &mdash; it keeps the help private for the people receiving it. <strong>But note that
+      <a href="/get-help">Get Help</a> describes the same program differently</strong>, and until the chapter says
+      which account is right, neither page should be read as settled &mdash; see below.
+    </p>
+    <p>
+      Requests reach the chapter through community partners, including {view.referralSentence}.
+    </p>
+    <p class="callout">
+      If you are a veteran who needs help and have no caseworker to refer you, start at
+      <a href="/get-help">Get Help</a> and with the chapter&rsquo;s general line. The chapter has not yet said
+      whether a partner referral is required, and until it does, nothing on this page should be read as saying that
+      one is.
+    </p>
+
+    {
+      view.image && (
+        <Figure
+          src={view.image.src}
+          alt={view.image.alt}
+          caption="How the Foundation and the chapter describe their partnership."
+          credit={view.image.credit}
+        />
+      )
+    }
+  </section>
+
+  <!-- ---------- Why it exists ---------- -->
+  <section class="stack">
+    <h2>Where it came from, and what it is for</h2>
+    <p>Chapter 227 was formed in 1985. The Foundation was created in the chapter&rsquo;s fortieth year.</p>
+    <p>{nvvvf.succession.summary}</p>
+    <p>
+      The chapter has been asking this question in public for some time. {nvvvf.succession.townHall} The Foundation
+      is evidently part of the answer. <a href="/about/reports/2023">Read that year&rsquo;s letter &rarr;</a>
+    </p>
+    <p><strong>{nvvvf.operating.volunteerOnly}</strong> Both organizations are run the same way.</p>
+  </section>
+
+  <!-- ---------- Giving ---------- -->
+  <section class="stack">
+    <h2>Giving to the Foundation</h2>
+    <p>
+      A gift to the Foundation funds the chapter&rsquo;s emergency assistance program specifically. Everything else
+      the chapter does &mdash; scholarships, school speakers, remembrance, Veterans Treatment Docket mentoring,
+      VASH &mdash; is funded by giving to the chapter itself.
+    </p>
+
+    <div class="payees">
+      <section class="payee">
+        <h3>To the Foundation</h3>
+        <address>
+          {view.postal.map((line, i) => (i === 0 ? line : [<br />, line]))}
+        </address>
+        <p class="payee__tax">{view.taxLine}</p>
+        <p class="payee__note">
+          Its website is{' '}
+          {
+            view.websiteHref ? (
+              <a href={view.websiteHref} rel="noopener">
+                {view.websiteText}
+              </a>
+            ) : (
+              <strong>{view.websiteText}</strong>
+            )
+          }.
+          {
+            view.websiteHref === null && (
+              <>
+                {' '}It is printed here as text rather than linked, because the newsletter this page draws on says
+                the site was still to go live &mdash; see below.
+              </>
+            )
+          }
+        </p>
+      </section>
+
+      <section class="payee">
+        <h3>To the chapter</h3>
+        <address>
+          {chapterPostal.map((line, i) => (i === 0 ? line : [<br />, line]))}
+        </address>
+        <p class="payee__tax">Tax status not published</p>
+        <p class="payee__note">
+          Everything the chapter does apart from emergency assistance.
+          <a href="/give">All the ways to give to the chapter &rarr;</a>
+        </p>
+      </section>
+    </div>
+
+    <p class="muted note">
+      {nvvvf.taxStatus.deductibleClaim} The chapter has never published its own tax status, so no claim is made here
+      about gifts to the chapter either way.
+    </p>
+  </section>
+
+  <!-- ---------- The disclosure this page is built around ---------- -->
+  <ReviewNote topic="The Foundation">
+    <p>
+      Everything on this page comes from <strong>&ldquo;{nvvvf.source.document}&rdquo;</strong>, a
+      {' '}{nvvvf.source.kind} {nvvvf.source.supplied}. It is the only source. It has not been confirmed by the
+      chapter board, and unlike the rest of this site it did not come from vva227.org, its PDFs or the bronze plaque
+      at Fort Meade. Before this page goes live, the chapter needs to answer the following.
+    </p>
+
+    <p><strong>Which figures are right?</strong> No figure from this source is published on this site, because:</p>
+    <ul>
+      {
+        view.disputed.map((item) => (
+          <li>
+            {item.question}
+            <ul>
+              {item.readings.map((reading) => (
+                <li>
+                  <strong>{reading.value}</strong> {reading.label} &mdash; {reading.source}.
+                </li>
+              ))}
+            </ul>
+            {item.note}
+          </li>
+        ))
+      }
+    </ul>
+    <p>
+      What is needed is one table: period start, period end, households helped, dollars disbursed, dollars raised,
+      as of a stated date.
+    </p>
+
+    <p><strong>And these, which the newsletter leaves open:</strong></p>
+    <ul>
+      {view.openQuestions.map((question) => <li>{question}</li>)}
+    </ul>
+
+    <p>
+      <strong>Some of what is in the newsletter is deliberately not reproduced here</strong>, because republishing
+      it is the board&rsquo;s decision and not ours:
+    </p>
+    <ul>
+      {view.withheld.map((item) => <li>{item}</li>)}
+    </ul>
+  </ReviewNote>
+
+  <CallToAction
+    title="Where the chapter&rsquo;s own money goes"
+    primary={{ label: 'Ways to give to the chapter', href: '/give' }}
+    secondary={{ label: 'See the chapter’s itemized aid', href: '/give/impact' }}
+    tone="clay"
+  >
+    The chapter publishes a line-by-line account of its own veteran aid, disbursed by the same volunteers who raised
+    it. The Foundation&rsquo;s figures are not part of that account.
+  </CallToAction>
+</PageLayout>
+
+<style>
+  /* Vertical rhythm between the page's own top-level sections only.
+     Written as .stack + .stack rather than section + section because the two
+     payee cards are <section>s inside a grid: the sibling rule outscored
+     .payee { margin-block-start: 0 } once Astro appended its scope attribute to
+     both, and pushed the second card onto its own row. */
+  .stack + .stack {
+    margin-block-start: var(--s-8);
+  }
+
+  h2 {
+    margin-block-end: var(--s-4);
+  }
+
+  /* Scoped to the page's own paragraphs. A bare `p` rule also reaches the
+     paragraphs this page slots into <ReviewNote>, capping them narrower than
+     the box they sit in while the list items beside them ran full width. */
+  .stack > p {
+    max-width: var(--w-prose);
+  }
+
+  .stack > p + p {
+    margin-block-start: var(--s-4);
+  }
+
+  figure {
+    margin-block-start: var(--s-6);
+  }
+
+  .note {
+    font-size: var(--t-sm);
+  }
+
+  /* The one paragraph on this page a veteran might act on, rather than a donor. */
+  .callout {
+    margin-block-start: var(--s-5);
+    padding: var(--s-4) var(--s-5);
+    background: var(--c-primary-tint);
+    border-inline-start: 3px solid var(--c-primary);
+    border-radius: var(--r-sm);
+    font-size: 1rem;
+    line-height: 1.6;
+  }
+
+  /* The global a:hover colour (--c-accent) lands at 4.47:1 on this tint, just
+     under the 4.5:1 AA threshold for body text. Darker on hover, not lighter. */
+  .callout a:hover {
+    color: var(--c-primary-dark);
+  }
+
+  /* ---- Two payees, side by side ----
+     Two organizations, two addresses, two tax positions. Shown together and
+     labeled, because the failure mode is a donor writing one cheque to the
+     wrong one of them. Not the .way cards from /give: those are a menu of
+     methods, this is a comparison of recipients. */
+
+  .payees {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(18rem, 100%), 1fr));
+    gap: var(--s-5);
+    margin-block-start: var(--s-5);
+  }
+
+  .payee {
+    padding: var(--s-5);
+    background: var(--c-surface);
+    border: 1px solid var(--c-border);
+    border-block-start: 4px solid var(--c-accent);
+    border-radius: var(--r-lg);
+  }
+
+  .payee h3 {
+    margin-block: 0 var(--s-3);
+    font-size: var(--t-lg);
+  }
+
+  /* Real <br> rather than a flex column of spans: the line breaks then survive
+     text extraction and a stylesheet that fails to load, which is how
+     SiteFooter renders the same address. */
+  .payee address {
+    padding: var(--s-3) var(--s-4);
+    background: var(--c-surface-sunken);
+    border-radius: var(--r-sm);
+    font-style: normal;
+    font-weight: 600;
+    line-height: 1.5;
+  }
+
+  .payee__tax {
+    margin-block-start: var(--s-3);
+    font-size: var(--t-sm);
+    font-variant-numeric: tabular-nums;
+    color: var(--c-ink-soft);
+  }
+
+  .payee__note {
+    margin-block-start: var(--s-3);
+    font-size: var(--t-sm);
+    color: var(--c-ink-faint);
+  }
+
+</style>

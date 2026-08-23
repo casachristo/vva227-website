@@ -1,0 +1,102 @@
+---
+/**
+ * Fairfax County Veterans Treatment Docket.
+ *
+ * On the legacy site this had its own top-level nav slot, labeled "Fairfax
+ * Court" — which reads like a courthouse address rather than help for a
+ * veteran facing charges. It also carried two children that did not belong to
+ * it, including a membership invitation.
+ *
+ * Rewritten so the veteran's path comes first and the volunteer's second. The
+ * legacy volunteer call-to-action contained three typos ("counlselling",
+ * "informarion") in its only two sentences.
+ */
+import PageLayout from '../../layouts/PageLayout.astro';
+import ContactList from '../../components/ContactList.astro';
+import ReviewNote from '../../components/ReviewNote.astro';
+import CallToAction from '../../components/CallToAction.astro';
+---
+
+<PageLayout
+  title="Veterans Treatment Court"
+  description="The Fairfax County Veterans Treatment Docket offers treatment and a veteran mentor instead of a jail sentence. Chapter 227 members serve as the mentors."
+  eyebrow="Get help"
+  lede="If you are a veteran facing charges in Fairfax County that trace back to addiction, PTSD or a brain injury, there may be a route through the courts that ends in treatment rather than a cell."
+  width="prose"
+>
+  <h2>What the Treatment Docket is</h2>
+  <p>
+    The Fairfax County Veterans Treatment Docket is a specialized court track for veterans whose offenses are tied to
+    service-connected problems — substance abuse, post-traumatic stress, traumatic brain injury. Instead of the
+    ordinary criminal path, a participating veteran gets a structured treatment plan, regular court supervision, and
+    a mentor who served.
+  </p>
+  <p>
+    Chapter 227 supplies those mentors. Under Don Sutherland, a chapter director, the chapter has become the leading
+    source of volunteer mentors on the docket, and it funds the mentor program as a line item in its annual budget.
+  </p>
+
+  <h2>How to find out whether it applies to you</h2>
+  <p>
+    Eligibility is decided by the court, not by the chapter. If you or a family member is facing charges in Fairfax
+    County, raise the Veterans Treatment Docket with your defense attorney, or contact the chapter and we will point
+    you at the right person.
+  </p>
+
+  <ReviewNote topic="Court contact details">
+    The chapter&rsquo;s pages describe the docket but never link to Fairfax County&rsquo;s own information about it,
+    and never give a court contact. A veteran reading this page still cannot reach the program directly. The chapter
+    should supply the current county contact and link.
+  </ReviewNote>
+
+  <h2>Volunteering as a mentor</h2>
+  <p>
+    The docket needs enough mentors to keep one-to-one coverage for every participant, and the program has expanded
+    to a second docket covering juvenile and domestic relations cases. You do not have to live in Fairfax County to
+    serve as a mentor. You do have to have served.
+  </p>
+
+  <ContactList only={['treatment-court']} />
+
+  <h2>Watch how it works</h2>
+  <p>
+    Justice For Vets, the national organization behind veterans treatment courts, produced two short films — one on
+    what mentors actually do, and one following a veteran through the program.
+  </p>
+  <ul class="videos">
+    <li>
+      <a href="https://youtu.be/bQYd6Zn47AQ" rel="noopener">Volunteer Mentors in Veterans Treatment Court</a>
+    </li>
+    <li>
+      <a href="https://youtu.be/q984FI1tcN4" rel="noopener">Veterans Treatment Court: a success story</a>
+    </li>
+  </ul>
+
+  <CallToAction
+    title="Mentors are always needed"
+    primary={{ label: 'Contact the chapter', href: '/contact' }}
+    secondary={{ label: 'Join the chapter', href: '/join' }}
+  >
+    Every veteran on the docket is supposed to have one mentor of their own. Keeping that ratio is the constraint.
+  </CallToAction>
+</PageLayout>
+
+<style>
+  h2 {
+    margin-block-start: var(--s-7);
+    margin-block-end: var(--s-4);
+  }
+
+  p + p {
+    margin-block-start: var(--s-4);
+  }
+
+  .videos {
+    margin-block-start: var(--s-4);
+    padding-inline-start: var(--s-5);
+  }
+
+  .videos li + li {
+    margin-block-start: var(--s-2);
+  }
+</style>

@@ -1,0 +1,212 @@
+---
+/**
+ * AVVA — Associates of Vietnam Veterans of America.
+ *
+ * The legacy AVVA page was the best-written page on the entire site, so its
+ * voice is preserved almost intact here. The one thing that could not survive
+ * migration is the contradiction: this page states flatly "It is not an
+ * auxiliary", while the Membership page called AVVA "an auxiliary membership
+ * for spouses and others". Both cannot be right, and it is not our call.
+ */
+import PageLayout from '../../layouts/PageLayout.astro';
+import ReviewNote from '../../components/ReviewNote.astro';
+import CallToAction from '../../components/CallToAction.astro';
+
+const activities = [
+  {
+    title: 'The Lamb Center',
+    body: 'AVVA supports and helps fund The Lamb Center in Fairfax, a day shelter for homeless veterans and other homeless men and women who need clothing, food and daily necessities. Cash and household goods are collected at every monthly meeting.',
+  },
+  {
+    title: 'Looking after our own',
+    body: 'Condolence cards for members who have died, and get-well cards for those in rehabilitation or unwell and in need of cheering up.',
+  },
+  {
+    title: 'The greeting table',
+    body: 'AVVA members staff the welcome table at the monthly dinner meetings, and work with the club manager on the menu.',
+  },
+  {
+    title: 'Representation',
+    body: 'The chapter representative attends every board meeting and dinner meeting, plus VVA national conventions, regional conferences and state meetings, sharing ideas with other VVA and AVVA members.',
+  },
+  {
+    title: 'Fellowship',
+    body: 'Spouses and friends gather for the chapter birthday and community events, and AVVA decorates for the annual Holiday Party.',
+  },
+  {
+    title: 'Whatever else is needed',
+    body: 'Arranging chapter speakers when asked, and any other task the chapter needs doing.',
+  },
+];
+---
+
+<PageLayout
+  title="AVVA — Associates of Vietnam Veterans of America"
+  heading="Associates of Vietnam Veterans of America"
+  description="AVVA is open to veterans and non-veterans alike. Chapter 227's associates fund The Lamb Center, staff the greeting table, and represent the chapter nationally."
+  eyebrow="Membership"
+  lede="You do not have to have served to serve. AVVA is open to anyone — spouses, family, friends and neighbors — who works toward the same goals."
+>
+  <div class="intro">
+    <p class="intro__lead">
+      The Associates of Vietnam Veterans of America is a catalyst for action, healing, support and fellowship
+      alongside VVA. There are 10,400 members across the country.
+    </p>
+    <p>
+      AVVA is non-partisan and is a non-profit organization. The most significant advantage it has is that it is
+      made up of veterans and non-veterans from all walks of life, working together for common goals. Because of
+      that status, Congress listens to their individual views on pending and suggested veterans legislation.
+    </p>
+    <p>
+      One of AVVA&rsquo;s main concerns is that all veterans know, understand and have clear access to the
+      information they need and the benefits they have earned through service to their country.
+    </p>
+  </div>
+
+  <ReviewNote topic="Is AVVA an auxiliary?">
+    The current AVVA page states plainly &ldquo;It is not an auxiliary.&rdquo; The current Membership page describes
+    AVVA as &ldquo;an auxiliary membership for spouses and others who wish to join.&rdquo; One of those has to go.
+    The AVVA wording is used here because it appears on the page AVVA members wrote themselves.
+  </ReviewNote>
+
+  <h2>What AVVA does in Chapter 227</h2>
+  <ol class="activities">
+    {
+      activities.map((item) => (
+        <li>
+          <h3>{item.title}</h3>
+          <p>{item.body}</p>
+        </li>
+      ))
+    }
+  </ol>
+
+  <div class="closing">
+    <p>
+      In AVVA we attempt to improve the lives, in some small way, of our chapter veterans and their families. Being
+      an AVVA member is an honor and a privilege we all have, for those who have served and are serving.
+    </p>
+    <p class="closing__call">Please join us.</p>
+  </div>
+
+  <div class="cost">
+    <p class="cost__amount">$100</p>
+    <p class="cost__label">a year for AVVA membership</p>
+  </div>
+
+  <ReviewNote topic="AVVA dues and application">
+    The $100 annual figure comes from the legacy Membership page. Please confirm the current amount, and tell us
+    where an AVVA application should be sent &mdash; the site has never published one.
+  </ReviewNote>
+
+  <CallToAction
+    title="Veterans join here"
+    primary={{ label: 'VVA membership', href: '/join' }}
+    secondary={{ label: 'Come to a meeting', href: '/events' }}
+    tone="green"
+  >
+    If you served during the Vietnam era, VVA life membership is $50 once, with no further dues.
+  </CallToAction>
+</PageLayout>
+
+<style>
+  .intro {
+    max-width: var(--w-prose);
+  }
+
+  .intro__lead {
+    font-size: var(--t-lg);
+    line-height: 1.55;
+    color: var(--c-ink-soft);
+  }
+
+  .intro p + p {
+    margin-block-start: var(--s-4);
+  }
+
+  h2 {
+    margin-block-start: var(--s-7);
+    margin-block-end: var(--s-5);
+  }
+
+  .activities {
+    counter-reset: act;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(19rem, 100%), 1fr));
+    gap: var(--s-5);
+  }
+
+  .activities li {
+    counter-increment: act;
+    padding: var(--s-5);
+    background: var(--c-surface);
+    border: 1px solid var(--c-border);
+    border-radius: var(--r-lg);
+  }
+
+  .activities h3 {
+    display: flex;
+    align-items: baseline;
+    gap: var(--s-3);
+    font-size: var(--t-lg);
+  }
+
+  .activities h3::before {
+    content: counter(act);
+    font-family: var(--font-sans);
+    font-size: var(--t-xs);
+    font-weight: 700;
+    color: var(--c-accent-dark);
+  }
+
+  .activities p {
+    margin-block-start: var(--s-3);
+    font-size: 1rem;
+    line-height: 1.6;
+    color: var(--c-ink-soft);
+  }
+
+  .closing {
+    max-width: var(--w-prose);
+    margin-block-start: var(--s-7);
+    padding-inline-start: var(--s-5);
+    border-inline-start: 3px solid var(--c-gold);
+    font-family: var(--font-serif);
+    font-size: var(--t-lg);
+    line-height: 1.55;
+    color: var(--c-ink-soft);
+  }
+
+  .closing__call {
+    margin-block-start: var(--s-3);
+    font-weight: 600;
+    color: var(--c-primary-dark);
+  }
+
+  .cost {
+    display: flex;
+    align-items: baseline;
+    gap: var(--s-4);
+    flex-wrap: wrap;
+    margin-block-start: var(--s-6);
+    padding: var(--s-5) var(--s-6);
+    background: var(--c-primary-tint);
+    border-radius: var(--r-lg);
+  }
+
+  .cost__amount {
+    font-family: var(--font-serif);
+    font-size: var(--t-3xl);
+    font-weight: 700;
+    line-height: 1;
+    color: var(--c-primary-dark);
+  }
+
+  .cost__label {
+    font-size: var(--t-lg);
+    color: var(--c-primary-dark);
+  }
+</style>

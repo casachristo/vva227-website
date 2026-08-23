@@ -1,0 +1,110 @@
+---
+/**
+ * A linked card.
+ *
+ * Accessibility note: the anchor wraps only the title, and a pseudo-element
+ * stretches it over the whole card. That keeps one meaningful link per card in
+ * the accessibility tree — wrapping the entire card in an <a> instead produces
+ * link text like "photo of five members standing under a tent Fall Festival
+ * read more", which is what screen-reader users actually hear on most card UIs.
+ */
+interface Props {
+  title: string;
+  href?: string;
+  eyebrow?: string;
+  image?: string;
+  imageAlt?: string;
+}
+
+const { title, href, eyebrow, image, imageAlt } = Astro.props;
+const Tag = href ? 'article' : 'div';
+---
+
+<Tag class:list={['card', href && 'card--link']}>
+  {
+    image && (
+      <div class="card__media">
+        <img src={image} alt={imageAlt ?? ''} loading="lazy" decoding="async" />
+      </div>
+    )
+  }
+  <div class="card__body">
+    {eyebrow && <p class="eyebrow">{eyebrow}</p>}
+    <h3 class="card__title">
+      {href ? <a href={href}>{title}</a> : title}
+    </h3>
+    <div class="card__text"><slot /></div>
+  </div>
+</Tag>
+
+<style>
+  .card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    background: var(--c-surface);
+    border: 1px solid var(--c-border);
+    border-radius: var(--r-lg);
+    overflow: hidden;
+    transition: border-color var(--dur) var(--ease), box-shadow var(--dur) var(--ease),
+      transform var(--dur) var(--ease);
+  }
+
+  .card--link:hover {
+    border-color: var(--c-border-strong);
+    box-shadow: var(--shadow-md);
+    transform: translateY(-2px);
+  }
+
+  .card--link:focus-within {
+    border-color: var(--c-primary);
+  }
+
+  .card__media {
+    aspect-ratio: 3 / 2;
+    background: var(--c-surface-sunken);
+  }
+
+  .card__media img {
+    inline-size: 100%;
+    block-size: 100%;
+    object-fit: cover;
+  }
+
+  .card__body {
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-2);
+    padding: var(--s-5);
+  }
+
+  .card__title {
+    font-size: var(--t-lg);
+  }
+
+  .card__title a {
+    color: var(--c-ink);
+    text-decoration: none;
+  }
+
+  /* Stretch the title link across the card. */
+  .card__title a::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+  }
+
+  .card--link:hover .card__title a {
+    color: var(--c-accent-dark);
+  }
+
+  .card__text {
+    color: var(--c-ink-soft);
+    font-size: 1rem;
+    line-height: 1.6;
+  }
+
+  .card__text :global(p + p) {
+    margin-block-start: var(--s-3);
+  }
+</style>

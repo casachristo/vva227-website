@@ -1,0 +1,41 @@
+---
+/**
+ * The masthead for an interior page: eyebrow, H1, and an optional standfirst.
+ *
+ * Every interior page uses this, so heading hierarchy is consistent by
+ * construction. The legacy site had pages whose only heading was an image of
+ * text, and pages where the H1 was the string "Click for More Details".
+ */
+interface Props {
+  eyebrow?: string;
+  title: string;
+  lede?: string;
+}
+
+const { eyebrow, title, lede } = Astro.props;
+---
+
+<div class="page-header">
+  <div class="container">
+    {eyebrow && <p class="eyebrow">{eyebrow}</p>}
+    <h1>{title}</h1>
+    {lede && <p class="lede page-header__lede">{lede}</p>}
+  </div>
+</div>
+
+<style>
+  .page-header {
+    padding-block: var(--s-7) var(--s-6);
+    border-bottom: 1px solid var(--c-border);
+    background: linear-gradient(to bottom, var(--c-surface-sunken), var(--c-ground));
+  }
+
+  .page-header .eyebrow {
+    margin-block-end: var(--s-2);
+  }
+
+  .page-header__lede {
+    margin-block-start: var(--s-4);
+    max-width: var(--w-prose);
+  }
+</style>

@@ -1,0 +1,103 @@
+---
+/**
+ * A single annual report.
+ *
+ * The letters are rendered from Markdown exactly as the chapter president wrote
+ * them. The only change made during migration was splitting the bullet
+ * characters the legacy site rendered inline into real list items — the words
+ * themselves are untouched.
+ */
+import type { GetStaticPaths } from 'astro';
+import { getCollection, render } from 'astro:content';
+import PageLayout from '../../../layouts/PageLayout.astro';
+import StatRow from '../../../components/StatRow.astro';
+import { currency, ordinal } from '../../../lib/format';
+import impact from '../../../data/impact.json';
+
+export const getStaticPaths = (async () => {
+  const reports = await getCollection('reports');
+  return reports.map((report) => ({
+    params: { year: String(report.data.year) },
+    props: { report },
+  }));
+}) satisfies GetStaticPaths;
+
+const { report } = Astro.props;
+const { Content } = await render(report);
+
+const figures = impact.years.find((y) => y.year === report.data.year);
+
+const stats = figures
+  ? [
+      { value: currency(figures.totalSupport), label: 'in direct veteran support' },
+      { value: String(figures.members), label: 'members at year end' },
+      ...(figures.nationalRank
+        ? [{ value: ordinal(figures.nationalRank), label: 'largest VVA chapter nationally' }]
+        : []),
+    ]
+  : [];
+
+// Neighboring years, for onward navigation rather than a dead end.
+const years = impact.years.map((y) => y.year).sort((a, b) => a - b);
+const idx = years.indexOf(report.data.year);
+const prev = idx > 0 ? years[idx - 1] : null;
+const next = idx < years.length - 1 ? years[idx + 1] : null;
+---
+
+<PageLayout
+  title={`${report.data.year} Annual Report`}
+  heading={report.data.title}
+  description={report.data.summary}
+  eyebrow={`Annual report · ${report.data.year}`}
+  width="prose"
+>
+  {report.data.author && <p class="byline">By {report.data.author}</p>}
+
+  {stats.length > 0 && <div class="stats-band"><StatRow stats={stats} /></div>}
+
+  <div class="prose">
+    <Content />
+  </div>
+
+  <nav class="pager" aria-label="Other annual reports">
+    {prev ? <a class="pager__link" href={`/about/reports/${prev}`}>&larr; {prev} report</a> : <span />}
+    <a class="pager__all" href="/about/reports">All reports</a>
+    {next ? <a class="pager__link pager__link--next" href={`/about/reports/${next}`}>{next} report &rarr;</a> : <span />}
+  </nav>
+</PageLayout>
+
+<style>
+  .byline {
+    font-size: var(--t-sm);
+    color: var(--c-ink-faint);
+  }
+
+  .stats-band {
+    margin-block: var(--s-6);
+    padding-block: var(--s-5);
+    border-block: 1px solid var(--c-border);
+  }
+
+  .pager {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--s-4);
+    margin-block-start: var(--s-8);
+    padding-block-start: var(--s-5);
+    border-block-start: 1px solid var(--c-border);
+    font-size: 1rem;
+  }
+
+  .pager__link {
+    font-weight: 600;
+  }
+
+  .pager__link--next {
+    text-align: end;
+  }
+
+  .pager__all {
+    color: var(--c-ink-faint);
+  }
+</style>

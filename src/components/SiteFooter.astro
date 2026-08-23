@@ -1,0 +1,244 @@
+---
+/**
+ * Site footer. Reads the same NAV structure as the header, so the two can never
+ * disagree — on the legacy site the global menu, the in-page hub lists and the
+ * footer each advertised a different set of pages.
+ *
+ * The eight uniformed-service links live here. They were previously the most
+ * prominent links on every page of the site.
+ */
+import { NAV, CONTACT_ITEM, SERVICE_LINKS } from '../lib/nav';
+import { addressLine } from '../lib/format';
+import site from '../data/site.json';
+
+const { mailingAddress: addr } = site;
+const postal = addressLine([addr.line1, addr.city, `${addr.state} ${addr.zip}`]);
+const year = 2026;
+---
+
+<footer class="footer no-print">
+  <div class="footer__inner container container--wide">
+    <div class="footer__identity">
+      <p class="footer__name">{site.name}</p>
+      <p class="footer__chapter">{site.memorialName}</p>
+      <p class="footer__motto">&ldquo;{site.motto}&rdquo;</p>
+
+      <address class="footer__address">
+        <a href={`tel:${site.phone.replace(/-/g, '')}`}>{site.phone}</a><br />
+        {postal}
+      </address>
+
+      <a class="footer__social" href={site.facebook} rel="noopener">Facebook</a>
+    </div>
+
+    <nav class="footer__nav" aria-label="Footer">
+      {
+        [...NAV, CONTACT_ITEM].map((item) => (
+          <div class="footer__col">
+            <a class="footer__head" href={item.href}>
+              {item.label}
+            </a>
+            {item.children && (
+              <ul>
+                {item.children.map((child) => (
+                  <li>
+                    <a href={child.href}>{child.label}</a>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        ))
+      }
+    </nav>
+  </div>
+
+  <div class="footer__services">
+    <div class="container container--wide">
+      <h2 class="footer__services-title">The uniformed services</h2>
+      <ul>
+        {
+          SERVICE_LINKS.map((s) => (
+            <li>
+              <a href={s.href} rel="noopener">
+                {s.label}
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+    </div>
+  </div>
+
+  <div class="footer__legal">
+    <div class="container container--wide">
+      <p>
+        &copy; {year} {site.name}, {site.memorialName}. A chapter of{' '}
+        <a href={site.national.url} rel="noopener">Vietnam Veterans of America</a>, {site.national.description}.
+      </p>
+      <p class="footer__disclaimer">
+        Bylined articles reflect the opinions solely of their authors and do not necessarily reflect those of the
+        membership of the Chapter, the VVA Virginia State Council, or the VVA National Office.
+      </p>
+    </div>
+  </div>
+</footer>
+
+<style>
+  .footer {
+    margin-block-start: var(--s-9);
+    background: var(--c-primary-dark);
+    color: #e8e5df;
+    font-size: var(--t-sm);
+  }
+
+  .footer a {
+    color: #e8e5df;
+    text-decoration-color: rgba(232, 229, 223, 0.45);
+  }
+
+  .footer a:hover {
+    color: #fff;
+    text-decoration-color: currentColor;
+  }
+
+  .footer :global(:focus-visible) {
+    outline-color: #fff;
+  }
+
+  .footer__inner {
+    display: grid;
+    grid-template-columns: minmax(15rem, 22rem) 1fr;
+    gap: var(--s-7);
+    padding-block: var(--s-8);
+  }
+
+  .footer__name {
+    font-family: var(--font-serif);
+    font-size: var(--t-lg);
+    font-weight: 600;
+    color: #fff;
+  }
+
+  .footer__chapter {
+    color: rgba(232, 229, 223, 0.75);
+  }
+
+  .footer__motto {
+    margin-block-start: var(--s-4);
+    font-family: var(--font-serif);
+    font-style: italic;
+    color: var(--c-gold);
+    line-height: 1.45;
+  }
+
+  .footer__address {
+    margin-block-start: var(--s-4);
+    font-style: normal;
+    line-height: 1.7;
+  }
+
+  .footer__social {
+    display: inline-block;
+    margin-block-start: var(--s-3);
+    font-weight: 600;
+  }
+
+  /* ---- Link columns ---- */
+
+  .footer__nav {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(9.5rem, 1fr));
+    gap: var(--s-5);
+  }
+
+  .footer__head {
+    display: block;
+    font-family: var(--font-serif);
+    font-weight: 600;
+    font-size: 1.0625rem;
+    color: #fff;
+    text-decoration: none;
+    margin-block-end: var(--s-2);
+  }
+
+  .footer__head:hover {
+    text-decoration: underline;
+  }
+
+  .footer__col ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .footer__col li + li {
+    margin-block-start: var(--s-1);
+  }
+
+  .footer__col li a {
+    color: rgba(232, 229, 223, 0.8);
+    text-decoration: none;
+  }
+
+  .footer__col li a:hover {
+    text-decoration: underline;
+  }
+
+  /* ---- Service links ---- */
+
+  .footer__services {
+    border-block-start: 1px solid rgba(255, 255, 255, 0.12);
+    padding-block: var(--s-5);
+  }
+
+  .footer__services-title {
+    font-family: var(--font-sans);
+    font-size: var(--t-xs);
+    font-weight: 700;
+    letter-spacing: var(--tracking-caps);
+    text-transform: uppercase;
+    color: rgba(232, 229, 223, 0.6);
+    margin-block-end: var(--s-3);
+  }
+
+  .footer__services ul {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--s-2) var(--s-5);
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .footer__services a {
+    text-decoration: none;
+    color: rgba(232, 229, 223, 0.8);
+  }
+
+  .footer__services a:hover {
+    text-decoration: underline;
+  }
+
+  /* ---- Legal ---- */
+
+  .footer__legal {
+    border-block-start: 1px solid rgba(255, 255, 255, 0.12);
+    padding-block: var(--s-5);
+    font-size: var(--t-xs);
+    color: rgba(232, 229, 223, 0.65);
+    line-height: 1.6;
+  }
+
+  .footer__disclaimer {
+    margin-block-start: var(--s-2);
+    max-width: 70ch;
+  }
+
+  @media (max-width: 52rem) {
+    .footer__inner {
+      grid-template-columns: 1fr;
+      gap: var(--s-6);
+    }
+  }
+</style>

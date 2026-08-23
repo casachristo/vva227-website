@@ -1,0 +1,79 @@
+{
+  "_doc": "Role-based contacts. One entry per ROLE, never per person, so a change of officer is a one-line edit. `status` drives both the UI and REVIEW.md: ok = published and unambiguous; conflict = the legacy site published two different values and one is wrong; missing = the legacy site never published it. Nothing here is invented — a missing value stays null.",
+  "roles": [
+    {
+      "id": "general",
+      "label": "General enquiries",
+      "person": null,
+      "email": null,
+      "phone": "703-850-3498",
+      "status": "ok",
+      "note": "Chapter phone published site-wide on the legacy site."
+    },
+    {
+      "id": "membership",
+      "label": "Membership",
+      "person": "Bill Lynch",
+      "email": "vva227bill@outlook.com",
+      "phone": null,
+      "status": "ok",
+      "note": "Published as the membership contact on the legacy site."
+    },
+    {
+      "id": "treasurer",
+      "label": "Treasurer / donations",
+      "person": "Charles “Chuck” Harris",
+      "email": null,
+      "phone": null,
+      "status": "conflict",
+      "conflict": ["caharris4@aol.com", "csharris4@aol.com"],
+      "note": "The legacy Donation page and the Veteran and Family Support Funds page publish two different addresses for the same person. One is wrong, so neither is published here until the chapter confirms."
+    },
+    {
+      "id": "newsletter",
+      "label": "Newsletter — The Journey",
+      "person": "Len Ignatowski",
+      "email": null,
+      "phone": null,
+      "status": "conflict",
+      "conflict": ["grunt69@gmail.com", "grunt60@gmail.com"],
+      "note": "Members-Information and Chapter-Publications publish two different addresses for the same person."
+    },
+    {
+      "id": "webmaster",
+      "label": "Website",
+      "person": "Stan Derr",
+      "email": "sderr5410@gmail.com",
+      "phone": null,
+      "status": "ok",
+      "note": "Published as the chapter web manager."
+    },
+    {
+      "id": "treatment-court",
+      "label": "Veterans Treatment Court mentoring",
+      "person": "Don Sutherland",
+      "email": "don_sutherland@vva227.org",
+      "phone": null,
+      "status": "ok",
+      "note": "Chapter-domain address; leads the chapter's mentor team."
+    },
+    {
+      "id": "school-speakers",
+      "label": "School speakers program",
+      "person": "Tom Stryer",
+      "email": null,
+      "phone": null,
+      "status": "missing",
+      "note": "The legacy Community Outreach page ends the sentence “Contact Tom Stryer at” with nothing after it. The chapter must supply this."
+    }
+  ],
+  "withheld": {
+    "_doc": "Present on the legacy public site but deliberately NOT republished here. These are personal contact details and named private individuals; putting them on a new public URL is the chapter's decision to make, not ours.",
+    "items": [
+      "Anniversary dinner RSVP — personal mobile number (published on the legacy Ceremonies and Parties page)",
+      "AVVA / Lamb Center enquiries — personal mobile number (published on the legacy AVVA page)",
+      "Membership applications — a board member's home street address, used as the public mail-to (the legacy site also prints a malformed ZIP+4)",
+      "Two donors named as the chapter's “most generous” in the 2020 annual letter"
+    ]
+  }
+}

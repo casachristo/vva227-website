@@ -1,0 +1,62 @@
+---
+/**
+ * A captioned photograph.
+ *
+ * The chapter's photographs are candid snapshots, mostly 680-800px wide, and
+ * they look better honest than stretched. This component caps display width
+ * and never blows an image up past its natural size — the legacy home page
+ * scaled 1050px banners across a fixed 1047px table and softened every one.
+ *
+ * `alt` is required, not optional. Every image on the legacy home page carried
+ * an empty alt attribute, including the seven carousel slides that were the
+ * only navigation on the page.
+ */
+interface Props {
+  src: string;
+  alt: string;
+  caption?: string;
+  credit?: string;
+  /** Cap the rendered width; defaults to the image's natural size. */
+  maxWidth?: string;
+}
+
+const { src, alt, caption, credit, maxWidth = '46rem' } = Astro.props;
+---
+
+<figure class="figure" style={`--fig-max: ${maxWidth}`}>
+  <img src={src} alt={alt} loading="lazy" decoding="async" />
+  {
+    (caption || credit) && (
+      <figcaption>
+        {caption}
+        {credit && <span class="figure__credit">{credit}</span>}
+      </figcaption>
+    )
+  }
+</figure>
+
+<style>
+  .figure {
+    margin: 0;
+    max-inline-size: var(--fig-max);
+  }
+
+  .figure img {
+    inline-size: 100%;
+    border-radius: var(--r-md);
+    background: var(--c-surface-sunken);
+  }
+
+  figcaption {
+    margin-block-start: var(--s-3);
+    font-size: var(--t-sm);
+    line-height: 1.5;
+    color: var(--c-ink-faint);
+  }
+
+  .figure__credit {
+    display: block;
+    margin-block-start: var(--s-1);
+    font-size: var(--t-xs);
+  }
+</style>

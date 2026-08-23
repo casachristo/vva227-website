@@ -1,0 +1,172 @@
+---
+/**
+ * Leadership.
+ *
+ * The legacy roster page carried 22 headshots, no date, and no contact details.
+ * Its cross-references suggest it was last revised around 2022-23, so it is
+ * republished here WITH an explicit currency warning rather than presented as
+ * fact. Personal phone numbers that appeared on other legacy pages are not
+ * reproduced — role-based contact routes are on /contact instead.
+ */
+import PageLayout from '../../layouts/PageLayout.astro';
+import ReviewNote from '../../components/ReviewNote.astro';
+import officers from '../../data/officers.json';
+---
+
+<PageLayout
+  title="Leadership"
+  description="Officers, directors and committee chairs of VVA Chapter 227."
+  eyebrow="About"
+  lede="Chapter 227 has no paid staff. Everything it does is done by the people on this page and the members behind them."
+>
+  <ReviewNote topic="Roster currency">{officers.reviewRequired}</ReviewNote>
+
+  <section>
+    <h2>Officers</h2>
+    <ul class="roster roster--officers">
+      {
+        officers.officers.map((person) => (
+          <li>
+            <p class="roster__role">{person.role}</p>
+            <p class="roster__name">{person.name}</p>
+          </li>
+        ))
+      }
+    </ul>
+  </section>
+
+  <section>
+    <h2>Board of directors</h2>
+    <p class="section__note">
+      The by-laws set the board at no fewer than three and no more than twenty, including the four officers. Terms
+      run two years, with no limit on the number of terms.
+    </p>
+    <ul class="roster roster--directors">
+      {
+        officers.directors.map((person) => (
+          <li>
+            <span class="roster__name">{person.name}</span>
+            {person.branch && <span class="roster__branch">{person.branch}</span>}
+          </li>
+        ))
+      }
+    </ul>
+  </section>
+
+  <section>
+    <h2>Committees</h2>
+    <ul class="roster roster--committees">
+      {
+        officers.committees.map((person) => (
+          <li>
+            <p class="roster__role">{person.role}</p>
+            <p class="roster__name">{person.name}</p>
+            {person.review && <p class="roster__flag">Needs confirmation: {person.review}</p>}
+          </li>
+        ))
+      }
+    </ul>
+  </section>
+
+  <section>
+    <h2>The membership behind them</h2>
+    <p class="section__note">{officers.notable}</p>
+  </section>
+
+  <p class="contact-note">
+    Looking for a particular person? <a href="/contact">Role-based contacts are on the contact page.</a>
+  </p>
+</PageLayout>
+
+<style>
+  section {
+    margin-block-start: var(--s-7);
+  }
+
+  h2 {
+    margin-block-end: var(--s-4);
+  }
+
+  .section__note {
+    max-width: var(--w-prose);
+    margin-block-end: var(--s-5);
+    color: var(--c-ink-soft);
+    font-size: 1rem;
+  }
+
+  .roster {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .roster__role {
+    font-size: var(--t-xs);
+    font-weight: 700;
+    letter-spacing: var(--tracking-caps);
+    text-transform: uppercase;
+    color: var(--c-accent-dark);
+  }
+
+  .roster__name {
+    font-family: var(--font-serif);
+    font-size: var(--t-lg);
+    font-weight: 600;
+  }
+
+  .roster__flag {
+    margin-block-start: var(--s-2);
+    font-size: var(--t-sm);
+    color: #7a5a1c;
+  }
+
+  /* Officers and committees: labeled cards */
+  .roster--officers,
+  .roster--committees {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(15rem, 100%), 1fr));
+    gap: var(--s-4);
+  }
+
+  .roster--officers li,
+  .roster--committees li {
+    padding: var(--s-4) var(--s-5);
+    background: var(--c-surface);
+    border: 1px solid var(--c-border);
+    border-radius: var(--r-md);
+  }
+
+  .roster--officers .roster__name,
+  .roster--committees .roster__name {
+    margin-block-start: var(--s-1);
+  }
+
+  /* Directors: a simple name list — no invented hierarchy */
+  .roster--directors {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(13rem, 100%), 1fr));
+    gap: var(--s-3) var(--s-5);
+  }
+
+  .roster--directors li {
+    display: flex;
+    flex-direction: column;
+    padding-inline-start: var(--s-4);
+    border-inline-start: 2px solid var(--c-gold);
+  }
+
+  .roster--directors .roster__name {
+    font-size: 1.0625rem;
+  }
+
+  .roster__branch {
+    font-size: var(--t-xs);
+    color: var(--c-ink-faint);
+  }
+
+  .contact-note {
+    margin-block-start: var(--s-8);
+    padding-block-start: var(--s-5);
+    border-block-start: 1px solid var(--c-border);
+  }
+</style>

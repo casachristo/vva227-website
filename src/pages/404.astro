@@ -1,0 +1,60 @@
+---
+/**
+ * 404.
+ *
+ * Fifty legacy URLs are redirected to their nearest replacement in
+ * public/_redirects, so this should be rare. When it happens, it offers the
+ * three things people actually come for rather than a dead end — which is more
+ * than the legacy site's own broken contact page managed, since it returned
+ * HTTP 200 with the words "Sorry, but the page you requested is not available".
+ */
+import BaseLayout from '../layouts/BaseLayout.astro';
+import site from '../data/site.json';
+---
+
+<BaseLayout title="Page not found" description="That page could not be found on the VVA Chapter 227 website.">
+  <div class="container container--prose notfound">
+    <p class="eyebrow">Error 404</p>
+    <h1>We could not find that page</h1>
+    <p class="lede">
+      It may have moved when the site was rebuilt. Here is where most people are heading.
+    </p>
+
+    <ul class="routes">
+      <li><a href="/get-help">Get help</a> — assistance for veterans and families</li>
+      <li><a href="/join">Join the chapter</a> — eligibility, cost and how to apply</li>
+      <li><a href="/give">Ways to give</a> — checks, vehicles and household goods</li>
+      <li><a href="/events">Meetings</a> — when and where we meet</li>
+      <li><a href="/contact">Contact</a> — reach a person</li>
+    </ul>
+
+    <p class="fallback">
+      Still stuck? Call the chapter on <a href={`tel:${site.phone.replace(/-/g, '')}`}>{site.phone}</a>.
+    </p>
+  </div>
+</BaseLayout>
+
+<style>
+  .notfound {
+    padding-block: var(--s-9);
+  }
+
+  h1 {
+    margin-block: var(--s-2) var(--s-4);
+  }
+
+  .routes {
+    margin-block-start: var(--s-6);
+    padding-inline-start: var(--s-5);
+  }
+
+  .routes li + li {
+    margin-block-start: var(--s-2);
+  }
+
+  .fallback {
+    margin-block-start: var(--s-6);
+    padding-block-start: var(--s-5);
+    border-block-start: 1px solid var(--c-border);
+  }
+</style>

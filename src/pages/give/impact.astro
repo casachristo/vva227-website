@@ -1,0 +1,255 @@
+---
+/**
+ * Where Your Money Goes.
+ *
+ * The chapter's strongest asset with donors — an itemized account of every
+ * dollar paid out — existed on the legacy site only as a bare table on a page
+ * called "Veteran and Family Support Funds", reachable four clicks deep, and
+ * carried figures two years out of date while the donate page quoted a
+ * different number for the same year.
+ *
+ * The breakdown total is recomputed from the line items at build time rather
+ * than trusted from the source, so the table can never disagree with itself.
+ */
+import PageLayout from '../../layouts/PageLayout.astro';
+import StatRow from '../../components/StatRow.astro';
+import ReviewNote from '../../components/ReviewNote.astro';
+import CallToAction from '../../components/CallToAction.astro';
+import { currency, ordinal } from '../../lib/format';
+import impact from '../../data/impact.json';
+
+const latest = impact.years[0];
+const itemized = impact.years.find((y) => Array.isArray(y.breakdown) && y.breakdown.length > 0)!;
+const rows = itemized.breakdown ?? [];
+const computedTotal = rows.reduce((sum, row) => sum + row.amount, 0);
+const vash = impact.programs.vash;
+
+const stats = [
+  { value: currency(latest.totalSupport), label: 'paid out in ' + latest.year, note: 'A chapter record' },
+  { value: '~50%', label: 'goes to families in VA Supportive Housing', note: 'Sustained for over ten years' },
+  { value: '$0', label: 'spent on salaries', note: 'The chapter has no paid staff' },
+];
+
+// Every year the chapter has reported, oldest first, for the trend table.
+const trend = [...impact.years].sort((a, b) => a.year - b.year);
+---
+
+<PageLayout
+  title="Where Your Money Goes"
+  description="An itemized account of VVA Chapter 227's veteran aid — what was spent, on whom, and in what amounts."
+  eyebrow="Ways to give"
+  lede="The chapter is run entirely by volunteers. Money raised from members and neighbors is paid straight back out to veterans in Northern Virginia."
+>
+  <StatRow stats={stats} />
+
+  <!-- ---------- Itemized year ---------- -->
+  <section class="stack">
+    <h2>{itemized.year} in detail</h2>
+    <p>
+      This is the chapter&rsquo;s most recent fully itemized year — the treasurer&rsquo;s line-by-line account of
+      every category of veteran aid.
+    </p>
+
+    <div class="scroll-x">
+      <table class="ledger">
+        <caption class="visually-hidden">Chapter 227 veteran support by category, {itemized.year}</caption>
+        <thead>
+          <tr>
+            <th scope="col">Category</th>
+            <th scope="col">Who it reached</th>
+            <th scope="col" class="num">Amount</th>
+          </tr>
+        </thead>
+        <tbody>
+          {
+            rows.map((row) => (
+              <tr>
+                <th scope="row">{row.item}</th>
+                <td class="muted">{row.detail ?? '—'}</td>
+                <td class="num">{currency(row.amount)}</td>
+              </tr>
+            ))
+          }
+        </tbody>
+        <tfoot>
+          <tr>
+            <th scope="row" colspan="2">Total veteran support</th>
+            <td class="num">{currency(computedTotal)}</td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  </section>
+
+  <!-- ---------- Trend ---------- -->
+  <section class="stack">
+    <h2>Five years of giving</h2>
+    <div class="scroll-x">
+      <table class="ledger">
+        <caption class="visually-hidden">Chapter 227 annual direct support and membership, 2020 to 2024</caption>
+        <thead>
+          <tr>
+            <th scope="col">Year</th>
+            <th scope="col" class="num">Direct support</th>
+            <th scope="col" class="num">Members</th>
+            <th scope="col" class="num">National rank</th>
+          </tr>
+        </thead>
+        <tbody>
+          {
+            trend.map((y) => (
+              <tr>
+                <th scope="row">{y.year}</th>
+                <td class="num">{y.totalSupportDisplay}</td>
+                <td class="num">{y.members}</td>
+                <td class="num">{y.nationalRank ? ordinal(y.nationalRank) : '—'}</td>
+              </tr>
+            ))
+          }
+        </tbody>
+      </table>
+    </div>
+    <p class="muted note">
+      Aid has risen every year for five years, from about $25,000 to over $39,700, while membership grew from 329 to
+      418.
+    </p>
+  </section>
+
+  <!-- ---------- VASH ---------- -->
+  <section class="stack">
+    <h2>The biggest single channel: {vash.name}</h2>
+    <p>
+      About half of everything the chapter spends goes through the VA Supportive Housing program, and it has done
+      for {vash.runningFor}.
+    </p>
+    <p>{vash.howItWorks}</p>
+    <p>
+      Cards are distributed {vash.cadence}. The chapter never contacts recipient families directly — VASH
+      caseworkers do that, which keeps the help private for the people receiving it.
+    </p>
+  </section>
+
+  <!-- ---------- The Foundation ---------- -->
+  <section class="stack">
+    <h2>How emergency assistance is funded</h2>
+    <p>
+      Every figure on this page is Chapter 227&rsquo;s own, taken from the treasurer&rsquo;s annual letters, by
+      calendar year, through {latest.year}.
+    </p>
+    <p>
+      Since June 2025 one of the programs behind those figures &mdash; emergency financial assistance &mdash; has
+      been funded in part through a separate charity the chapter created, the Northern Virginia Vietnam Veterans
+      Foundation, which says the chapter still receives and verifies every request and still pays the creditor
+      &mdash; a description <a href="/get-help">Get Help</a> does not yet agree with.
+      <strong>The Foundation reports its own totals, over its own period, and none of them appear on this page.</strong>
+      Nobody has yet said how the two sets of figures relate, so they are not shown together and must never be
+      added.
+    </p>
+    <p><a href="/give/nvvvf">About the Foundation &rarr;</a></p>
+  </section>
+
+  <!-- ---------- Conflicts ---------- -->
+  <ReviewNote topic="Figures that disagree">
+    <p>
+      The chapter&rsquo;s own annual letters do not agree with each other, and these need resolving before the
+      figures go in front of donors or grant-makers:
+    </p>
+    <ul>
+      {impact.years.flatMap((y) => (y.conflicts ?? []).map((c) => <li>{c}</li>))}
+      <li>
+        Every donor-facing page on the current site still reports 2023 figures. There are no published 2025 numbers
+        at all.
+      </li>
+      <li>
+        The Northern Virginia Vietnam Veterans Foundation reports its own assistance totals since June 2025. Nobody
+        has said whether those grants are also counted in the chapter&rsquo;s direct-support figures, whether the
+        households overlap the VASH families counted here, or whether the chapter&rsquo;s 2025 and 2026 letters
+        will include them. Until that is answered the two sets of figures cannot appear on one page.
+      </li>
+    </ul>
+  </ReviewNote>
+
+  <CallToAction
+    title="Give to this"
+    primary={{ label: 'Ways to give', href: '/give' }}
+    secondary={{ label: 'Read the annual reports', href: '/about/reports' }}
+    tone="clay"
+  >
+    Every dollar is disbursed by the same volunteers who raised it.
+  </CallToAction>
+</PageLayout>
+
+<style>
+  section {
+    margin-block-start: var(--s-8);
+  }
+
+  h2 {
+    margin-block-end: var(--s-4);
+  }
+
+  p {
+    max-width: var(--w-prose);
+  }
+
+  p + p {
+    margin-block-start: var(--s-4);
+  }
+
+  .note {
+    margin-block-start: var(--s-4);
+    font-size: var(--t-sm);
+  }
+
+  /* ---- Ledger tables ---- */
+
+  .ledger {
+    inline-size: 100%;
+    min-inline-size: 34rem;
+    border-collapse: collapse;
+    margin-block-start: var(--s-5);
+    font-size: 1rem;
+  }
+
+  .ledger th,
+  .ledger td {
+    padding: var(--s-3) var(--s-4);
+    text-align: start;
+    border-block-end: 1px solid var(--c-border);
+  }
+
+  .ledger thead th {
+    font-family: var(--font-sans);
+    font-size: var(--t-xs);
+    font-weight: 700;
+    letter-spacing: var(--tracking-caps);
+    text-transform: uppercase;
+    color: var(--c-ink-faint);
+    border-block-end: 2px solid var(--c-border-strong);
+  }
+
+  .ledger tbody th {
+    font-weight: 600;
+  }
+
+  .ledger .num {
+    text-align: end;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+
+  .ledger tfoot th,
+  .ledger tfoot td {
+    padding-block-start: var(--s-4);
+    border-block-end: none;
+    border-block-start: 2px solid var(--c-border-strong);
+    font-family: var(--font-serif);
+    font-size: var(--t-lg);
+    font-weight: 700;
+    color: var(--c-primary-dark);
+  }
+
+  .ledger tbody tr:hover {
+    background: var(--c-surface-sunken);
+  }
+</style>

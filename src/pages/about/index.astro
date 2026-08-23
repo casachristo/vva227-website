@@ -1,0 +1,201 @@
+---
+/**
+ * About — "Who We Are".
+ *
+ * This is copy the legacy site never had. Its "Chapter Basics" page was a
+ * heading, the literal string "Click for More Details:", and a list of eight
+ * links — no explanation of what the chapter is, who it serves, or when it
+ * meets. The real founding narrative was two levels down on a page called
+ * "chapter history", which also carried duplicate paragraphs pasted from
+ * Community Outreach.
+ */
+import PageLayout from '../../layouts/PageLayout.astro';
+import Card from '../../components/Card.astro';
+import CardGrid from '../../components/CardGrid.astro';
+import StatRow from '../../components/StatRow.astro';
+import ReviewNote from '../../components/ReviewNote.astro';
+import CallToAction from '../../components/CallToAction.astro';
+import site from '../../data/site.json';
+import { ordinal } from '../../lib/format';
+import impact from '../../data/impact.json';
+
+const latest = impact.years[0];
+
+const stats = [
+  { value: String(latest.members), label: 'members', note: `As of ${latest.year}` },
+  { value: '#1', label: 'largest VVA chapter in Virginia', note: `${ordinal(latest.nationalRank)} nationally` },
+  { value: '40', label: 'years serving Northern Virginia', note: 'Founded 1985' },
+];
+---
+
+<PageLayout
+  title="About the Chapter"
+  description="VVA Chapter 227, the Dean K. Phillips Memorial Chapter, was formed in 1985 by fifteen people at the Fort Myer NCO Club. It is now the largest VVA chapter in Virginia."
+  eyebrow="About"
+  lede="Fifteen people in a club room at Fort Myer, forty years ago. Four hundred and eighteen members now, and the largest Vietnam Veterans of America chapter in the Commonwealth."
+>
+  <section class="stack">
+    <h2>How it started</h2>
+    <p>
+      On <strong>24 July 1985</strong>, approximately fifteen people met at the Fort Myer NCO Club in Arlington,
+      Virginia to form a local chapter of the only congressionally chartered Vietnam-veteran service organization in
+      the United States. The chapter was incorporated as a non-profit in the Commonwealth of Virginia in
+      <strong> January 1986</strong>.
+    </p>
+    <p>
+      It took the name of <a href="/about/dean-k-phillips">Captain Dean K. Phillips</a> &mdash; 101st Airborne in
+      Vietnam, author of the Vietnam Era Veterans&rsquo; Readjustment Assistance Act, and one of the people who got
+      the Vietnam Veterans Memorial approved. He died a month after the chapter was founded.
+    </p>
+
+    <ReviewNote topic="Founding date">{site.founded.review}</ReviewNote>
+  </section>
+
+  <section class="stack">
+    <h2>Where it stands now</h2>
+    <StatRow stats={stats} />
+    <p class="muted note">
+      Membership has grown every year for five years — from 329 in 2020 to 418 in 2024 — at a time when most
+      Vietnam-era veterans organizations are shrinking.
+    </p>
+  </section>
+
+  <section class="stack">
+    <h2>And what came next</h2>
+    <p>
+      In June 2025, in the chapter&rsquo;s fortieth year, its members created a separate charitable organization
+      &mdash; the <strong>Northern Virginia Vietnam Veterans Foundation</strong> &mdash; to raise money for veterans
+      facing a sudden financial emergency, and to carry that work past the current generation of chapter leaders.
+    </p>
+    <p>
+      It answers, at least in part, a question the chapter put to itself at a town hall in September 2023: how the
+      mission continues after the eventual dissolution of VVA National later in the decade.
+    </p>
+    <p><a href="/give/nvvvf">About the Foundation &rarr;</a></p>
+  </section>
+
+  <section class="stack">
+    <h2>What we are for</h2>
+    <blockquote class="mission">
+      <p>{site.mission}</p>
+    </blockquote>
+    <p>
+      In practice that means three things: money paid directly to veterans and families who need it, a room full of
+      people who understand once a month, and telling the truth about the war to anyone who will listen.
+    </p>
+    <p>
+      The chapter helps <em>all</em> needy and homeless veterans in Northern Virginia, not only Vietnam veterans,
+      and it has no paid staff. Everything is done by members.
+    </p>
+  </section>
+
+  <section class="stack">
+    <h2>Traditions</h2>
+    <div class="traditions">
+      <div>
+        <h3>Memorial Day and Veterans Day</h3>
+        <p>
+          Members, family and friends spend the day together. It starts with brunch and building a commemorative
+          wreath, moves to the Vietnam Veterans Memorial to join other veterans groups in paying homage, and ends in
+          the late afternoon with a potluck dinner at a member&rsquo;s home.
+        </p>
+      </div>
+      <div>
+        <h3>The social year</h3>
+        <p>
+          A picnic in June or July, an awards banquet in June, the anniversary dinner in October, and a holiday
+          party in December — with other events scattered through the year.
+        </p>
+      </div>
+      <div>
+        <h3>Publications</h3>
+        <p>
+          The chapter publishes <a href="/events/news">The Journey</a> for its members. Through the Virginia State Council
+          network the chapter is featured quarterly in the <em>Virginia Vietnam Veteran</em>, and members receive
+          the national magazine, <em>The VVA Veteran</em>.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <section class="stack">
+    <h2>Go deeper</h2>
+    <CardGrid min="17rem">
+      <Card title="Captain Dean K. Phillips" href="/about/dean-k-phillips" eyebrow="Namesake">
+        <p>Who the chapter is named for, and the plaque its members restored at Fort Meade in 2006.</p>
+      </Card>
+      <Card title="Leadership" href="/about/leadership" eyebrow="Who runs it">
+        <p>Officers, the board of directors, and the committee chairs.</p>
+      </Card>
+      <Card title="Annual reports" href="/about/reports" eyebrow="2020 – 2024">
+        <p>The president&rsquo;s letters, year by year, with the figures behind them.</p>
+      </Card>
+      <Card title="Chapter documents" href="/about/documents" eyebrow="Governance">
+        <p>By-laws, board meeting minutes, and the chapter publication policy.</p>
+      </Card>
+    </CardGrid>
+  </section>
+
+  <CallToAction
+    title="Forty years, and still meeting"
+    primary={{ label: 'Join the chapter', href: '/join' }}
+    secondary={{ label: 'Come to a meeting', href: '/events' }}
+  >
+    Membership is open to anyone who served during the Vietnam era. Life membership is $50, once.
+  </CallToAction>
+</PageLayout>
+
+<style>
+  section + section {
+    margin-block-start: var(--s-8);
+  }
+
+  h2 {
+    margin-block-end: var(--s-4);
+  }
+
+  h3 {
+    font-size: var(--t-lg);
+    margin-block-end: var(--s-3);
+  }
+
+  p {
+    max-width: var(--w-prose);
+  }
+
+  p + p {
+    margin-block-start: var(--s-4);
+  }
+
+  .note {
+    font-size: var(--t-sm);
+    margin-block-start: var(--s-5);
+  }
+
+  .mission {
+    margin: 0 0 var(--s-5);
+    padding: var(--s-5) var(--s-6);
+    background: var(--c-primary-tint);
+    border-radius: var(--r-lg);
+    font-family: var(--font-serif);
+    font-size: var(--t-xl);
+    line-height: 1.35;
+    color: var(--c-primary-dark);
+  }
+
+  .mission p {
+    max-width: none;
+  }
+
+  .traditions {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(18rem, 100%), 1fr));
+    gap: var(--s-6);
+  }
+
+  .traditions p {
+    max-width: none;
+    font-size: 1rem;
+    color: var(--c-ink-soft);
+  }
+</style>

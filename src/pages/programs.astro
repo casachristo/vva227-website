@@ -1,0 +1,239 @@
+---
+/**
+ * What We Do.
+ *
+ * Consolidates chapter-history's outreach section, Community-Outreach and
+ * Support-to-VA-VASH. The scholarship and school-speaker paragraphs appeared
+ * word-for-word on two separate pages, including the same "it's/its" typo.
+ *
+ * The legacy Community Outreach page hedged its own currency in its opening
+ * sentence — "is currently involved in multiple community oriented programs (or
+ * was in the past)" — which is flagged rather than quietly tidied away, because
+ * nobody outside the chapter knows which programs are still running.
+ */
+import PageLayout from '../layouts/PageLayout.astro';
+import Figure from '../components/Figure.astro';
+import ReviewNote from '../components/ReviewNote.astro';
+import ContactList from '../components/ContactList.astro';
+import CallToAction from '../components/CallToAction.astro';
+import Card from '../components/Card.astro';
+import CardGrid from '../components/CardGrid.astro';
+import impact from '../data/impact.json';
+
+const vash = impact.programs.vash;
+
+const venues = [
+  'The Vietnam Veterans Memorial — The Wall',
+  'Arlington County Public Schools',
+  'Fairfax County Public Schools',
+  'George Mason University',
+  'Northern Virginia Community College',
+  'University of Maryland',
+  'Trinity College',
+];
+
+const partners = [
+  {
+    title: 'The Lamb Center',
+    body: 'A day shelter in Fairfax for homeless men and women, many of them veterans. The chapter’s AVVA members collect cash and household goods at every monthly meeting.',
+  },
+  {
+    title: 'Wounded Warrior families',
+    body: 'The chapter funds the Santa Lists of wounded warrior families each December — $3,000 across three families in 2024.',
+  },
+  {
+    title: 'MITRE Care Packages',
+    body: 'A partnership sending care packages to deployed troops. The chapter helps pay shipping, disburses the funds collected, and sends the acknowledgment letters.',
+  },
+  {
+    title: 'Memorial Day Writers’ Project',
+    body: 'The chapter has funded the tent at The Wall where veterans read poetry, short stories and music. Many chapter members helped form it.',
+  },
+  {
+    title: 'Suits for Veterans',
+    body: 'Business attire gift certificates and more than 150 donated suits for patients at Walter Reed and Bethesda Naval Hospital.',
+  },
+  {
+    title: 'Operation Kick-Start',
+    body: 'A $25 grant to every new homeless veteran resident at Compassion House, for personal items.',
+  },
+];
+---
+
+<PageLayout
+  title="What We Do"
+  description="VVA Chapter 227 supports families in VA Supportive Housing, funds scholarships for Northern Virginia students, and sends Vietnam veterans into classrooms to tell students what the war was actually like."
+  eyebrow="Programs"
+  lede="Four decades of the same idea: money where it is needed, and veterans telling the truth about what happened to them."
+>
+  <!-- ---------- VASH ---------- -->
+  <section class="stack">
+    <p class="eyebrow">The largest commitment</p>
+    <h2>{vash.name}</h2>
+    <p class="lede">{vash.shareOfFunds}, sustained for {vash.runningFor}.</p>
+    <p>{vash.howItWorks}</p>
+    <p>
+      Cards go out {vash.cadence}. The chapter never meets the families — VASH caseworkers handle distribution,
+      which keeps the help private for the people receiving it.
+    </p>
+    <ReviewNote topic="VASH amounts">{vash.note}</ReviewNote>
+  </section>
+
+  <!-- ---------- Speakers ---------- -->
+  <section class="stack">
+    <p class="eyebrow">Since 1987</p>
+    <h2>Tour of Duty: veterans in classrooms</h2>
+
+    <div class="split">
+      <div class="split__text">
+        <p>
+          Chapter members have shared their Tour of Duty experiences with audiences from elementary school students
+          to senior citizens groups. Past speakers have included nurses, Red Cross service personnel, and men and
+          women who served in every capacity in each of the services, from combat to logistical support. Each one
+          had a story worth hearing.
+        </p>
+        <p>
+          As Vietnam veterans, the chapter&rsquo;s aim is to ensure an accurate and balanced understanding of the
+          war. A typical program covers each veteran&rsquo;s road to Vietnam, his tour of duty, and questions from
+          the floor. The agenda is flexible.
+        </p>
+        <p>
+          Those who served during the Vietnam War are one of the greatest resources for understanding what happened
+          during that period. Having members share their experiences can help a group gain respect and understanding
+          for service, and learn lessons in character and civic responsibility.
+        </p>
+      </div>
+
+      <Figure
+        src="/images/student-awards.jpg"
+        alt="A chapter member stands at the right of eight high-school students in a school art room, holding presentation cards, with student photography displayed on a projector screen behind them."
+        caption="Chapter members present awards to Northern Virginia students."
+        maxWidth="100%"
+      />
+    </div>
+
+    <h3>Where members have spoken</h3>
+    <ul class="venues">
+      {venues.map((v) => <li>{v}</li>)}
+    </ul>
+
+    <h3>Request a speaker</h3>
+    <ContactList only={['school-speakers']} />
+
+    <ReviewNote topic="Speaker program contact">
+      The current site ends the sentence &ldquo;Contact Tom Stryer at&rdquo; with nothing after it. This is one of
+      the chapter&rsquo;s strongest community stories and its only call to action is broken.
+    </ReviewNote>
+  </section>
+
+  <!-- ---------- Scholarships ---------- -->
+  <section class="stack">
+    <p class="eyebrow">Since 1985</p>
+    <h2>Scholarships</h2>
+    <p>
+      Chapter 227 has been involved in scholarships for needy Northern Virginia students since it was founded. To
+      meet the chapter&rsquo;s goal of assisting veteran families and providing community service, members
+      fundraise specifically for scholarship purposes.
+    </p>
+    <p>
+      The program has since been extended to fund summer English teaching classes at area schools, giving students
+      an opportunity to improve their English and become better students.
+    </p>
+  </section>
+
+  <!-- ---------- Partners ---------- -->
+  <section class="stack">
+    <h2>Where else the money goes</h2>
+    <p>
+      Beyond direct aid, the chapter funds and staffs a long list of smaller commitments. Emergency aid to
+      individual veterans is described under <a href="/get-help">Get Help</a>; since June 2025 it has been funded in
+      part through <a href="/give/nvvvf">a separate foundation the chapter created</a>.
+    </p>
+    <CardGrid min="17rem">
+      {
+        partners.map((p) => (
+          <Card title={p.title}>
+            <p>{p.body}</p>
+          </Card>
+        ))
+      }
+    </CardGrid>
+  </section>
+
+  <ReviewNote topic="Which programs are still running">
+    <p>
+      The current Community Outreach page opens by saying the chapter &ldquo;is currently involved in multiple
+      community oriented programs <em>(or was in the past)</em>&rdquo;. That parenthesis means no reader can tell
+      which of these are live.
+    </p>
+    <p>
+      Several entries above come from an undated accomplishments sheet and may describe work from years ago. The
+      chapter should mark each program as active or historic before this page is published.
+    </p>
+  </ReviewNote>
+
+  <CallToAction
+    title="This is what donations pay for"
+    primary={{ label: 'Ways to give', href: '/give' }}
+    secondary={{ label: 'See the numbers', href: '/give/impact' }}
+  >
+    None of it is funded by grants or government money. It comes from members and neighbors.
+  </CallToAction>
+</PageLayout>
+
+<style>
+  section + section {
+    margin-block-start: var(--s-9);
+  }
+
+  h2 {
+    margin-block: var(--s-2) var(--s-4);
+  }
+
+  h3 {
+    margin-block-start: var(--s-6);
+    margin-block-end: var(--s-4);
+  }
+
+  p {
+    max-width: var(--w-prose);
+  }
+
+  p + p {
+    margin-block-start: var(--s-4);
+  }
+
+  .split {
+    display: grid;
+    grid-template-columns: 1.15fr 0.85fr;
+    align-items: start;
+    gap: var(--s-6);
+  }
+
+  .split__text p {
+    max-width: none;
+  }
+
+  .venues {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(15rem, 100%), 1fr));
+    gap: var(--s-2) var(--s-5);
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    max-width: var(--w-content);
+  }
+
+  .venues li {
+    padding-inline-start: var(--s-4);
+    border-inline-start: 2px solid var(--c-gold);
+    font-size: 1rem;
+    line-height: 1.5;
+  }
+
+  @media (max-width: 56rem) {
+    .split {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

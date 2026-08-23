@@ -1,0 +1,84 @@
+---
+/**
+ * Privacy.
+ *
+ * Written to describe what this site actually does, which is very little: it is
+ * static HTML with no analytics, no cookies, no third-party scripts and no
+ * forms. That is worth stating plainly rather than pasting a boilerplate policy
+ * describing data collection that does not happen.
+ */
+import PageLayout from '../layouts/PageLayout.astro';
+import ReviewNote from '../components/ReviewNote.astro';
+import site from '../data/site.json';
+---
+
+<PageLayout
+  title="Privacy"
+  description="What this website does and does not collect."
+  eyebrow="Legal"
+  lede="Short version: this website does not collect anything about you."
+  width="prose"
+>
+  <h2>What we collect</h2>
+  <p>
+    Nothing. This site is a set of static files. It sets no cookies, runs no analytics, embeds no tracking pixels,
+    loads no third-party scripts, and has no forms that submit data to us. Fonts are served from this site rather
+    than from a font provider, so visiting a page does not tell any other company that you were here.
+  </p>
+
+  <h2>What our host can see</h2>
+  <p>
+    The site is served by Cloudflare, which keeps standard web-server records — IP address, timestamp, the page
+    requested, browser type — for security and reliability. We do not have access to those records as individual
+    profiles and we do not use them to identify anyone.
+  </p>
+
+  <h2>Links to other sites</h2>
+  <p>
+    Pages here link to the Department of Veterans Affairs, the Veterans Crisis Line, Facebook, payment services and
+    other veterans organizations. Once you follow one of those links you are on their site, under their privacy
+    policy, not ours.
+  </p>
+
+  <h2>If you contact us</h2>
+  <p>
+    If you call, write or email the chapter, that correspondence is handled by chapter volunteers. It is used to
+    answer you, and to administer membership or assistance where that is what you asked about. The chapter does not
+    sell or rent contact information.
+  </p>
+
+  <h2>Members and privacy</h2>
+  <p>
+    The chapter publishes the names of its officers, directors and committee chairs because those are public roles.
+    It does not publish members&rsquo; personal contact details, home addresses or donation amounts on this site.
+  </p>
+
+  <ReviewNote topic="This policy needs the chapter's approval">
+    <p>
+      This text describes what the rebuilt site does technically. It has not been reviewed by the chapter and is not
+      legal advice.
+    </p>
+    <p>
+      The chapter also has an existing privacy policy on the current site which should be compared against this one,
+      and a decision is needed about whether to publish members&rsquo; names, donors&rsquo; names, and personal
+      contact details at all.
+    </p>
+  </ReviewNote>
+
+  <h2>Questions</h2>
+  <p>
+    Write to VVA Chapter 227, {site.mailingAddress.line1}, {site.mailingAddress.city}, {site.mailingAddress.state}{' '}
+    {site.mailingAddress.zip}, or call <a href={`tel:${site.phone.replace(/-/g, '')}`}>{site.phone}</a>.
+  </p>
+</PageLayout>
+
+<style>
+  h2 {
+    margin-block-start: var(--s-6);
+    margin-block-end: var(--s-3);
+  }
+
+  h2:first-of-type {
+    margin-block-start: 0;
+  }
+</style>

@@ -1,0 +1,146 @@
+{
+  "_doc": "The Northern Virginia Vietnam Veterans Foundation — a SEPARATE 501(c)(3) corporation that Chapter 227 created in June 2025. Deliberately NOT part of impact.json, which is the chapter’s own treasurer-sourced ledger: the two entities’ figures must never appear in one visual block and must never be summed. PROVENANCE: everything here comes from a single member-supplied newsletter, and NOT from the legacy vva227.org, its PDFs, or the Fort Meade plaque. Nothing here has been confirmed by the chapter board. Every quantitative claim in that newsletter is contradicted by another claim in the same newsletter, so `disputed` records both readings and this file carries no single figure for any of them. See REVIEW.md 1.5 and 1.6.",
+
+  "source": {
+    "document": "One Year Later — How Chapter 227 Built a Lifeline and a Legacy for Northern Virginia Veterans",
+    "kind": "Foundation member newsletter and fundraising appeal",
+    "supplied": "forwarded to the site by a chapter member in 2026",
+    "dateInferred": "circa July–August 2026",
+    "dateInferredFrom": "The letter reports gifts received as of 30 June against a 2026 goal, and says the Foundation website will be live in September.",
+    "confirmedByChapter": false
+  },
+
+  "name": "Northern Virginia Vietnam Veterans Foundation",
+  "abbr": "NVVVF",
+  "createdBy": "Vietnam Veterans of America, Chapter 227",
+
+  "founded": {
+    "display": "June 2025",
+    "detail": "In June 2025 Chapter 227 created the Foundation as a charitable organization able to raise funds and help veterans of every era when a sudden financial emergency threatens their stability.",
+    "source": "One Year Later, paragraph 2; corroborated by the letter’s own timeline graphic, which reads NVVVF — ESTABLISHED 2025",
+    "review": "The newsletter gives the month only. The chapter must supply the exact date and say what it marks: incorporation in Virginia, the IRS determination letter, or the board vote. The effective date of exemption governs which gifts were deductible."
+  },
+
+  "taxStatus": {
+    "designation": "501(c)(3)",
+    "ein": "33-2320012",
+    "deductibleClaim": "The Foundation states that gifts to it are tax-deductible and are used to pay veterans’ verified creditors.",
+    "source": "One Year Later, closing appeal: NVVVF is a 501(c)(3) organization, EIN 33-2320012",
+    "review": "Neither the exemption nor the EIN has been independently verified. Both are checkable in the IRS Tax Exempt Organization Search and must be confirmed before this page goes live. Separately: the chapter has never published its OWN tax status, and stating the Foundation’s deductibility beside the chapter’s own donate routes invites a reader to assume both are deductible."
+  },
+
+  "url": {
+    "value": "https://nvvvf.org",
+    "source": "One Year Later, “Momentum Is Growing”: Visit https://nvvvf.org",
+    "confirmedLive": false,
+    "review": "The newsletter writes the address two ways in one document — https://nvvvf.org in the body, www.nvvvf.org in the closing appeal and the footer — and says the site would not be live until September. The chapter must confirm the canonical host, that it resolves over HTTPS, and the exact donation address. Until then it is printed here as text, not as a link."
+  },
+
+  "mailingAddress": {
+    "payee": "NVVVF",
+    "line1": "PO Box 2111",
+    "city": "Reston",
+    "state": "VA",
+    "zip": "20195",
+    "source": "One Year Later, closing appeal: mail a check to NVVVF, PO Box 2111, Reston, VA 20195"
+  },
+
+  "purpose": {
+    "summary": "To raise funds so that veterans of every era can be helped when a sudden financial emergency threatens their stability.",
+    "crisisFrame": "A missed rent payment, a utility shutoff or a car repair that cannot wait can turn a temporary setback into a lasting one. The Foundation exists to stop that first step, before a veteran loses housing, employment or transportation.",
+    "source": "One Year Later, paragraph 2 and “Why This Matters”"
+  },
+
+  "division": {
+    "foundation": "The Foundation raises and stewards the charitable funds.",
+    "chapter": "Chapter 227 receives, verifies and approves the referrals, and pays landlords, utility companies, repair shops and other creditors directly.",
+    "committee": "Chapter 227 volunteers manage the chapter’s Financial Assistance Committee, which makes certain that each request is documented, verified, and paid to the appropriate creditor.",
+    "creditorRule": "Money is paid to the creditor. It is never handed directly to the veteran.",
+    "source": "One Year Later, paragraph 3 and “A Chapter 227 Team Effort”; the creditor rule from the closing appeal",
+    "review": "“Raises and stewards” is the newsletter’s own wording. The section drafted to accompany it says instead that the Foundation REIMBURSES Chapter 227 for grants the chapter has already approved and paid — a word that appears nowhere in the newsletter. “Your gift pays a veteran’s landlord” and “your gift reimburses another organization” are different statements to a donor, and only the chapter can say which is true. Nothing on this site uses the word reimburse until it does."
+  },
+
+  "referralPartners": {
+    "list": [
+      "the Virginia Department of Veterans Services",
+      "county veterans offices",
+      "Veterans Treatment Docket mentors",
+      "the VFW",
+      "the American Legion"
+    ],
+    "andOthers": "and other community partners",
+    "source": "One Year Later, “Momentum Is Growing”, third bullet",
+    "review": "The newsletter describes where referrals come FROM. It does not say whether a veteran with no caseworker may approach the chapter directly. Until the chapter answers that, this list must never be presented as the way to ask for help."
+  },
+
+  "operating": {
+    "volunteerOnly": "No salaries. No paid staff. Chapter members and community volunteers working together.",
+    "model": "an all-volunteer, zero-salary operating model",
+    "candidSeal": "Platinum",
+    "source": "One Year Later, callout box and “Momentum Is Growing”, fourth bullet",
+    "review": "The Candid Platinum Seal is independently checkable on Candid and has not been verified."
+  },
+
+  "succession": {
+    "summary": "The Foundation is described by its own officers as more than a way to raise money: a way to preserve the chapter’s values, relationships and service to veterans as today’s leaders eventually pass the mission on — the website, the reports, the donor systems, the partnerships and the procedures that future volunteers can use, so that none of it depends on one or two people.",
+    "townHall": "At a town hall meeting in September 2023, members reaffirmed their hopes to continue the chapter’s mission of helping veterans and their families even after the eventual dissolution of VVA National later in the decade.",
+    "townHallSource": "The president’s 2023 annual letter, republished at /about/reports/2023",
+    "source": "One Year Later, “Building Something That Will Last”"
+  },
+
+  "governance": {
+    "overlapStatement": "The newsletter lists eight Foundation officers and directors, and gives seven of the eight a Chapter 227 office or directorship as well.",
+    "namesPublished": false,
+    "source": "One Year Later, “Foundation and Chapter 227 Team”, cross-read against src/data/officers.json",
+    "review": "The roster itself is NOT published here. It is a separate corporation’s governance; it names one person who appears nowhere else in the chapter’s data; it spells the chapter vice-president’s surname differently from every chapter record; and it gives one officer a chapter role the chapter roster does not carry. See REVIEW.md 1.2, 1.5 and 4."
+  },
+
+  "disputed": [
+    {
+      "id": "people-helped",
+      "question": "How many veterans and families has the program helped, and over what period?",
+      "readings": [
+        { "value": "92", "label": "veterans and families helped, since June 2025", "source": "One Year Later, figure block" },
+        { "value": "84", "label": "veterans and families helped this year", "source": "One Year Later, the paragraph immediately above that figure block" }
+      ],
+      "note": "The two sit inches apart and read as the same claim. They reconcile only if 84 means calendar 2026 to date and 92 means cumulative since June 2025 — which would put 8 households in the program’s first seven months and 84 in the next six. That is not what the prose says, and no reader would infer it."
+    },
+    {
+      "id": "assistance-paid",
+      "question": "How much emergency assistance has been paid out, and over what period?",
+      "readings": [
+        { "value": "$101,598", "label": "in emergency financial assistance, since June 2025", "source": "One Year Later, figure block" },
+        { "value": "$169,000", "label": "already distributed to veterans since the Foundation’s founding", "source": "One Year Later, “The Challenge Ahead”" }
+      ],
+      "note": "The Foundation was founded in June 2025, so both describe the same window. They differ by $67,402 — two thirds of the smaller figure. Both are donor-facing. Neither may be published until the chapter reconciles them."
+    },
+    {
+      "id": "response-time",
+      "question": "What does the published response time actually measure?",
+      "readings": [
+        { "value": "under 48 hours", "label": "average response time, after a verified referral", "source": "One Year Later, figure block" }
+      ],
+      "note": "Not contradicted, but undefined. “Response” could mean acknowledgement of the referral, a funding decision, or a check in the creditor’s hands — over an unstated sample and an unstated period. A service-level number on a page somebody in crisis is reading has to mean something specific, so it is not published as a figure."
+    }
+  ],
+
+  "image": {
+    "src": "/images/nvvvf-partnership.jpg",
+    "width": 900,
+    "height": 600,
+    "textInImage": "One Mission. Two Organizations. One Commitment to Veterans.",
+    "alt": "A graphic captioned “One Mission. Two Organizations. One Commitment to Veterans.” — two people shaking hands over a sunlit mountain landscape, with the Vietnam Veterans of America Chapter 227 seal and the Northern Virginia Vietnam Veterans Foundation seal side by side above them.",
+    "credit": "Supplied with the “One Year Later” newsletter. It is a computer-generated composite, not a photograph of the chapter, and it renders both organizations’ seals.",
+    "source": "One Year Later, masthead image",
+    "review": "Every other image on this site is a photograph the chapter took. This one is not: it was generated by a member’s AI assistant, it sets its headline into the pixels rather than into text, and it reproduces approximations of the Vietnam Veterans of America registered mark and of the Foundation’s own seal. The chapter should either replace it with a chapter photograph or confirm — with the Foundation, and with VVA over its mark — that publishing it is acceptable."
+  },
+
+  "withheld": {
+    "_doc": "Present in the member newsletter and deliberately NOT reproduced on this site. Matches the posture of contacts.json.withheld.",
+    "items": [
+      "A quoted testimonial from a veteran the program helped. It names nobody, but it gives that household’s service history, family size and medical and financial circumstances in enough detail to be re-identifying within one chapter’s catchment — so the detail is not repeated even here. It was written for a members’ appeal, not for a permanent public URL, and republishing it would run against the chapter’s own stated practice on /give/impact: that it never contacts recipient families directly, which keeps the help private for the people receiving it. Withheld pending documented, republication-specific consent from that veteran.",
+      "The eight-name Foundation and Chapter 227 team roster. It is a separate corporation’s governance, it contains one person who appears nowhere in the chapter’s own data, one surname spelled differently from every chapter record, and one chapter role the chapter roster does not carry.",
+      "Foundation fundraising internals — the sum raised as of 30 June against a 2026 goal, the volunteer-recruitment appeal, and the ask for member introductions. That is members’-appeal register, wrong for a public chapter page, and an unmet public goal has a downside if it is missed."
+    ]
+  }
+}

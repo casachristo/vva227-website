@@ -1,0 +1,99 @@
+---
+/**
+ * The document shell. Every page renders through here, so head metadata, the
+ * crisis banner, the skip link and the landmark structure are guaranteed
+ * present and identical everywhere.
+ *
+ * Notably absent, all of which the legacy site shipped on every page:
+ *   - <meta http-equiv="refresh" content="1">   (reloaded the page every second)
+ *   - a jQuery reload loop that appended "#" and called location.reload(true)
+ *   - four separate <!DOCTYPE> declarations and nested <html>/<head> pairs
+ *   - jQuery 1.4.3 and FancyBox 1.3.4
+ */
+import '../styles/global.css';
+import CrisisBanner from '../components/CrisisBanner.astro';
+import SiteHeader from '../components/SiteHeader.astro';
+import SiteFooter from '../components/SiteFooter.astro';
+import { normalizePath } from '../lib/nav';
+import site from '../data/site.json';
+
+interface Props {
+  title: string;
+  description: string;
+  /** Absolute or root-relative path to a social preview image. */
+  image?: string;
+}
+
+const { title, description, image = '/images/og-default.jpg' } = Astro.props;
+
+// Every page gets a distinct title. On the legacy site all 50 pages shared the
+// string "VVA Dean K Phillips Memorial Chapter 227".
+const fullTitle = `${title} | VVA Chapter 227`;
+// astro.config.mjs always sets `site`. A fallback string here would be a SECOND
+// source of truth for the origin, and a source file that names this site by
+// absolute URL is exactly the defect tests/integration guards against.
+const origin = Astro.site!;
+// normalizePath strips the ".html" that build.format: 'file' puts on
+// Astro.url.pathname, so the canonical URL matches the URL people actually see.
+const canonical = new URL(normalizePath(Astro.url.pathname), origin);
+const ogImage = new URL(image, origin);
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{fullTitle}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical.href} />
+
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <meta name="theme-color" content="#3c5541" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content={site.shortName} />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical.href} />
+    <meta property="og:image" content={ogImage.href} />
+    <meta name="twitter:card" content="summary_large_image" />
+
+    <slot name="head" />
+  </head>
+
+  <body>
+    <a class="skip" href="#main">Skip to main content</a>
+    <CrisisBanner />
+    <SiteHeader />
+    <main id="main" tabindex="-1">
+      <slot />
+    </main>
+    <SiteFooter />
+  </body>
+</html>
+
+<style>
+  .skip {
+    position: absolute;
+    inset-block-start: 0;
+    inset-inline-start: var(--s-4);
+    z-index: 100;
+    padding: var(--s-3) var(--s-5);
+    background: var(--c-surface);
+    color: var(--c-ink);
+    font-weight: 700;
+    border: 2px solid var(--c-primary);
+    border-radius: 0 0 var(--r-md) var(--r-md);
+    transform: translateY(-120%);
+    transition: transform var(--dur) var(--ease);
+  }
+
+  .skip:focus {
+    transform: translateY(0);
+  }
+
+  main:focus {
+    outline: none;
+  }
+</style>

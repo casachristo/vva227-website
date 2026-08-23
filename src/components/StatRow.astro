@@ -1,0 +1,90 @@
+---
+/**
+ * A row of headline figures.
+ *
+ * This component exists because of the single biggest finding in the audit: a
+ * chapter that pays out nearly $40,000 a year to veterans had a home page that
+ * communicated none of it. The proof of impact was buried in a PDF.
+ */
+export interface Stat {
+  value: string;
+  label: string;
+  note?: string;
+}
+
+interface Props {
+  stats: Stat[];
+  /** Rendered on a dark ground (e.g. over a photo). */
+  invert?: boolean;
+}
+
+const { stats, invert = false } = Astro.props;
+---
+
+<dl class:list={['stats', invert && 'stats--invert']}>
+  {
+    stats.map((stat) => (
+      <div class="stat">
+        <dt class="stat__value">{stat.value}</dt>
+        <dd class="stat__label">
+          {stat.label}
+          {stat.note && <span class="stat__note">{stat.note}</span>}
+        </dd>
+      </div>
+    ))
+  }
+</dl>
+
+<style>
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(11rem, 100%), 1fr));
+    gap: var(--s-5);
+    margin: 0;
+    padding: 0;
+  }
+
+  .stat {
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-1);
+    padding-inline-start: var(--s-4);
+    border-inline-start: 3px solid var(--c-gold);
+  }
+
+  .stat__value {
+    font-family: var(--font-serif);
+    font-size: var(--t-2xl);
+    font-weight: 700;
+    line-height: 1.05;
+    color: var(--c-primary-dark);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .stat__label {
+    margin: 0;
+    font-size: 1rem;
+    line-height: 1.4;
+    color: var(--c-ink-soft);
+  }
+
+  .stat__note {
+    display: block;
+    margin-block-start: var(--s-1);
+    font-size: var(--t-xs);
+    color: var(--c-ink-faint);
+  }
+
+  /* Inverted, for use over the dark hero photograph. */
+  .stats--invert .stat__value {
+    color: #fff;
+  }
+
+  .stats--invert .stat__label {
+    color: rgba(255, 255, 255, 0.85);
+  }
+
+  .stats--invert .stat__note {
+    color: rgba(255, 255, 255, 0.65);
+  }
+</style>

@@ -1,0 +1,71 @@
+{
+  "_doc": "The chapter's recurring annual rhythm. The legacy site scattered these across six pages that contradicted each other, while shipping a live calendar grid with zero events in it. Here the meeting details exist exactly once.",
+  "meeting": {
+    "cadence": "Third Thursday of the month",
+    "monthsNote": "Nine meetings a year — none in July or August",
+    "venue": {
+      "name": "American Legion Post 177",
+      "street": "3939 Oak Street",
+      "city": "Fairfax",
+      "state": "VA",
+      "mapQuery": "American Legion Post 177, 3939 Oak St, Fairfax, VA"
+    },
+    "schedule": [
+      { "time": "5:30 pm", "what": "Cash bar opens" },
+      { "time": "6:15 pm", "what": "Dinner served" },
+      { "time": "7:00 pm", "what": "Meeting and guest speaker" }
+    ],
+    "welcome": "Anyone is welcome, including spouses and guests. You do not have to be a member to come to a meeting.",
+    "review": "The legacy site says both “9 general meetings every Thursday evening except July, August and Christmas” and “the 3rd Thursday of almost every month”. Third Thursday is shown here because it appears in the membership letter and matches a nine-meeting year, but the chapter must confirm the day, the start time, and whether December has a meeting, a party, or both."
+  },
+  "annual": [
+    {
+      "month": "April",
+      "title": "Annual meeting",
+      "description": "Officers and directors are elected, as required by the chapter by-laws."
+    },
+    {
+      "month": "May",
+      "title": "Memorial Day observance",
+      "description": "Brunch, building a commemorative wreath, and gathering at the Vietnam Veterans Memorial with other veterans groups, followed by a potluck dinner at a member's home."
+    },
+    {
+      "month": "June",
+      "title": "Annual awards banquet",
+      "description": "The chapter recognizes members and partners."
+    },
+    {
+      "month": "June or July",
+      "title": "Chapter picnic",
+      "description": "A family gathering in the summer break between meetings."
+    },
+    {
+      "month": "October",
+      "title": "Anniversary dinner",
+      "description": "The October meeting is the chapter's birthday. The 39th anniversary dinner in 2024 featured a free buffet and a retired four-star general as speaker."
+    },
+    {
+      "month": "November",
+      "title": "Veterans Day observance",
+      "description": "The chapter gathers with other veterans organizations to mark the day."
+    },
+    {
+      "month": "December",
+      "title": "Holiday party",
+      "description": "Decorated and hosted by the chapter's AVVA members.",
+      "review": "The legacy site has an empty page titled “Christmas Party”. Details needed."
+    }
+  ],
+  "outreach": [
+    {
+      "title": "Mission BBQ veteran days",
+      "description": "Chapter teams staff four Mission BBQ restaurants on days when the restaurant gives veterans a free sandwich.",
+      "review": "The legacy site never names which four locations."
+    },
+    {
+      "title": "Tank Farm open house",
+      "description": "The chapter exhibits at the National Museum of Americans in Wartime annual open house — more than 150 combat vehicles and around 20,000 visitors over two days.",
+      "review": "No date or link for the next open house is published."
+    }
+  ]
+}

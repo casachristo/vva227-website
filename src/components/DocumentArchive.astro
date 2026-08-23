@@ -1,0 +1,103 @@
+---
+/**
+ * A dated document archive.
+ *
+ * Built once and instantiated twice — the newsletter and the board minutes.
+ * The legacy site shipped the same ColdFusion widget twice, showing raw
+ * filenames ("The_Journey_202411.pdf") inside <select> dropdowns that reloaded
+ * the page on change. Here the labels are derived from the filename, so an
+ * issue can never be mislabeled, and every item is a plain link.
+ */
+import { groupIssuesByYear } from '../lib/format';
+
+interface Props {
+  files: readonly string[];
+  baseUrl: string;
+  /** Accessible label for the list region. */
+  label: string;
+}
+
+const { files, baseUrl, label } = Astro.props;
+const groups = groupIssuesByYear(files);
+const total = groups.reduce((sum, g) => sum + g.issues.length, 0);
+---
+
+<section class="archive" aria-label={label}>
+  <p class="archive__count">{total} issues available</p>
+
+  {
+    groups.map((group) => (
+      <div class="archive__year">
+        <h3 class="archive__heading">{group.year}</h3>
+        <ul class="archive__list">
+          {group.issues.map((issue) => (
+            <li>
+              <a href={`${baseUrl}${issue.file}`} rel="noopener">
+                {issue.label}
+                <span class="archive__type">PDF</span>
+              </a>
+            </li>
+          ))}
+        </ul>
+      </div>
+    ))
+  }
+</section>
+
+<style>
+  .archive__count {
+    font-size: var(--t-sm);
+    color: var(--c-ink-faint);
+    margin-block-end: var(--s-5);
+  }
+
+  .archive__year + .archive__year {
+    margin-block-start: var(--s-6);
+  }
+
+  .archive__heading {
+    font-size: var(--t-lg);
+    color: var(--c-primary-dark);
+    padding-block-end: var(--s-2);
+    border-block-end: 1px solid var(--c-border);
+  }
+
+  .archive__list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(13rem, 100%), 1fr));
+    gap: var(--s-2);
+    list-style: none;
+    margin: var(--s-4) 0 0;
+    padding: 0;
+  }
+
+  .archive__list a {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--s-3);
+    padding: var(--s-3) var(--s-4);
+    background: var(--c-surface);
+    border: 1px solid var(--c-border);
+    border-radius: var(--r-md);
+    color: var(--c-ink);
+    font-size: 1rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: border-color var(--dur) var(--ease), background var(--dur) var(--ease);
+  }
+
+  .archive__list a:hover {
+    border-color: var(--c-primary);
+    background: var(--c-primary-tint);
+    color: var(--c-primary-dark);
+  }
+
+  .archive__type {
+    flex: none;
+    font-size: 0.6875rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    color: var(--c-ink-faint);
+  }
+</style>

@@ -1,0 +1,62 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+# Private-repo Actions minutes are metered, so a new push to a branch cancels
+# the run it superseded rather than paying for both.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - run: npm ci
+
+      # `npm test` is `astro build && vitest run`, and the order matters: the
+      # migration-coverage ratchet greps dist/ for every registered fact, so
+      # without the build first it would pass against an empty tree.
+      - run: npm test
+
+  system:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - run: npm ci
+
+      - run: npm run build
+
+      # Both Playwright projects (Desktop Chrome and Pixel 5) are chromium, so
+      # the other browsers are not worth the download.
+      - run: npx playwright install --with-deps chromium
+
+      # playwright.config.ts serves dist/ via `npm run preview` on 4321.
+      - run: npx playwright test
+
+      # A collaborator who cannot reproduce a failure locally needs the trace.
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 14

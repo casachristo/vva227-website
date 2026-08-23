@@ -1,0 +1,105 @@
+{
+  "_doc": "Chapter aid figures, one entry per year, taken verbatim from the president's annual letters. This file is the SINGLE source for every impact number on the site. On the legacy site these figures appeared in nine places and disagreed with each other; `conflicts` records each disagreement rather than silently picking a winner.",
+  "latestYear": 2024,
+  "years": [
+    {
+      "year": 2024,
+      "totalSupport": 39700,
+      "totalSupportDisplay": "over $39,700",
+      "members": 418,
+      "nationalRank": 17,
+      "donationsReceived": 37000,
+      "headline": "A record year for direct support, even as donations fell.",
+      "highlights": [
+        "Over $16,000 to some 30 veterans and their families for rent assistance, car repairs and utility bills",
+        "$13,500 for 105 veterans and families in the VA Supportive Housing program, for back-to-school and holiday gifts",
+        "$3,000 in grants for the Santa Lists of three Wounded Warrior families",
+        "$500 to the Adopt-a-Soldier charity golf tournament",
+        "Just over $1,000 in cash, plus household goods, collected by AVVA for The Lamb Center"
+      ],
+      "note": "Direct support rose about 20% over 2023, while annual donations received fell about 20%."
+    },
+    {
+      "year": 2023,
+      "totalSupport": 33068,
+      "totalSupportDisplay": "$33,068",
+      "members": 401,
+      "nationalRank": 18,
+      "donationsReceived": null,
+      "headline": "The chapter's only fully itemized year.",
+      "breakdown": [
+        { "item": "Veterans in need", "detail": "34 instances", "amount": 13059 },
+        { "item": "VASH — back to school", "detail": "42 families and 12 veteran students", "amount": 6600 },
+        { "item": "VASH — holiday gift cards", "detail": "27 single veterans and 16 veterans with families", "amount": 8375 },
+        { "item": "Wounded Warrior families", "detail": "3 families, 6 children", "amount": 3000 },
+        { "item": "Veterans Treatment Docket mentors", "detail": null, "amount": 1000 },
+        { "item": "America's Adopt a Soldier", "detail": null, "amount": 250 },
+        { "item": "The Lamb Center", "detail": null, "amount": 784 }
+      ],
+      "conflicts": [
+        "The 2023 letter states members donated some $37,500 to the chapter; the 2024 letter states 2023 donations were over $46,000. The chapter must confirm which is correct."
+      ]
+    },
+    {
+      "year": 2022,
+      "totalSupport": 31000,
+      "totalSupportDisplay": "$31,000",
+      "members": 359,
+      "nationalRank": 18,
+      "donationsReceived": null,
+      "headline": "Aid grew for a third pandemic year.",
+      "highlights": [
+        "$13,100 to some 30 veterans and their families",
+        "$13,700 for 100 veterans and families in the VASH program",
+        "$1,000 to the Kentucky VVA State Council for veterans hit by flooding",
+        "$1,000 in Wounded Warrior Santa List grants",
+        "AVVA gave $300 to Project Smile and $260 plus household goods to The Lamb Center"
+      ]
+    },
+    {
+      "year": 2021,
+      "totalSupport": 28000,
+      "totalSupportDisplay": "about $28,000",
+      "members": 349,
+      "nationalRank": null,
+      "donationsReceived": null,
+      "headline": "Meetings resumed in person; December alone brought in over $18,000.",
+      "highlights": [
+        "About $6,000 in grants to three Wounded Warrior families",
+        "$500 to Veterans Fishing Adventure in Lorton",
+        "$1,000 each to VVA chapters in Louisiana and Kentucky for disaster relief",
+        "Backpacks and kitchen supplies for The Lamb Center"
+      ],
+      "conflicts": [
+        "The 2021 letter ends the year at 349 members; the 2022 letter says 2021 ran “348 to 359”. The chapter must confirm the year-end figure."
+      ]
+    },
+    {
+      "year": 2020,
+      "totalSupport": 25000,
+      "totalSupportDisplay": "about $25,000",
+      "members": 329,
+      "nationalRank": 22,
+      "donationsReceived": null,
+      "headline": "The chapter moved to Zoom and kept paying out.",
+      "highlights": [
+        "VASH aid reached some 57 veterans and family members",
+        "Care packages for over 300 deployed troops",
+        "$1,000 each to VVA chapters in Louisiana and Puerto Rico for hurricane relief",
+        "$1,100 to Capital Caring Health for prescription meals for home-bound veterans",
+        "$3,000 to VVA National to offset pandemic cutbacks"
+      ]
+    }
+  ],
+  "programs": {
+    "vash": {
+      "name": "VA Supportive Housing (VASH)",
+      "shareOfFunds": "about half of all chapter veteran-support funds",
+      "runningFor": "more than ten years",
+      "perChild": 75,
+      "cadence": "twice a year — at Christmas and at back-to-school",
+      "howItWorks": "The chapter buys preloaded debit cards sized to each family — a set amount per child, plus veterans taking college courses. VASH staff inventory the children and hand out the cards. The chapter never contacts recipient families directly.",
+      "note": "The legacy site prints the amounts as “$75,00” and “$225,00”, using commas where decimal points belong."
+    }
+  }
+}

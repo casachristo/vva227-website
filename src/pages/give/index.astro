@@ -1,0 +1,253 @@
+---
+/**
+ * Ways to Give.
+ *
+ * Consolidates four legacy pages. "Donation" and "Cash and Check Donations to
+ * the chapter" were roughly 90% identical, and carried between them the copy
+ * for vehicle and household-goods donation — while the two pages actually
+ * NAMED "Vehicles" and "Clothing and Furniture" were completely empty and sat
+ * in the global nav that way.
+ *
+ * Three defects carried over as flags rather than being papered over: the
+ * PayPal link was served over plain http, the Venmo handle existed only as
+ * pixels inside a QR image with empty alt text, and neither the vehicle nor the
+ * household-goods program published any phone number or signup URL — leaving a
+ * willing donor with no way to act.
+ */
+import PageLayout from '../../layouts/PageLayout.astro';
+import ReviewNote from '../../components/ReviewNote.astro';
+import CallToAction from '../../components/CallToAction.astro';
+import { currency, addressLine } from '../../lib/format';
+import site from '../../data/site.json';
+import impact from '../../data/impact.json';
+
+const latest = impact.years[0];
+const a = site.mailingAddress;
+const postal = addressLine([a.line1, a.city, `${a.state} ${a.zip}`]);
+
+const goodsWanted = [
+  'Clothing and shoes',
+  'Baby items',
+  'Kitchenware, dishes, glassware, utensils',
+  'Pots, pans and general kitchen items',
+  'Chairs, tables, beds and dressers',
+  'Microwaves, toasters, blenders, coffeemakers',
+  'Electronics',
+];
+---
+
+<PageLayout
+  title="Ways to Give"
+  description="Support VVA Chapter 227 by check, at a monthly meeting, or by donating a vehicle or household goods. In 2024 the chapter paid out over $39,700 directly to veterans."
+  eyebrow="Support the chapter"
+  lede={`Almost everything the chapter gives away comes from individual donations. In ${latest.year} that added up to ${currency(latest.totalSupport)} paid directly to veterans and their families.`}
+>
+  <!-- ---------- Money ---------- -->
+  <section class="stack">
+    <h2>Give money</h2>
+
+    <div class="ways">
+      <div class="way way--primary">
+        <h3>By check</h3>
+        <p>Make it out to <strong>VVA Chapter 227</strong> and post it to:</p>
+        <address>
+          {a.line1}<br />
+          {a.city}, {a.state} {a.zip}
+        </address>
+        <p class="way__note">The chapter&rsquo;s most-used route, and the one with no fees attached.</p>
+      </div>
+
+      <div class="way">
+        <h3>PayPal</h3>
+        <p>
+          <a href="https://paypal.me/VVA227" rel="noopener">paypal.me/VVA227</a>
+        </p>
+        <p class="way__note">Added in 2021. The chapter also links it from its Facebook page.</p>
+      </div>
+
+      <div class="way">
+        <h3>Venmo</h3>
+        <p class="way__missing">Handle not published</p>
+        <p class="way__note">
+          The chapter accepts Venmo, but the account name appears on the current site only inside a QR code image.
+        </p>
+      </div>
+
+      <div class="way">
+        <h3>Cash at a meeting</h3>
+        <p>
+          There is a collection box at every monthly meeting, and the proceeds of the 50/50 drawing go to the same
+          fund.
+        </p>
+        <p class="way__note">
+          <a href="/events">When and where we meet &rarr;</a>
+        </p>
+      </div>
+    </div>
+
+    <ReviewNote topic="Venmo and PayPal">
+      <p>
+        <strong>The Venmo handle must be published as text.</strong> On the current site it exists only as pixels
+        inside a QR code with an empty alt attribute — meaning anyone using a screen reader, or anyone at a desktop
+        computer, cannot donate by Venmo at all.
+      </p>
+      <p>
+        The current PayPal link is also served over insecure <code>http://</code> on one page, and is not a link at
+        all on the other. It is corrected to <code>https</code> here; please confirm{' '}
+        <code>paypal.me/VVA227</code> is still the right destination.
+      </p>
+    </ReviewNote>
+  </section>
+
+  <!-- ---------- The Foundation ---------- -->
+  <section class="stack">
+    <h2>Giving to the Foundation instead</h2>
+    <p>
+      In June 2025 the chapter created a separate charity, the
+      <strong>Northern Virginia Vietnam Veterans Foundation</strong>, to raise money for one chapter program:
+      emergency financial assistance for veterans facing a sudden crisis. It is a different corporation, with its
+      own board, its own mailing address and its own tax status.
+    </p>
+    <p>
+      Everything else on this page &mdash; and everything else the chapter does, from scholarships and school
+      speakers to remembrance, Veterans Treatment Docket mentoring and VASH &mdash; is funded by giving to the
+      chapter.
+    </p>
+    <p><a href="/give/nvvvf">How the Foundation and the chapter work together &rarr;</a></p>
+  </section>
+
+  <!-- ---------- Vehicles ---------- -->
+  <section class="stack">
+    <h2>Donate a vehicle</h2>
+    <p>
+      <strong>Vehicles for Veterans</strong> is Car Donation Foundation&rsquo;s tax-exempt vehicle donation program,
+      benefiting disabled veterans. It accepts cars, boats with a trailer, RVs, trucks, SUVs and motorcycles —
+      running or not.
+    </p>
+    <p>
+      At no cost to you, the vehicle is towed away at a time that suits you, and a preliminary tax receipt is mailed
+      within 15 days. The chapter receives prorated funds from VVA headquarters for vehicles donated this way.
+    </p>
+
+    <ReviewNote topic="How to start a vehicle donation">
+      The current site describes this program in detail and then gives the donor no way whatsoever to begin one — no
+      phone number, no link, no form. The chapter needs to supply the correct Vehicles for Veterans number or URL.
+    </ReviewNote>
+  </section>
+
+  <!-- ---------- Goods ---------- -->
+  <section class="stack">
+    <h2>Donate clothing and household goods</h2>
+    <p>
+      <strong>VVA Pickup</strong> is a service of Vietnam Veterans of America. It collects used clothes and
+      household goods from your door, at your convenience, and uses them to support programs addressing the needs of
+      all veterans. The chapter receives prorated funds from the resulting retail sales.
+    </p>
+
+    <h3>What is wanted</h3>
+    <ul class="goods">
+      {goodsWanted.map((item) => <li>{item}</li>)}
+    </ul>
+
+    <ReviewNote topic="How to schedule a pickup">
+      As with vehicles, the current site explains the program and then offers no scheduling link or phone number. A
+      donor ready to give reaches a dead end.
+    </ReviewNote>
+  </section>
+
+  <CallToAction
+    title="See exactly where it goes"
+    primary={{ label: 'Where your money goes', href: '/give/impact' }}
+    secondary={{ label: 'Read the 2024 report', href: '/about/reports/2024' }}
+    tone="clay"
+  >
+    The chapter publishes an itemized account of its veteran aid. Every dollar is disbursed by the same volunteers
+    who raised it — there is no paid staff.
+  </CallToAction>
+</PageLayout>
+
+<style>
+  section + section {
+    margin-block-start: var(--s-8);
+  }
+
+  h2 {
+    margin-block-end: var(--s-4);
+  }
+
+  h3 {
+    margin-block-start: var(--s-5);
+    margin-block-end: var(--s-3);
+  }
+
+  p {
+    max-width: var(--w-prose);
+  }
+
+  p + p {
+    margin-block-start: var(--s-4);
+  }
+
+  /* ---- Give methods ---- */
+
+  .ways {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(16rem, 100%), 1fr));
+    gap: var(--s-5);
+    margin-block-start: var(--s-5);
+  }
+
+  .way {
+    padding: var(--s-5);
+    background: var(--c-surface);
+    border: 1px solid var(--c-border);
+    border-radius: var(--r-lg);
+  }
+
+  .way--primary {
+    border-color: var(--c-accent);
+    border-block-start: 4px solid var(--c-accent);
+  }
+
+  .way h3 {
+    margin-block: 0 var(--s-3);
+    font-size: var(--t-lg);
+  }
+
+  .way address {
+    margin-block-start: var(--s-3);
+    padding: var(--s-3) var(--s-4);
+    background: var(--c-surface-sunken);
+    border-radius: var(--r-sm);
+    font-style: normal;
+    font-weight: 600;
+    line-height: 1.5;
+  }
+
+  .way__note {
+    margin-block-start: var(--s-3);
+    font-size: var(--t-sm);
+    color: var(--c-ink-faint);
+  }
+
+  .way__missing {
+    font-style: italic;
+    color: var(--c-ink-faint);
+  }
+
+  .goods {
+    max-width: var(--w-prose);
+    padding-inline-start: var(--s-5);
+  }
+
+  .goods li + li {
+    margin-block-start: var(--s-1);
+  }
+
+  code {
+    padding: 0.1em 0.35em;
+    background: var(--c-surface-sunken);
+    border-radius: var(--r-sm);
+    font-size: 0.9em;
+  }
+</style>

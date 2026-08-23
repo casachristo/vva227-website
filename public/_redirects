@@ -1,0 +1,89 @@
+# Legacy URL map — every page of the old ColdFusion site sent to its nearest
+# replacement, so no existing link, bookmark or search result breaks.
+#
+# 50 legacy URLs. Where a page was consolidated into a section of a larger page,
+# the redirect points at the page that absorbed it. Where a page was empty, it
+# points at the page that now carries the content it should have had.
+#
+# Format: /source  /destination  status
+
+# ---- Home ----
+/home                                          /                              301
+/Home                                          /                              301
+
+# ---- Chapter Basics hub → About ----
+/Chapter-Basics                                /about                         301
+/chapter-history                               /about                         301
+/chapter-by-laws-and-history                   /about                         301
+/Photos                                        /about                         301
+/Member-Stories                                /about                         301
+
+# ---- Namesake ----
+/becoming-a-memorial-chapter                   /about/dean-k-phillips         301
+
+# ---- Leadership ----
+/Chapter-Officers                              /about/leadership              301
+
+# ---- Annual reports ----
+/Presidents-Corner                             /about/reports                 301
+/2024-year-in-review                           /about/reports/2024            301
+/2023-year-in-review                           /about/reports/2023            301
+/2022-year-in-review                           /about/reports/2022            301
+/2021-year-in-review                           /about/reports/2021            301
+/2020-year-in-review                           /about/reports/2020            301
+
+# ---- Governance and internal records ----
+/Chapter-227-By-Laws                           /about/documents               301
+/Board-Meeting-Minutes                         /about/documents               301
+/Members-Information                           /about/documents               301
+/Chapter-Information-to-Members                /about/documents               301
+/Chapter-Publications                          /about/documents               301
+
+# ---- Get help ----
+/Veteran-and-Family-Support                    /get-help                      301
+/Chapter-227-Key-Mission                       /get-help                      301
+/Working-with-Vet-Reps                         /get-help                      301
+/Alexandria-Vet-Center                         /get-help/vet-center           301
+/Fairfax-Court                                 /get-help/treatment-court      301
+/Presentation-to-Chapter-227-NOV-2024          /get-help/treatment-court      301
+
+# ---- Programs ----
+/Community-Support                             /programs                      301
+/Community-Outreach                            /programs                      301
+/More-Details-Coming                           /programs                      301
+/Support-to-VA-VASH                            /programs                      301
+
+# ---- Giving ----
+/Donation                                      /give                          301
+/Cash-and-Check-Donations-to-the-chapter       /give                          301
+/Clothing-and-Furniture                        /give                          301
+/Vehicles                                      /give                          301
+/Veteran-and-Family-Support-Funds              /give/impact                   301
+
+# ---- Membership ----
+/Membership                                    /join                          301
+/VVA-227-Chapter-membership                    /join                          301
+/Membership-Invitation                         /join                          301
+/Chapter-Marketing                             /join                          301
+/Individual-One-on-One                         /join                          301
+/AVVA-Chapter-membership                       /join/avva                     301
+
+# ---- Events ----
+/Activities                                    /events                        301
+/Monthly-Meetings                              /events                        301
+/Calendar                                      /events                        301
+/Ceremonies-and-Parties                        /events                        301
+/Christmas-Party                               /events                        301
+/Working-with-Mission-bbq                      /events                        301
+/Marketing-at-the-American-wartime-tank-farm   /events                        301
+
+# ---- Newsletter ----
+/Newsletter                                    /events/news                   301
+
+# ---- Contact and legal ----
+/email-form                                    /contact                       301
+/Privacy-Policy                                /privacy                       301
+
+# ---- Retired 1990s artifacts ----
+/Browser-and-Email-Settings                    /                              301
+/fancybox.cfm                                  /                              301

@@ -1,0 +1,332 @@
+---
+/**
+ * Home.
+ *
+ * The legacy home page was a seven-slide carousel with no alt text and three
+ * text links. It contained no welcome copy, no mission statement, no meeting
+ * details, and no mention that the chapter pays out nearly $40,000 a year to
+ * veterans. Everything a first-time visitor needed was somewhere else.
+ *
+ * This page answers, in order: who are you, what have you actually done, what
+ * do I do next, and when do you meet.
+ */
+import BaseLayout from '../layouts/BaseLayout.astro';
+import StatRow from '../components/StatRow.astro';
+import Card from '../components/Card.astro';
+import CardGrid from '../components/CardGrid.astro';
+import MeetingCard from '../components/MeetingCard.astro';
+import CallToAction from '../components/CallToAction.astro';
+import { currency, ordinal } from '../lib/format';
+import site from '../data/site.json';
+import impact from '../data/impact.json';
+
+const latest = impact.years[0];
+
+const stats = [
+  {
+    value: currency(latest.totalSupport),
+    label: 'paid directly to veterans and their families',
+    note: `In ${latest.year} — a chapter record`,
+  },
+  {
+    value: String(latest.members),
+    label: 'members',
+    note: 'The largest VVA chapter in Virginia',
+  },
+  {
+    value: ordinal(latest.nationalRank),
+    label: 'largest chapter in the country',
+    note: 'Of more than 700 nationally',
+  },
+  {
+    value: '1985',
+    label: 'serving Northern Virginia since',
+    note: 'Founded at the Fort Myer NCO Club',
+  },
+];
+---
+
+<BaseLayout
+  title="Home"
+  description="VVA Chapter 227, the Dean K. Phillips Memorial Chapter, serves veterans and their families across Northern Virginia. In 2024 the chapter paid out over $39,700 in direct support."
+>
+  <!-- ---------- Hero ---------- -->
+  <section class="hero">
+    <div class="container container--wide hero__inner">
+      <div class="hero__text">
+        <p class="eyebrow">Vietnam Veterans of America &middot; Chapter 227</p>
+        <h1 class="hero__title">We served then.<br />We serve now.</h1>
+        <p class="hero__mission">
+          The Dean K. Phillips Memorial Chapter has supported veterans, service members and their families across
+          Northern Virginia since 1985 &mdash; with rent when it is short, a ride to the VA, a mentor in court, and a
+          room full of people who understand.
+        </p>
+        <div class="hero__actions">
+          <a class="btn btn--primary" href="/get-help">I need help</a>
+          <a class="btn btn--outline" href="/join">Join the chapter</a>
+        </div>
+        <p class="hero__motto">&ldquo;{site.motto}&rdquo;</p>
+      </div>
+
+      <figure class="hero__figure">
+        <img
+          src="/images/fall-festival.jpg"
+          alt="Five Chapter 227 members in chapter jackets and caps standing together in front of the chapter's canopy at a community fall festival."
+          width="679"
+          height="510"
+          fetchpriority="high"
+          decoding="async"
+        />
+        <figcaption>Chapter members at a community fall festival in Northern Virginia.</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <!-- ---------- Impact ---------- -->
+  <section class="section section--sunken">
+    <div class="container">
+      <h2 class="section__title">What that has meant</h2>
+      <p class="section__lede lede">
+        The chapter raises money from its own members and neighbors, and pays it straight back out to veterans in
+        Northern Virginia. Every figure below comes from the treasurer&rsquo;s annual report.
+      </p>
+      <StatRow stats={stats} />
+      <p class="section__more">
+        <a href="/give/impact">See exactly where the money went &rarr;</a>
+      </p>
+    </div>
+  </section>
+
+  <!-- ---------- Three doors ---------- -->
+  <section class="section">
+    <div class="container">
+      <h2 class="section__title">How can we help?</h2>
+      <CardGrid min="19rem">
+        <Card title="I am a veteran who needs help" href="/get-help" eyebrow="Get help">
+          <p>
+            The chapter helps with rent, utilities, car repairs and medical costs, and can point you to counseling,
+            housing and benefits support. You do not have to be a member.
+          </p>
+        </Card>
+        <Card title="I served during the Vietnam era" href="/join" eyebrow="Join us">
+          <p>
+            Life membership is $50, once, with no further dues. In-country service is not required &mdash; anyone who
+            served during the era is eligible.
+          </p>
+        </Card>
+        <Card title="I want to support this work" href="/give" eyebrow="Ways to give">
+          <p>
+            Checks, cash at meetings, a vehicle you no longer drive, or clothing and household goods collected from
+            your door.
+          </p>
+        </Card>
+      </CardGrid>
+    </div>
+  </section>
+
+  <!-- ---------- What we do ---------- -->
+  <section class="section">
+    <div class="container">
+      <h2 class="section__title">What the chapter does</h2>
+      <CardGrid min="17rem">
+        <Card
+          title="Scholarships and school speakers"
+          href="/programs"
+          image="/images/student-awards.jpg"
+          imageAlt="A chapter member stands with eight high-school students in an art classroom during a student awards presentation."
+        >
+          <p>
+            Chapter members have been telling students what the Vietnam War was actually like since 1987, and funding
+            scholarships for Northern Virginia students since 1985.
+          </p>
+        </Card>
+        <Card
+          title="Remembrance"
+          href="/events"
+          image="/images/pow-chair-dedication.jpg"
+          imageAlt="Five chapter members standing beside a POW/MIA chair and dedication plaque in the stands at Nationals Park."
+        >
+          <p>
+            The chapter marks Memorial Day and Veterans Day at The Wall, and dedicated the POW/MIA chair at Nationals
+            Park &mdash; a seat that stays empty on purpose.
+          </p>
+        </Card>
+        <Card title="Mentoring veterans in court" href="/get-help/treatment-court">
+          <p>
+            Chapter members serve as one-to-one mentors in the Fairfax County Veterans Treatment Docket, which helps
+            veterans facing charges tied to addiction and PTSD.
+          </p>
+        </Card>
+      </CardGrid>
+    </div>
+  </section>
+
+  <!-- ---------- Meetings ---------- -->
+  <section class="section">
+    <div class="container">
+      <h2 class="section__title">Come to a meeting</h2>
+      <p class="section__lede lede">
+        You do not need to be a member, and you do not need to call ahead. Come for dinner, stay for the speaker.
+      </p>
+      <MeetingCard />
+    </div>
+  </section>
+
+  <div class="container">
+    <CallToAction
+      title="Nine meetings a year, and forty years of showing up"
+      primary={{ label: 'Ways to give', href: '/give' }}
+      secondary={{ label: 'Read the 2024 report', href: '/about/reports/2024' }}
+      tone="green"
+    >
+      Chapter 227 is run entirely by its members. Every dollar donated is paid out by the same people who raised it.
+    </CallToAction>
+  </div>
+</BaseLayout>
+
+<style>
+  /* ---------- Hero ---------- */
+
+  .hero {
+    padding-block: var(--s-8) var(--s-7);
+    background: linear-gradient(to bottom, var(--c-surface), var(--c-ground));
+    border-bottom: 1px solid var(--c-border);
+  }
+
+  .hero__inner {
+    display: grid;
+    grid-template-columns: 1.05fr 0.95fr;
+    align-items: center;
+    gap: var(--s-8);
+  }
+
+  .hero__title {
+    margin-block-start: var(--s-3);
+    font-size: var(--t-4xl);
+    line-height: 1.02;
+    letter-spacing: -0.025em;
+  }
+
+  .hero__mission {
+    margin-block-start: var(--s-5);
+    max-width: 46ch;
+    font-size: var(--t-lg);
+    line-height: 1.55;
+    color: var(--c-ink-soft);
+  }
+
+  .hero__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--s-3);
+    margin-block-start: var(--s-6);
+  }
+
+  .btn {
+    display: inline-block;
+    padding: var(--s-3) var(--s-6);
+    border-radius: var(--r-md);
+    font-weight: 700;
+    text-decoration: none;
+    transition: background var(--dur) var(--ease), color var(--dur) var(--ease);
+  }
+
+  .btn--primary {
+    background: var(--c-primary);
+    color: #fff;
+  }
+
+  .btn--primary:hover {
+    background: var(--c-primary-dark);
+    color: #fff;
+  }
+
+  .btn--outline {
+    border: 2px solid var(--c-primary);
+    color: var(--c-primary-dark);
+  }
+
+  .btn--outline:hover {
+    background: var(--c-primary-tint);
+    color: var(--c-primary-dark);
+  }
+
+  .hero__motto {
+    margin-block-start: var(--s-6);
+    padding-inline-start: var(--s-4);
+    border-inline-start: 3px solid var(--c-gold);
+    font-family: var(--font-serif);
+    font-style: italic;
+    font-size: var(--t-lg);
+    color: var(--c-ink-soft);
+    max-width: 40ch;
+  }
+
+  /* The photograph is 679px wide and slightly soft. It is capped rather than
+     stretched, and framed so the softness reads as documentary. */
+  .hero__figure {
+    margin: 0;
+  }
+
+  .hero__figure img {
+    inline-size: 100%;
+    border-radius: var(--r-lg);
+    box-shadow: var(--shadow-lg);
+  }
+
+  .hero__figure figcaption {
+    margin-block-start: var(--s-3);
+    font-size: var(--t-sm);
+    color: var(--c-ink-faint);
+  }
+
+  /* ---------- Sections ---------- */
+
+  .section__title {
+    margin-block-end: var(--s-3);
+  }
+
+  .section__lede {
+    max-width: var(--w-prose);
+    margin-block-end: var(--s-6);
+  }
+
+  .section__title + :global(.stats),
+  .section__title + :global(.grid) {
+    margin-block-start: var(--s-6);
+  }
+
+  .section__more {
+    margin-block-start: var(--s-6);
+    font-weight: 600;
+  }
+
+  @media (max-width: 60rem) {
+    .hero {
+      /* Tighter than desktop: on a phone the header is already above this and
+         4rem of leading whitespace pushed the headline off the first screen. */
+      padding-block: var(--s-5) var(--s-6);
+    }
+
+    .hero__inner {
+      grid-template-columns: 1fr;
+      gap: var(--s-5);
+    }
+
+    /* Text first on a phone. Leading with the photograph looked warmer but
+       pushed the headline and the "I need help" button below the fold, which
+       is the wrong trade for the visitor this page is most urgently for. */
+    .hero__figure {
+      max-inline-size: 34rem;
+      margin-block-start: var(--s-2);
+    }
+
+    .hero__title {
+      margin-block-start: var(--s-2);
+    }
+
+    .hero__motto {
+      margin-block-start: var(--s-5);
+    }
+  }
+</style>
