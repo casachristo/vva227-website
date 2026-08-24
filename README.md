@@ -129,7 +129,7 @@ once [REVIEW.md](./REVIEW.md) is answered.
 npm run deploy     # builds and pushes to Cloudflare Pages
 ```
 
-Target project: `vva227-refresh` → https://vva227-refresh.pages.dev
+Target project: `vva227-refresh` → https://vva227-refresh.pages.dev -- url deprecated
 
 `public/_redirects` maps all 50 legacy URLs. It is written for the real domain,
 so it becomes active the moment the site is pointed at `vva227.org`; no existing
