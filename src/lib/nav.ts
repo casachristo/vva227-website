@@ -12,11 +12,15 @@
  *   2. a veteran considering joining
  *   3. someone who wants to give
  *
- * The Foundation (NVVVF) sits under Ways to Give rather than under Get Help,
- * because it is where the money for emergency assistance comes FROM. The
- * program itself — what a veteran actually receives — stays under Get Help.
- * The header nav is flat, so children surface only in the footer and the
- * mobile disclosure; adding one costs no header space.
+ * The Foundation (NVVVF) has both a top-level entry and a child under Ways to
+ * Give. The two answer different questions: the top-level "The Foundation"
+ * explains the relationship between the two organizations and bridges a
+ * prospective donor to the chapter's own spending record; "Give to the
+ * Foundation" under Ways to Give is the transactional page — payee, tax
+ * status, how to actually send money. The program itself — what a veteran
+ * actually receives — stays under Get Help. The header nav is flat, so
+ * children surface only in the footer and the mobile disclosure; adding one
+ * costs no header space.
  */
 
 export interface NavItem {
@@ -68,11 +72,16 @@ export const NAV: NavItem[] = [
         blurb: 'Every dollar the chapter paid out, itemized.',
       },
       {
-        label: 'The Foundation',
+        label: 'Give to the Foundation',
         href: '/give/nvvvf',
         blurb: 'The 501(c)(3) the chapter created in 2025 to fund emergency assistance.',
       },
     ],
+  },
+  {
+    label: 'The Foundation',
+    href: '/foundation',
+    blurb: 'A separate 501(c)(3) the chapter created in 2025 — and how the two organizations work together.',
   },
   {
     label: 'What We Do',

@@ -38,10 +38,12 @@ describe('normalizePath', () => {
 });
 
 describe('NAV structure', () => {
-  it('has exactly six top-level sections', () => {
+  it('has exactly seven top-level sections', () => {
     // The legacy site had nine, five of which were internal bookkeeping or
-    // jargon. Six is the deliberate ceiling for a flat, no-dropdown header.
-    expect(NAV).toHaveLength(6);
+    // jargon. Six was the ceiling until The Foundation was promoted out of
+    // Ways to Give to its own top-level entry — a deliberate content call,
+    // not scope creep, so the ceiling moved rather than being enforced blindly.
+    expect(NAV).toHaveLength(7);
   });
 
   it('puts Get Help first, ahead of recruitment and donation', () => {

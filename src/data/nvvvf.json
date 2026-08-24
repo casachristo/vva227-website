@@ -26,14 +26,14 @@
     "ein": "33-2320012",
     "deductibleClaim": "The Foundation states that gifts to it are tax-deductible and are used to pay veterans’ verified creditors.",
     "source": "One Year Later, closing appeal: NVVVF is a 501(c)(3) organization, EIN 33-2320012",
-    "review": "Neither the exemption nor the EIN has been independently verified. Both are checkable in the IRS Tax Exempt Organization Search and must be confirmed before this page goes live. Separately: the chapter has never published its OWN tax status, and stating the Foundation’s deductibility beside the chapter’s own donate routes invites a reader to assume both are deductible."
+    "review": "Neither the exemption nor the EIN has been independently verified, and the EIN itself is now in dispute: One Year Later gives 33-2320012, but the 2026 PenFed Foundation grant proposal gives 33-2520012 — a one-digit difference that changes which entity the number identifies. This must be checked directly against the IRS Tax Exempt Organization Search and the Foundation's own IRS determination letter before either figure is published; it is not a typo to guess at. Separately: the chapter has never published its OWN tax status, and stating the Foundation’s deductibility beside the chapter’s own donate routes invites a reader to assume both are deductible."
   },
 
   "url": {
     "value": "https://nvvvf.org",
     "source": "One Year Later, “Momentum Is Growing”: Visit https://nvvvf.org",
     "confirmedLive": false,
-    "review": "The newsletter writes the address two ways in one document — https://nvvvf.org in the body, www.nvvvf.org in the closing appeal and the footer — and says the site would not be live until September. The chapter must confirm the canonical host, that it resolves over HTTPS, and the exact donation address. Until then it is printed here as text, not as a link."
+    "review": "The newsletter writes the address two ways in one document — https://nvvvf.org in the body, www.nvvvf.org in the closing appeal and the footer — and One Year Later v11 goes further and claims the new public site is already live. Confirmed directly with the chapter as of August 2026: nvvvf.org is a development build, not yet public. It stays printed here as text, not a link, until the chapter confirms it is live and states the canonical host."
   },
 
   "mailingAddress": {
@@ -101,18 +101,20 @@
       "question": "How many veterans and families has the program helped, and over what period?",
       "readings": [
         { "value": "92", "label": "veterans and families helped, since June 2025", "source": "One Year Later, figure block" },
-        { "value": "84", "label": "veterans and families helped this year", "source": "One Year Later, the paragraph immediately above that figure block" }
+        { "value": "84", "label": "veterans and families helped this year", "source": "One Year Later, the paragraph immediately above that figure block" },
+        { "value": "101", "label": "veterans and families helped, since June 2025", "source": "2026 PenFed Foundation grant proposal, submitted ~August 22, 2026" }
       ],
-      "note": "The two sit inches apart and read as the same claim. They reconcile only if 84 means calendar 2026 to date and 92 means cumulative since June 2025 — which would put 8 households in the program’s first seven months and 84 in the next six. That is not what the prose says, and no reader would infer it."
+      "note": "Three readings, from two different documents, both claiming the same \"since June 2025\" window. The newsletter's own two figures sit inches apart and read as the same claim — they reconcile only if 84 means calendar 2026 to date and 92 means cumulative since June 2025, which is not what the prose says. The PenFed proposal's 101 does not match either newsletter figure, and post-dates both of them. Nothing here is presented as final: One Year Later v11 itself labels its own numbers \"editable statistics — update with the latest figures before publication.\""
     },
     {
       "id": "assistance-paid",
       "question": "How much emergency assistance has been paid out, and over what period?",
       "readings": [
         { "value": "$101,598", "label": "in emergency financial assistance, since June 2025", "source": "One Year Later, figure block" },
-        { "value": "$169,000", "label": "already distributed to veterans since the Foundation’s founding", "source": "One Year Later, “The Challenge Ahead”" }
+        { "value": "$169,000", "label": "already distributed to veterans since the Foundation’s founding", "source": "One Year Later, “The Challenge Ahead”" },
+        { "value": "$110,383", "label": "in emergency financial assistance, since June 2025", "source": "2026 PenFed Foundation grant proposal, submitted ~August 22, 2026" }
       ],
-      "note": "The Foundation was founded in June 2025, so both describe the same window. They differ by $67,402 — two thirds of the smaller figure. Both are donor-facing. Neither may be published until the chapter reconciles them."
+      "note": "The Foundation was founded in June 2025, so all three describe the same window. The newsletter's own two figures differ by $67,402 — two thirds of the smaller one. The PenFed proposal's $110,383, from a document dated more recently than the newsletter, is lower than the newsletter's own higher figure despite covering a longer elapsed period — the opposite of what a running total should do. All three are donor-facing. None may be published until the chapter reconciles them into the single table this page keeps asking for: period start, period end, households helped, dollars disbursed, as of one stated date."
     },
     {
       "id": "response-time",

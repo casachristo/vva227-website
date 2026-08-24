@@ -187,6 +187,44 @@ Whichever is correct has to change in `officers.json`, `contacts.json` and both
 `facts-registry.json` entries together. Note this is the same man whose email
 address is already contested in **1.4**.
 
+### 1.8 Two new documents, and they raise the stakes rather than settle them — **BLOCKER**
+
+As of August 2026, the chapter supplied two more Foundation source documents: a
+newer version of the newsletter (*"One Year Later v11"*) and a **2026 PenFed
+Foundation grant proposal** dated roughly August 22, 2026. Confirmed directly
+with the chapter at the same time: **NVVVF has a development website, not yet
+public** — `url.confirmedLive` stays `false` on `/foundation` and
+`/give/nvvvf` until that changes, regardless of what any newsletter draft says
+about launch dates.
+
+These documents do not resolve **1.6** — they add a third, disagreeing reading:
+
+- **People helped**, since June 2025: 92 or 84 (the newsletter, against itself)
+  and now **101** (the PenFed proposal).
+- **Assistance paid**, since June 2025: $101,598 or $169,000 (the newsletter,
+  against itself) and now **$110,383** (the PenFed proposal) — lower than the
+  newsletter's own higher figure, despite the PenFed document being dated
+  later. A running total should not go down.
+- One Year Later v11 labels its own headline numbers "editable statistics —
+  update with the latest figures before publication," so even the newsletter's
+  own authors do not treat them as final.
+
+Two new problems, not previously flagged:
+
+- **The EIN does not match.** One Year Later gives `33-2320012`; the PenFed
+  proposal gives `33-2520012`. These must be checked against the IRS Tax
+  Exempt Organization Search and the Foundation's own determination letter —
+  this is not a typo either document's reader could safely guess at, and it sits
+  on a page asking for tax-deductible gifts.
+- **A chapter title conflicts with the chapter's own roster.** The newsletter's
+  "Foundation and Chapter 227 Team" list gives Bruce Waxman the chapter title
+  "Director"; `officers.json` has him as "Immediate Past President." This does
+  not change anything published today — the roster stays withheld per **4.5** —
+  but it belongs in the record for whoever eventually decides whether to
+  publish it.
+
+→ shown on `/foundation`, `/give/nvvvf`
+
 ---
 
 ## 2. Missing information

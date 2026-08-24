@@ -1,0 +1,115 @@
+---
+/**
+ * The Foundation — the relationship hub.
+ *
+ * This page exists because NVVVF is now visible enough in the chapter's own
+ * work that it deserves a top-level answer to "what is NVVVF, and how does it
+ * relate to Chapter 227?" — not just a child page under Ways to Give.
+ *
+ * It deliberately does NOT duplicate what NVVVF's own site says about itself:
+ * nvvvf.org is where a visitor learns the Foundation's full story. This page
+ * exists to do the one thing nvvvf.org cannot — show a donor how the money
+ * NVVVF raises actually moves once it reaches Chapter 227, and point at the
+ * chapter's own itemized spending record. It also does not repeat the full
+ * disputed-figures disclosure that already lives on /give/nvvvf; that stays
+ * the one place those numbers are argued over, so there is a single source of
+ * truth for the review conversation rather than two copies that can drift.
+ */
+import PageLayout from '../layouts/PageLayout.astro';
+import CallToAction from '../components/CallToAction.astro';
+import { validateNvvvf, buildNvvvfView } from '../lib/nvvvf';
+import raw from '../data/nvvvf.json';
+
+const nvvvf = validateNvvvf(raw);
+const view = buildNvvvfView(nvvvf);
+---
+
+<PageLayout
+  title="The Foundation"
+  description="Chapter 227 and the Northern Virginia Vietnam Veterans Foundation are separate organizations with one mission. Here's how they work together, and where a gift to the Foundation actually ends up."
+  eyebrow="Chapter 227 & NVVVF"
+  heading="One mission, two organizations"
+  lede="In June 2025, Chapter 227 created a separate charity — the Northern Virginia Vietnam Veterans Foundation — to raise money for one thing: getting a veteran past a sudden financial emergency before it becomes a permanent one."
+>
+  <!-- ---------- What it is ---------- -->
+  <section class="stack">
+    <h2>Two organizations, not one</h2>
+    <p>
+      {view.fullName} is a <strong>separate 501(c)(3) corporation</strong> from Vietnam Veterans of America Chapter
+      227. It has its own board and its own mailing address. Chapter 227 created it, and most of its leadership also
+      serves the chapter in some capacity — but legally, financially and administratively, the two are distinct.
+    </p>
+    <p>{nvvvf.purpose.crisisFrame}</p>
+  </section>
+
+  <!-- ---------- How they work together ---------- -->
+  <section class="stack">
+    <h2>How the two organizations work together</h2>
+    <p><strong>{nvvvf.division.foundation}</strong> {nvvvf.division.chapter}</p>
+    <p>{nvvvf.division.creditorRule}</p>
+    <p>
+      Requests reach the chapter through community partners, including {view.referralSentence}. Full detail on how
+      to give — and the Foundation&rsquo;s tax status — is on
+      <a href="/give/nvvvf">Give to the Foundation &rarr;</a>.
+    </p>
+  </section>
+
+  <!-- ---------- History ---------- -->
+  <section class="stack">
+    <h2>Forty years, then a foundation</h2>
+    <p>Chapter 227 was formed in 1985. The Foundation was created in the chapter&rsquo;s fortieth year, in {nvvvf.founded.display}.</p>
+    <p>{nvvvf.succession.summary}</p>
+    <p>
+      The Foundation is also building a public website of its own, where it will tell its own story directly. It is
+      still in development, so this page does not link to it yet.
+    </p>
+  </section>
+
+  <!-- ---------- The bridge ---------- -->
+  <section class="stack">
+    <h2>Where a gift to the Foundation ends up</h2>
+    <p>
+      A gift to NVVVF funds one thing: Chapter 227&rsquo;s emergency financial assistance program. The Foundation
+      raises and stewards the money; the chapter&rsquo;s own volunteers verify each request and pay the veteran&rsquo;s
+      landlord, utility company or repair shop directly. If you&rsquo;re considering a gift to the Foundation, the
+      most direct way to see what that money supports is the chapter&rsquo;s own record of what it has paid out.
+    </p>
+    <p class="muted note">
+      The Foundation also reports its own impact figures. Several of those numbers currently disagree across the
+      Foundation&rsquo;s own source documents and have not been published here for that reason — the full disclosure
+      is on <a href="/give/nvvvf">Give to the Foundation</a>.
+    </p>
+  </section>
+
+  <CallToAction
+    title="See where the chapter's own money goes"
+    primary={{ label: 'Where Your Money Goes', href: '/give/impact' }}
+    secondary={{ label: 'Give to the Foundation', href: '/give/nvvvf' }}
+    tone="clay"
+  >
+    An itemized, year-by-year account of every dollar Chapter 227 has paid out — the same volunteers who verify
+    NVVVF-funded emergency assistance requests.
+  </CallToAction>
+</PageLayout>
+
+<style>
+  .stack + .stack {
+    margin-block-start: var(--s-8);
+  }
+
+  h2 {
+    margin-block-end: var(--s-4);
+  }
+
+  .stack > p {
+    max-width: var(--w-prose);
+  }
+
+  .stack > p + p {
+    margin-block-start: var(--s-4);
+  }
+
+  .note {
+    font-size: var(--t-sm);
+  }
+</style>

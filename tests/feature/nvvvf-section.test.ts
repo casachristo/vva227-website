@@ -48,12 +48,12 @@ describe('happy path — the real data file', () => {
     expect(view.image?.src).toBe('/images/nvvvf-partnership.jpg');
   });
 
-  it('carries both readings of every contradicted figure, and no third answer', () => {
+  it('carries every reading of a contradicted figure, however many sources disagree', () => {
     const people = view.disputed.find((d) => d.id === 'people-helped')!;
-    expect(people.readings.map((r) => r.value).sort()).toEqual(['84', '92']);
+    expect(people.readings.map((r) => r.value).sort()).toEqual(['101', '84', '92']);
 
     const money = view.disputed.find((d) => d.id === 'assistance-paid')!;
-    expect(money.readings.map((r) => r.value).sort()).toEqual(['$101,598', '$169,000']);
+    expect(money.readings.map((r) => r.value).sort()).toEqual(['$101,598', '$110,383', '$169,000']);
 
     // Each reading must say where it came from, or the ReviewNote is an
     // assertion rather than a disclosure.
