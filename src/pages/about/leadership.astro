@@ -2,10 +2,10 @@
 /**
  * Leadership.
  *
- * The legacy roster page carried 22 headshots, no date, and no contact details.
- * Its cross-references suggest it was last revised around 2022-23, so it is
- * republished here WITH an explicit currency warning rather than presented as
- * fact. Personal phone numbers that appeared on other legacy pages are not
+ * The legacy roster page carried 22 headshots, no date, and no contact details,
+ * and was replaced once this site sourced a dated, chapter-supplied board & POC
+ * directory (see officers.json's `source`/`asOf`). Personal phone numbers,
+ * addresses, emails and spouse details that document also carries are not
  * reproduced — role-based contact routes are on /contact instead.
  */
 import PageLayout from '../../layouts/PageLayout.astro';
@@ -17,10 +17,8 @@ import officers from '../../data/officers.json';
   title="Leadership"
   description="Officers, directors and committee chairs of VVA Chapter 227."
   eyebrow="About"
-  lede="Chapter 227 has no paid staff. Everything it does is done by the people on this page and the members behind them."
+  lede={`Chapter 227 has no paid staff. Everything it does is done by the people on this page and the members behind them, as of ${officers.asOf}.`}
 >
-  <ReviewNote topic="Roster currency">{officers.reviewRequired}</ReviewNote>
-
   <section>
     <h2>Officers</h2>
     <ul class="roster roster--officers">
@@ -46,7 +44,24 @@ import officers from '../../data/officers.json';
         officers.directors.map((person) => (
           <li>
             <span class="roster__name">{person.name}</span>
-            {person.branch && <span class="roster__branch">{person.branch}</span>}
+            {(person.branch || person.note) && (
+              <span class="roster__branch">{[person.branch, person.note].filter(Boolean).join(' · ')}</span>
+            )}
+          </li>
+        ))
+      }
+    </ul>
+  </section>
+
+  <section>
+    <h2>Points of contact</h2>
+    <p class="section__note">Not board directors, but part of the same directory — the people to reach for these roles.</p>
+    <ul class="roster roster--committees">
+      {
+        officers.contacts.map((person) => (
+          <li>
+            <p class="roster__role">{person.role}</p>
+            <p class="roster__name">{person.name}</p>
           </li>
         ))
       }
@@ -72,6 +87,8 @@ import officers from '../../data/officers.json';
     <h2>The membership behind them</h2>
     <p class="section__note">{officers.notable}</p>
   </section>
+
+  <ReviewNote topic="One name held back">{officers.review}</ReviewNote>
 
   <p class="contact-note">
     Looking for a particular person? <a href="/contact">Role-based contacts are on the contact page.</a>

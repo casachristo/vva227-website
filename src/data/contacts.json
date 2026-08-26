@@ -42,11 +42,11 @@
     {
       "id": "webmaster",
       "label": "Website",
-      "person": "Stan Derr",
-      "email": "sderr5410@gmail.com",
+      "person": null,
+      "email": null,
       "phone": null,
-      "status": "ok",
-      "note": "Published as the chapter web manager."
+      "status": "missing",
+      "note": "Published as the chapter web manager, Stan Derr, who has since died. This role is vacant — his email is not carried forward as a live contact route."
     },
     {
       "id": "treatment-court",
@@ -60,11 +60,11 @@
     {
       "id": "school-speakers",
       "label": "School speakers program",
-      "person": "Tom Stryer",
+      "person": null,
       "email": null,
       "phone": null,
       "status": "missing",
-      "note": "The legacy Community Outreach page ends the sentence “Contact Tom Stryer at” with nothing after it. The chapter must supply this."
+      "note": "The legacy Community Outreach page named Tom Stryer, ending the sentence “Contact Tom Stryer at” with nothing after it — already broken before this: as of the 2026-08-17 board & POC directory, Tom Stryer has resigned from this role. The chapter needs to name a new coordinator and supply their contact details."
     }
   ],
   "withheld": {

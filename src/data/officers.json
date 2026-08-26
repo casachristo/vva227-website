@@ -1,38 +1,48 @@
 {
-  "_doc": "Chapter leadership as published on the legacy site. Names only — no personal phone numbers or home addresses. The legacy roster carries no date and its cross-references suggest it was last revised around 2022-23, so `asOf` is null on purpose and the page says so plainly rather than presenting a possibly-stale roster as current.",
-  "asOf": null,
-  "reviewRequired": "The chapter must confirm the current officers, directors and committee chairs before this page goes live. Publishing a stale roster is worse than publishing none.",
+  "_doc": "Chapter leadership as of the current board & POC directory. Names and roles only — the source document also carries home addresses, personal phone numbers, personal emails, spouse names and VVA member numbers, none of which are reproduced here or anywhere on this site.",
+  "asOf": "2026-08-17",
+  "source": "Directory of Board & POCs, chapter-supplied 2026-08-17.",
   "officers": [
     { "role": "President", "name": "Jay Kalner" },
     { "role": "Vice President", "name": "Len Ignatowski" },
     { "role": "Secretary", "name": "Bob Tecklenburg" },
-    { "role": "Treasurer", "name": "Charles “Chuck” Harris" },
+    { "role": "Treasurer", "name": "Chuck Harris" },
     { "role": "Immediate Past President", "name": "Bruce I. Waxman" }
   ],
   "directors": [
-    { "name": "Ralph “Andy” Bender", "branch": "Air Force" },
+    { "name": "Andy Bender", "branch": "Air Force" },
     { "name": "Tom Brown", "branch": "Air Force" },
     { "name": "Thomas Davis Jr.", "branch": "Navy" },
-    { "name": "Stan Derr", "branch": null },
     { "name": "Don Drunsic", "branch": null },
-    { "name": "Bill Dumsick", "branch": null },
+    { "name": "Bill Dumsick", "branch": null, "note": "Past President" },
     { "name": "Scott Hurley", "branch": null },
     { "name": "George Jones", "branch": null },
-    { "name": "Gerald “Jerry” Krueger", "branch": null },
+    { "name": "Jerry Krueger", "branch": null, "note": "Commander, VFW Post 609" },
+    { "name": "Mike Kelly", "branch": null },
     { "name": "Bill Lynch", "branch": null },
+    { "name": "Marcy Neuendorf", "branch": null },
     { "name": "Bob Pezold", "branch": null },
-    { "name": "Tom Stryer", "branch": null },
     { "name": "Don Sutherland", "branch": null },
-    { "name": "Dennis Stephens", "branch": null },
     { "name": "Norm Williamson", "branch": null }
+  ],
+  "contacts": [
+    { "name": "Diane Ignatowski", "role": "AVVA Representative" },
+    { "name": "Dick Weaver", "role": "Contact" }
   ],
   "committees": [
     { "role": "Membership", "name": "Bill Lynch" },
     { "role": "Newsletter editor", "name": "Len Ignatowski" },
-    { "role": "Web manager", "name": "Stan Derr" },
-    { "role": "AVVA representative", "name": "Diane Ignatowski" },
+    {
+      "role": "Web manager",
+      "name": "Vacant",
+      "review": "Stan Derr, the chapter's longtime web manager, has died. This role is vacant and needs a new owner."
+    },
     { "role": "Guest speakers", "name": "Jay Kalner" },
-    { "role": "School speakers panel", "name": "Tom Stryer" },
+    {
+      "role": "School speakers panel",
+      "name": "Vacant",
+      "review": "Tom Stryer has resigned from this role, per the chapter's 2026-08-17 board & POC directory. See REVIEW.md 2.4 — the legacy site's only call to action for this program was already broken, and now there is no coordinator to fix it toward. The chapter needs to name a successor."
+    },
     { "role": "Sergeant at arms", "name": "George Jones" },
     { "role": "Welcome Home Vietnam Vets", "name": "Dick Weaver" },
     {
@@ -41,5 +51,6 @@
       "review": "The legacy site spells this “anniversity” and never says which 50th. The chapter's own 50th falls in 2035, so this is probably the Vietnam War 50th Commemoration."
     }
   ],
+  "review": "The 2026-08-17 board & POC directory lists one person, James (Jim) Ellett, with no title filled in (every other entry says \"Director\" or \"Contact\"). He is a 2025 National delegate per the same document, but is left off this roster until the chapter confirms his role rather than guessing.",
   "notable": "The chapter's ranks have run from privates to a three-star general and an admiral. Admiral Zumwalt remained a member after moving to North Carolina."
 }

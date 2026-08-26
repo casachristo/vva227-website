@@ -53,29 +53,38 @@ reads first. Still needed, on top of the original question:
   never be presented as the way in.
 - Who chairs the Financial Assistance Committee? It appears on no roster.
 
-### 1.2 Who are the current officers and directors? — **BLOCKER**
+### 1.2 Who are the current officers and directors? — **RESOLVED, 2026-08-17**
 
-The roster page carries no date, and cross-references suggest it was last
-revised around 2022–23. Publishing a stale roster is worse than publishing none.
+The roster page used to carry no date, with cross-references suggesting it was
+last revised around 2022–23.
 
-*Needed: a confirmed list of officers, directors and committee chairs.*
-→ shown on `/about/leadership`
+**Resolved.** The chapter supplied a dated *Directory of Board & POCs*
+(2026-08-17), and `officers.json` now reflects it — names and roles only; the
+source document's addresses, personal phone numbers, emails, spouse details
+and member numbers are not reproduced anywhere on this site. This also
+settles two items the Foundation newsletter had left open:
 
-**Amended, 2026.** The Foundation newsletter independently corroborates **Jay
-Kalner** as president and **Len Ignat(k)owski** as vice president, and
-directorships for **Don Sutherland**, **Norm Williamson** and **Tom Brown** —
-which narrows the staleness question without closing it. Secretary, treasurer
-and the other directors are still unconfirmed. Three new items:
+- **Bruce Waxman is Immediate Past President**, not a plain director as the
+  newsletter said — the chapter's own directory confirms `officers.json` had
+  it right. See **1.8**.
+- **Don Drunsic is still a chapter director** — his absence from the
+  Foundation newsletter's chapter-role column was an omission there, not a
+  change here.
+
+Three items remain open:
 
 - **A Financial Assistance Committee exists and is on no roster.** It decides
   who receives emergency aid. It needs a chair in `officers.json`.
-- **Bruce Waxman.** The newsletter calls him *Director, Chapter 227*;
-  `officers.json` lists *Bruce I. Waxman* as **Immediate Past President** and
-  not among the directors. Both may be true. The roster has not been changed on
-  a newsletter's authority.
-- **Don Drunsic** is the Foundation's president and is the only person in the
-  newsletter's list given no chapter role at all, while `officers.json` lists him
-  as a chapter director. Did he leave the board, or is it an omission?
+- **James (Jim) Ellett** appears in the 2026-08-17 directory with no title
+  filled in (every other entry says "Director" or "Contact"). He is left off
+  the published roster until the chapter says what his role is, rather than
+  guessing.
+- **Three people on the previous roster are gone**, confirmed directly by the
+  chapter rather than inferred from their absence: **Stan Derr** (web
+  manager) and **Dennis Stephens** have died; **Tom Stryer** (school speakers
+  panel) has resigned. The two committee chairs are now marked vacant in
+  `officers.json` and need successors — see also **2.4**, which was already
+  tracking Tom Stryer's broken contact link before this.
 
 ### 1.3 What is the exact meeting schedule? — **BLOCKER**
 
@@ -173,19 +182,17 @@ Two more:
 disbursed, dollars raised, as of a stated date.* → shown on `/give/nvvvf` and
 `/give/impact`
 
-### 1.7 Is it Ignatowski or Ignatkowski? — **BLOCKER**
+### 1.7 Is it Ignatowski or Ignatkowski? — **RESOLVED, 2026-08-17**
 
-The Foundation newsletter spells the vice president's surname **Ignat*k*owski**.
-The site has three independent legacy attestations of **Ignatowski**: the officer
+The Foundation newsletter spelled the vice president's surname **Ignat*k*owski**.
+The site had three independent legacy attestations of **Ignatowski**: the officer
 roster (twice — vice president and newsletter editor), the contact list, and the
 inscription record for the Fort Meade plaque, *"installed 26 August 2006 by Len
-Ignatowski and Joe Celesnik"*. The newsletter is almost certainly the typo, and
-the site keeps the legacy spelling — but it is a real person's name and it is now
-spelled two ways across the chapter's own materials.
+Ignatowski and Joe Celesnik"*.
 
-Whichever is correct has to change in `officers.json`, `contacts.json` and both
-`facts-registry.json` entries together. Note this is the same man whose email
-address is already contested in **1.4**.
+**Resolved.** The chapter's 2026-08-17 board & POC directory confirms
+**Ignatowski** — the newsletter had the typo. No data files needed to change.
+Note this is the same man whose email address is still contested in **1.4**.
 
 ### 1.8 Two new documents, and they raise the stakes rather than settle them — **BLOCKER**
 
@@ -216,12 +223,11 @@ Two new problems, not previously flagged:
   Exempt Organization Search and the Foundation's own determination letter —
   this is not a typo either document's reader could safely guess at, and it sits
   on a page asking for tax-deductible gifts.
-- **A chapter title conflicts with the chapter's own roster.** The newsletter's
-  "Foundation and Chapter 227 Team" list gives Bruce Waxman the chapter title
-  "Director"; `officers.json` has him as "Immediate Past President." This does
-  not change anything published today — the roster stays withheld per **4.5** —
-  but it belongs in the record for whoever eventually decides whether to
-  publish it.
+- **A chapter title conflicted with the chapter's own roster — resolved.** The
+  newsletter's "Foundation and Chapter 227 Team" list gave Bruce Waxman the
+  chapter title "Director"; `officers.json` had him as "Immediate Past
+  President." The chapter's 2026-08-17 board & POC directory confirms
+  `officers.json` was right. The roster itself stays withheld per **4.5**.
 
 → shown on `/foundation`, `/give/nvvvf`
 
