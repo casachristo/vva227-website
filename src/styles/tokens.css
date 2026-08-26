@@ -44,6 +44,20 @@
 
   --c-focus: #1f6feb; /* focus ring — high contrast against every surface */
 
+  /* ---- Hero band: navy tone -----------------------------------------------
+     <HeroBand>'s default tone is "warm" and reuses --c-primary-dark/--c-gold
+     above — no separate tokens needed. These navy tokens back the "navy"
+     tone only, reserved for anything that deliberately wants to stand apart
+     from the rest of the site (that was tried site-wide once and reverted:
+     it read as a jarring insert rather than "professional"). Neither tone is
+     used for body copy, cards or long-form text — the 70+-legibility case
+     for the warm palette above still holds for anything a visitor has to
+     *read*, hero banners aside. */
+  --c-hero-bg: #16233f;
+  --c-hero-bg-dark: #0e1830;
+  --c-hero-ink: #ffffff;
+  --c-hero-ink-soft: rgba(255, 255, 255, 0.78);
+
   /* ---- Type ----------------------------------------------------------- */
   --font-serif: 'Source Serif 4', 'Iowan Old Style', Georgia, serif;
   --font-sans: 'Source Sans 3', system-ui, -apple-system, 'Segoe UI', sans-serif;

@@ -12,6 +12,7 @@
  * nobody outside the chapter knows which programs are still running.
  */
 import PageLayout from '../layouts/PageLayout.astro';
+import HeroBand from '../components/HeroBand.astro';
 import Figure from '../components/Figure.astro';
 import ReviewNote from '../components/ReviewNote.astro';
 import ContactList from '../components/ContactList.astro';
@@ -63,9 +64,23 @@ const partners = [
 <PageLayout
   title="What We Do"
   description="VVA Chapter 227 supports families in VA Supportive Housing, funds scholarships for Northern Virginia students, and sends Vietnam veterans into classrooms to tell students what the war was actually like."
-  eyebrow="Programs"
-  lede="Four decades of the same idea: money where it is needed, and veterans telling the truth about what happened to them."
+  hero
 >
+  <HeroBand
+    slot="hero"
+    eyebrow="Programs"
+    title="What We Do"
+    lede="Four decades of the same idea: money where it is needed, and veterans telling the truth about what happened to them."
+    primary={{ label: 'Get Help', href: '/get-help' }}
+    secondary={{ label: 'Where Your Money Goes', href: '/give/impact' }}
+    image={{
+      src: '/images/student-awards.jpg',
+      alt: 'A chapter member stands with eight high-school students in an art classroom during a student awards presentation.',
+      width: 684,
+      height: 450,
+    }}
+  />
+
   <!-- ---------- VASH ---------- -->
   <section class="stack">
     <p class="eyebrow">The largest commitment</p>

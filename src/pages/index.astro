@@ -11,6 +11,7 @@
  * do I do next, and when do you meet.
  */
 import BaseLayout from '../layouts/BaseLayout.astro';
+import HeroBand from '../components/HeroBand.astro';
 import StatRow from '../components/StatRow.astro';
 import Card from '../components/Card.astro';
 import CardGrid from '../components/CardGrid.astro';
@@ -51,36 +52,22 @@ const stats = [
   description="VVA Chapter 227, the Dean K. Phillips Memorial Chapter, serves veterans and their families across Northern Virginia. In 2024 the chapter paid out over $39,700 in direct support."
 >
   <!-- ---------- Hero ---------- -->
-  <section class="hero">
-    <div class="container container--wide hero__inner">
-      <div class="hero__text">
-        <p class="eyebrow">Vietnam Veterans of America &middot; Chapter 227</p>
-        <h1 class="hero__title">We served then.<br />We serve now.</h1>
-        <p class="hero__mission">
-          The Dean K. Phillips Memorial Chapter has supported veterans, service members and their families across
-          Northern Virginia since 1985 &mdash; with rent when it is short, a ride to the VA, a mentor in court, and a
-          room full of people who understand.
-        </p>
-        <div class="hero__actions">
-          <a class="btn btn--primary" href="/get-help">I need help</a>
-          <a class="btn btn--outline" href="/join">Join the chapter</a>
-        </div>
-        <p class="hero__motto">&ldquo;{site.motto}&rdquo;</p>
-      </div>
-
-      <figure class="hero__figure">
-        <img
-          src="/images/fall-festival.jpg"
-          alt="Five Chapter 227 members in chapter jackets and caps standing together in front of the chapter's canopy at a community fall festival."
-          width="679"
-          height="510"
-          fetchpriority="high"
-          decoding="async"
-        />
-        <figcaption>Chapter members at a community fall festival in Northern Virginia.</figcaption>
-      </figure>
-    </div>
-  </section>
+  <HeroBand
+    eyebrow="Vietnam Veterans of America &middot; Chapter 227"
+    title="We served then. We serve now."
+    lede="The Dean K. Phillips Memorial Chapter has supported veterans, service members and their families across Northern Virginia since 1985 — with rent when it is short, a ride to the VA, a mentor in court, and a room full of people who understand."
+    primary={{ label: 'I need help', href: '/get-help' }}
+    secondary={{ label: 'Join the chapter', href: '/join' }}
+    image={{
+      src: '/images/fall-festival.jpg',
+      alt: "Five Chapter 227 members in chapter jackets and caps standing together in front of the chapter's canopy at a community fall festival.",
+      width: 679,
+      height: 507,
+    }}
+  />
+  <div class="container">
+    <p class="home-motto">&ldquo;{site.motto}&rdquo;</p>
+  </div>
 
   <!-- ---------- Impact ---------- -->
   <section class="section section--sunken">
@@ -185,74 +172,11 @@ const stats = [
 </BaseLayout>
 
 <style>
-  /* ---------- Hero ---------- */
-
-  .hero {
-    padding-block: var(--s-8) var(--s-7);
-    background: linear-gradient(to bottom, var(--c-surface), var(--c-ground));
-    border-bottom: 1px solid var(--c-border);
-  }
-
-  .hero__inner {
-    display: grid;
-    grid-template-columns: 1.05fr 0.95fr;
-    align-items: center;
-    gap: var(--s-8);
-  }
-
-  .hero__title {
-    margin-block-start: var(--s-3);
-    font-size: var(--t-4xl);
-    line-height: 1.02;
-    letter-spacing: -0.025em;
-  }
-
-  .hero__mission {
-    margin-block-start: var(--s-5);
-    max-width: 46ch;
-    font-size: var(--t-lg);
-    line-height: 1.55;
-    color: var(--c-ink-soft);
-  }
-
-  .hero__actions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--s-3);
-    margin-block-start: var(--s-6);
-  }
-
-  .btn {
-    display: inline-block;
-    padding: var(--s-3) var(--s-6);
-    border-radius: var(--r-md);
-    font-weight: 700;
-    text-decoration: none;
-    transition: background var(--dur) var(--ease), color var(--dur) var(--ease);
-  }
-
-  .btn--primary {
-    background: var(--c-primary);
-    color: #fff;
-  }
-
-  .btn--primary:hover {
-    background: var(--c-primary-dark);
-    color: #fff;
-  }
-
-  .btn--outline {
-    border: 2px solid var(--c-primary);
-    color: var(--c-primary-dark);
-  }
-
-  .btn--outline:hover {
-    background: var(--c-primary-tint);
-    color: var(--c-primary-dark);
-  }
-
-  .hero__motto {
-    margin-block-start: var(--s-6);
+  /* The chapter's motto, moved out from under the hero photo since
+     <HeroBand>'s props don't carry a third line of quoted text — this reads
+     as the page's own standfirst rather than part of the banner. */
+  .home-motto {
+    margin-block: var(--s-6) 0;
     padding-inline-start: var(--s-4);
     border-inline-start: 3px solid var(--c-gold);
     font-family: var(--font-serif);
@@ -260,24 +184,6 @@ const stats = [
     font-size: var(--t-lg);
     color: var(--c-ink-soft);
     max-width: 40ch;
-  }
-
-  /* The photograph is 679px wide and slightly soft. It is capped rather than
-     stretched, and framed so the softness reads as documentary. */
-  .hero__figure {
-    margin: 0;
-  }
-
-  .hero__figure img {
-    inline-size: 100%;
-    border-radius: var(--r-lg);
-    box-shadow: var(--shadow-lg);
-  }
-
-  .hero__figure figcaption {
-    margin-block-start: var(--s-3);
-    font-size: var(--t-sm);
-    color: var(--c-ink-faint);
   }
 
   /* ---------- Sections ---------- */
@@ -302,30 +208,7 @@ const stats = [
   }
 
   @media (max-width: 60rem) {
-    .hero {
-      /* Tighter than desktop: on a phone the header is already above this and
-         4rem of leading whitespace pushed the headline off the first screen. */
-      padding-block: var(--s-5) var(--s-6);
-    }
-
-    .hero__inner {
-      grid-template-columns: 1fr;
-      gap: var(--s-5);
-    }
-
-    /* Text first on a phone. Leading with the photograph looked warmer but
-       pushed the headline and the "I need help" button below the fold, which
-       is the wrong trade for the visitor this page is most urgently for. */
-    .hero__figure {
-      max-inline-size: 34rem;
-      margin-block-start: var(--s-2);
-    }
-
-    .hero__title {
-      margin-block-start: var(--s-2);
-    }
-
-    .hero__motto {
+    .home-motto {
       margin-block-start: var(--s-5);
     }
   }

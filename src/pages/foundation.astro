@@ -16,6 +16,7 @@
  * truth for the review conversation rather than two copies that can drift.
  */
 import PageLayout from '../layouts/PageLayout.astro';
+import HeroBand from '../components/HeroBand.astro';
 import CallToAction from '../components/CallToAction.astro';
 import { validateNvvvf, buildNvvvfView } from '../lib/nvvvf';
 import raw from '../data/nvvvf.json';
@@ -27,19 +28,38 @@ const view = buildNvvvfView(nvvvf);
 <PageLayout
   title="The Foundation"
   description="Chapter 227 and the Northern Virginia Vietnam Veterans Foundation are separate organizations with one mission. Here's how they work together, and where a gift to the Foundation actually ends up."
-  eyebrow="Chapter 227 & NVVVF"
-  heading="One mission, two organizations"
-  lede="In June 2025, Chapter 227 created a separate charity — the Northern Virginia Vietnam Veterans Foundation — to raise money for one thing: getting a veteran past a sudden financial emergency before it becomes a permanent one."
+  hero
 >
+  <HeroBand
+    slot="hero"
+    tone="warm"
+    eyebrow="Chapter 227 & NVVVF"
+    title="One mission, two organizations"
+    lede="In June 2025, Chapter 227 created a separate charity — the Northern Virginia Vietnam Veterans Foundation — to raise money for one thing: getting a veteran past a sudden financial emergency before it becomes a permanent one."
+    primary={{ label: 'Where Your Money Goes', href: '/give/impact' }}
+    secondary={{ label: 'Give to the Foundation', href: '/give/nvvvf' }}
+  />
+
   <!-- ---------- What it is ---------- -->
   <section class="stack">
-    <h2>Two organizations, not one</h2>
+    <h2>227 runs the program. The Foundation sustains it.</h2>
+    <p>
+      Chapter 227 has been verifying needs and paying veterans&rsquo; creditors directly since long before the
+      Foundation existed. NVVVF doesn&rsquo;t run the emergency assistance program — it exists to raise the money
+      that keeps the chapter&rsquo;s own program funded, so the volunteers with decades of experience doing this work
+      can keep doing it.
+    </p>
     <p>
       {view.fullName} is a <strong>separate 501(c)(3) corporation</strong> from Vietnam Veterans of America Chapter
-      227. It has its own board and its own mailing address. Chapter 227 created it, and most of its leadership also
+      227, with its own board and its own mailing address. Chapter 227 created it, and most of its leadership also
       serves the chapter in some capacity — but legally, financially and administratively, the two are distinct.
     </p>
     <p>{nvvvf.purpose.crisisFrame}</p>
+    <p class="muted note">
+      Emergency financial assistance is one program among several. Chapter 227 has also run monthly member dinners,
+      guest speakers and holiday events since 1985 — see <a href="/events">Events &amp; News</a> and
+      <a href="/programs">What We Do</a> for the rest of what the chapter does.
+    </p>
   </section>
 
   <!-- ---------- How they work together ---------- -->

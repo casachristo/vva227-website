@@ -11,6 +11,7 @@
  * Calendar page that rendered a grid with zero events in it.
  */
 import PageLayout from '../layouts/PageLayout.astro';
+import HeroBand from '../components/HeroBand.astro';
 import MeetingCard from '../components/MeetingCard.astro';
 import Figure from '../components/Figure.astro';
 import ReviewNote from '../components/ReviewNote.astro';
@@ -32,9 +33,23 @@ const speakers2024 = [
 <PageLayout
   title="Events & Meetings"
   description="Chapter 227 meets on the third Thursday of the month at American Legion Post 177 in Fairfax. Dinner at 6:15, meeting and guest speaker at 7:00."
-  eyebrow="Events"
-  lede="Nine dinner meetings a year, each with a speaker worth turning out for, plus the observances and gatherings that make up the chapter's year."
+  hero
 >
+  <HeroBand
+    slot="hero"
+    eyebrow="Events"
+    title="Events & Meetings"
+    lede="Nine dinner meetings a year, each with a speaker worth turning out for, plus the observances and gatherings that make up the chapter's year."
+    primary={{ label: 'Join the chapter', href: '/join' }}
+    secondary={{ label: 'The Journey newsletter', href: '/events/news' }}
+    image={{
+      src: '/images/nationals-ceremony.jpg',
+      alt: 'Chapter members and other attendees at the POW/MIA chair dedication ceremony at Nationals Park.',
+      width: 1050,
+      height: 384,
+    }}
+  />
+
   <!-- ---------- Meetings ---------- -->
   <section>
     <h2>When and where we meet</h2>

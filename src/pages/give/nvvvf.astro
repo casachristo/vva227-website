@@ -36,6 +36,7 @@
  * `url.confirmedLive` becomes true — one edit, no markup change.
  */
 import PageLayout from '../../layouts/PageLayout.astro';
+import HeroBand from '../../components/HeroBand.astro';
 import Figure from '../../components/Figure.astro';
 import ReviewNote from '../../components/ReviewNote.astro';
 import CallToAction from '../../components/CallToAction.astro';
@@ -60,10 +61,18 @@ const chapterPostal = [
 <PageLayout
   title="Give to the Foundation"
   description="Chapter 227 created the Northern Virginia Vietnam Veterans Foundation in June 2025 — a 501(c)(3) that raises money for emergency assistance, while the chapter verifies each request and pays the creditor directly."
-  eyebrow="Ways to give"
-  heading={view.fullName}
-  lede="In June 2025 the chapter created a separate charity to raise money for one thing: getting a veteran past a sudden financial emergency before it becomes a permanent one."
+  hero
 >
+  <HeroBand
+    slot="hero"
+    tone="warm"
+    eyebrow="Ways to give"
+    title={view.fullName}
+    lede="In June 2025 the chapter created a separate charity to raise money for one thing: getting a veteran past a sudden financial emergency before it becomes a permanent one."
+    primary={{ label: 'Ways to give to the chapter', href: '/give' }}
+    secondary={{ label: "See the chapter's itemized aid", href: '/give/impact' }}
+  />
+
   <!-- ---------- What it is ---------- -->
   <section class="stack">
     <h2>What it is</h2>

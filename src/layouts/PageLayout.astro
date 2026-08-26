@@ -18,14 +18,18 @@ interface Props {
   lede?: string;
   width?: 'prose' | 'content';
   image?: string;
+  /** Skip the plain-text PageHeader — the page supplies its own masthead
+   *  (e.g. a <HeroBand>) as the first thing in its slot instead. */
+  hero?: boolean;
 }
 
-const { title, description, eyebrow, heading, lede, width = 'content', image } = Astro.props;
+const { title, description, eyebrow, heading, lede, width = 'content', image, hero = false } = Astro.props;
 ---
 
 <BaseLayout title={title} description={description} image={image}>
-  <PageHeader eyebrow={eyebrow} title={heading ?? title} lede={lede} />
-  <div class:list={['body', `body--${width}`]}>
+  {!hero && <PageHeader eyebrow={eyebrow} title={heading ?? title} lede={lede} />}
+  {hero && <slot name="hero" />}
+  <div class:list={['body', `body--${width}`, hero && 'body--hero']}>
     <div class:list={['container', width === 'prose' && 'container--prose']}>
       <slot />
     </div>
@@ -41,5 +45,10 @@ const { title, description, eyebrow, heading, lede, width = 'content', image } =
      paragraph read as one block. */
   .body--prose {
     padding-block-start: var(--s-6);
+  }
+
+  /* A <HeroBand> sits flush against the header, with no PageHeader above it. */
+  .body--hero {
+    padding-block-start: 0;
   }
 </style>

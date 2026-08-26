@@ -15,6 +15,7 @@
  * willing donor with no way to act.
  */
 import PageLayout from '../../layouts/PageLayout.astro';
+import HeroBand from '../../components/HeroBand.astro';
 import ReviewNote from '../../components/ReviewNote.astro';
 import CallToAction from '../../components/CallToAction.astro';
 import { currency, addressLine } from '../../lib/format';
@@ -39,9 +40,16 @@ const goodsWanted = [
 <PageLayout
   title="Ways to Give"
   description="Support VVA Chapter 227 by check, at a monthly meeting, or by donating a vehicle or household goods. In 2024 the chapter paid out over $39,700 directly to veterans."
-  eyebrow="Support the chapter"
-  lede={`Almost everything the chapter gives away comes from individual donations. In ${latest.year} that added up to ${currency(latest.totalSupport)} paid directly to veterans and their families.`}
+  hero
 >
+  <HeroBand
+    slot="hero"
+    eyebrow="Support the chapter"
+    title="Ways to Give"
+    lede={`Almost everything the chapter gives away comes from individual donations. In ${latest.year} that added up to ${currency(latest.totalSupport)} paid directly to veterans and their families.`}
+    primary={{ label: 'Where Your Money Goes', href: '/give/impact' }}
+  />
+
   <!-- ---------- Money ---------- -->
   <section class="stack">
     <h2>Give money</h2>

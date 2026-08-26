@@ -13,6 +13,7 @@
  * it say how a veteran actually ASKS for help. That is flagged, not invented.
  */
 import PageLayout from '../../layouts/PageLayout.astro';
+import HeroBand from '../../components/HeroBand.astro';
 import Card from '../../components/Card.astro';
 import CardGrid from '../../components/CardGrid.astro';
 import ReviewNote from '../../components/ReviewNote.astro';
@@ -36,9 +37,17 @@ const helpWith = [
 <PageLayout
   title="Get Help"
   description="Chapter 227 provides direct financial assistance to veterans and their families in Northern Virginia, and can refer you to counseling, housing and treatment court support."
-  eyebrow="For veterans and families"
-  lede="If you served, and things are tight, the chapter may be able to help — and if we cannot, we probably know who can."
+  hero
 >
+  <HeroBand
+    slot="hero"
+    eyebrow="For veterans and families"
+    title="Get Help"
+    lede="If you served, and things are tight, the chapter may be able to help — and if we cannot, we probably know who can."
+    primary={{ label: 'Contact the chapter', href: '/contact' }}
+    secondary={{ label: 'Veterans Treatment Court', href: '/get-help/treatment-court' }}
+  />
+
   <!-- Crisis first, before anything else on the page. -->
   <section class="urgent">
     <h2 class="urgent__title">If you are in crisis right now</h2>

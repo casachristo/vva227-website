@@ -13,6 +13,7 @@
  * redesign would write.
  */
 import PageLayout from '../../layouts/PageLayout.astro';
+import HeroBand from '../../components/HeroBand.astro';
 import MeetingCard from '../../components/MeetingCard.astro';
 import Card from '../../components/Card.astro';
 import CardGrid from '../../components/CardGrid.astro';
@@ -24,9 +25,17 @@ import events from '../../data/events.json';
 <PageLayout
   title="Join the Chapter"
   description="Membership in VVA Chapter 227 is open to anyone who served during the Vietnam era. Life membership is $50, once, with no further dues."
-  eyebrow="Membership"
-  lede="Life membership is $50. You pay it once and never again. In-country service is not required."
+  hero
 >
+  <HeroBand
+    slot="hero"
+    eyebrow="Membership"
+    title="Join the Chapter"
+    lede="Life membership is $50. You pay it once and never again. In-country service is not required."
+    primary={{ label: 'Come to a meeting', href: '/events' }}
+    secondary={{ label: 'AVVA membership', href: '/join/avva' }}
+  />
+
   <!-- ---------- Eligibility ---------- -->
   <section class="stack">
     <h2>Who can join</h2>

@@ -167,8 +167,6 @@ describe('static assets', () => {
   // unused image was added. Six were already shipping unreferenced when this was
   // written; they are listed so the number can only go down.
   const KNOWN_UNREFERENCED: ReadonlyArray<{ file: string; why: string }> = [
-    { file: 'nationals-ceremony.jpg', why: 'POW/MIA chair ceremony — no page places it yet' },
-    { file: 'phillips-plaque-flag.jpg', why: 'third plaque photograph; the namesake page uses two' },
     { file: 'pow-chair.jpg', why: 'alternate POW/MIA chair shot' },
     { file: 'pow-flag.jpg', why: 'POW/MIA flag — no page places it yet' },
     { file: 'pow-plaque.jpg', why: 'POW/MIA plaque — no page places it yet' },

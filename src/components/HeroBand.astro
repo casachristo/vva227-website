@@ -1,0 +1,246 @@
+---
+/**
+ * A section-opening banner: text panel + full-bleed photograph, or — without
+ * one — the text panel expands full width over a dark field carrying a faint
+ * topographic-line pattern (evoking terrain/mission maps rather than a blank
+ * box), so a page reads as finished before a real photograph exists for it.
+ * Swapping in a photo later is a one-line prop change, not a restructure.
+ *
+ * `tone` picks the palette:
+ *   - "warm" (default) — the site's own deep field-green + gold, so this
+ *     reads as part of the chapter site rather than a borrowed insert.
+ *   - "navy" — the deep-navy/gold treatment (see the "Hero band" token block
+ *     in tokens.css), reserved for anything that deliberately wants to stand
+ *     apart from the rest of the site.
+ */
+interface Props {
+  eyebrow?: string;
+  title: string;
+  lede?: string;
+  primary?: { label: string; href: string };
+  secondary?: { label: string; href: string };
+  image?: { src: string; alt: string; width: number; height: number };
+  tone?: 'warm' | 'navy';
+}
+
+const { eyebrow, title, lede, primary, secondary, image, tone = 'warm' } = Astro.props;
+---
+
+<section class:list={['hero-band', `hero-band--${tone}`, !image && 'hero-band--no-image']}>
+  <div class="hero-band__text">
+    {eyebrow && <p class="hero-band__eyebrow">{eyebrow}</p>}
+    <h1 class="hero-band__title">{title}</h1>
+    {lede && <p class="hero-band__lede">{lede}</p>}
+    {
+      (primary || secondary) && (
+        <div class="hero-band__actions">
+          {primary && (
+            <a class="hero-band__btn hero-band__btn--solid" href={primary.href}>
+              {primary.label}
+            </a>
+          )}
+          {secondary && (
+            <a class="hero-band__btn hero-band__btn--ghost" href={secondary.href}>
+              {secondary.label}
+            </a>
+          )}
+        </div>
+      )
+    }
+  </div>
+
+  {
+    image ? (
+      <div class="hero-band__figure">
+        <img
+          src={image.src}
+          alt={image.alt}
+          width={image.width}
+          height={image.height}
+          fetchpriority="high"
+          decoding="async"
+          style={`--hb-img-w: ${image.width}px`}
+        />
+      </div>
+    ) : (
+      <div class="hero-band__pattern" aria-hidden="true" />
+    )
+  }
+</section>
+
+<style>
+  .hero-band {
+    /* Rendered via PageLayout's "hero" slot, outside the centered .container,
+       so this is naturally full width already — no 100vw full-bleed hack,
+       which reliably introduces a few pixels of horizontal overflow from
+       vw including the scrollbar's own width. */
+    display: grid;
+    grid-template-columns: minmax(20rem, 0.85fr) 1.15fr;
+    align-items: stretch;
+    min-block-size: 24rem;
+    margin-block-end: var(--s-8);
+    background: var(--hb-bg);
+    color: var(--hb-ink);
+  }
+
+  .hero-band--warm {
+    --hb-bg: var(--c-primary-dark);
+    --hb-bg-dark: color-mix(in srgb, var(--c-primary-dark) 82%, black);
+    --hb-ink: #ffffff;
+    --hb-ink-soft: rgba(255, 255, 255, 0.78);
+  }
+
+  .hero-band--navy {
+    --hb-bg: var(--c-hero-bg);
+    --hb-bg-dark: var(--c-hero-bg-dark);
+    --hb-ink: var(--c-hero-ink);
+    --hb-ink-soft: var(--c-hero-ink-soft);
+  }
+
+  .hero-band--no-image {
+    grid-template-columns: 1fr;
+  }
+
+  .hero-band__text {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: var(--s-4);
+    padding: var(--s-8) var(--gutter);
+    max-width: 40rem;
+  }
+
+  .hero-band--no-image .hero-band__text {
+    max-width: 46rem;
+    margin-inline: auto;
+    text-align: left;
+  }
+
+  .hero-band__eyebrow {
+    font-family: var(--font-sans);
+    font-size: var(--t-xs);
+    font-weight: 700;
+    letter-spacing: var(--tracking-caps);
+    text-transform: uppercase;
+    color: var(--c-gold);
+  }
+
+  .hero-band__title {
+    color: var(--hb-ink);
+    font-size: var(--t-3xl);
+    line-height: var(--lh-tight);
+    letter-spacing: -0.02em;
+  }
+
+  .hero-band__lede {
+    max-width: 46ch;
+    font-size: var(--t-lg);
+    line-height: var(--lh-body);
+    color: var(--hb-ink-soft);
+  }
+
+  .hero-band__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--s-3);
+    margin-block-start: var(--s-2);
+  }
+
+  .hero-band__btn {
+    display: inline-block;
+    padding: var(--s-3) var(--s-5);
+    border-radius: var(--r-md);
+    font-weight: 700;
+    font-size: 1rem;
+    text-decoration: none;
+    transition: background var(--dur) var(--ease), color var(--dur) var(--ease), border-color var(--dur) var(--ease);
+  }
+
+  .hero-band__btn--solid {
+    background: var(--c-gold);
+    color: var(--c-ink);
+  }
+
+  .hero-band__btn--solid:hover {
+    background: #cd9c4a;
+  }
+
+  .hero-band__btn--ghost {
+    border: 2px solid rgba(255, 255, 255, 0.55);
+    color: var(--hb-ink);
+  }
+
+  .hero-band__btn--ghost:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.8);
+  }
+
+  .hero-band :global(:focus-visible) {
+    outline-color: var(--c-gold);
+  }
+
+  /* ---- With a photograph: full-bleed on the second column ---- */
+  .hero-band__figure {
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* The chapter's photographs are all narrower than a full-bleed column at
+     typical desktop widths (650-1050px, per README). Capping at the image's
+     own natural width — never wider — and centering it in the remaining
+     space is the "never stretch a photo" rule this site already enforces
+     elsewhere, applied here structurally rather than left to chance per page. */
+  .hero-band__figure img {
+    position: absolute;
+    inset: 0;
+    inline-size: min(100%, var(--hb-img-w, 100%));
+    block-size: 100%;
+    margin-inline: auto;
+    object-fit: cover;
+  }
+
+  /* ---- Without one: a faint topographic-line field, not a blank navy box ---- */
+  .hero-band__pattern {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    background-image:
+      repeating-radial-gradient(
+        circle at 82% 45%,
+        transparent 0,
+        transparent 34px,
+        rgba(184, 137, 60, 0.14) 35px,
+        rgba(184, 137, 60, 0.14) 36px
+      ),
+      linear-gradient(to bottom, transparent, var(--hb-bg-dark));
+  }
+
+  .hero-band--no-image {
+    position: relative;
+  }
+
+  @media (max-width: 60rem) {
+    .hero-band {
+      grid-template-columns: 1fr;
+      min-block-size: 0;
+    }
+
+    .hero-band__text {
+      max-width: none;
+      padding: var(--s-7) var(--gutter);
+    }
+
+    .hero-band__figure {
+      block-size: 16rem;
+    }
+
+    .hero-band__figure img {
+      position: static;
+      inline-size: 100%;
+      block-size: 100%;
+    }
+  }
+</style>

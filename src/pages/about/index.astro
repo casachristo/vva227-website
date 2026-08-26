@@ -10,6 +10,7 @@
  * Community Outreach.
  */
 import PageLayout from '../../layouts/PageLayout.astro';
+import HeroBand from '../../components/HeroBand.astro';
 import Card from '../../components/Card.astro';
 import CardGrid from '../../components/CardGrid.astro';
 import StatRow from '../../components/StatRow.astro';
@@ -31,9 +32,23 @@ const stats = [
 <PageLayout
   title="About the Chapter"
   description="VVA Chapter 227, the Dean K. Phillips Memorial Chapter, was formed in 1985 by fifteen people at the Fort Myer NCO Club. It is now the largest VVA chapter in Virginia."
-  eyebrow="About"
-  lede="Fifteen people in a club room at Fort Myer, forty years ago. Four hundred and eighteen members now, and the largest Vietnam Veterans of America chapter in the Commonwealth."
+  hero
 >
+  <HeroBand
+    slot="hero"
+    eyebrow="About"
+    title="About the Chapter"
+    lede="Fifteen people in a club room at Fort Myer, forty years ago. Four hundred and eighteen members now, and the largest Vietnam Veterans of America chapter in the Commonwealth."
+    primary={{ label: 'Leadership', href: '/about/leadership' }}
+    secondary={{ label: 'Annual Reports', href: '/about/reports' }}
+    image={{
+      src: '/images/phillips-plaque-flag.jpg',
+      alt: 'The bronze Dean K. Phillips memorial plaque with a small American flag planted beside it.',
+      width: 640,
+      height: 480,
+    }}
+  />
+
   <section class="stack">
     <h2>How it started</h2>
     <p>
