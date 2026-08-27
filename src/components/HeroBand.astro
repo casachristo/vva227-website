@@ -19,14 +19,39 @@ interface Props {
   lede?: string;
   primary?: { label: string; href: string };
   secondary?: { label: string; href: string };
-  image?: { src: string; alt: string; width: number; height: number };
+  image?: {
+    src: string;
+    alt: string;
+    width: number;
+    height: number;
+    /** CSS object-position, for a photo where the subject isn't centered — e.g. "right center" to keep the right edge in frame when the crop narrows. Defaults to "center". */
+    focus?: string;
+    /**
+     * "cover" (default) fills the frame and crops overflow — right for a
+     * photograph, where losing some margin doesn't lose the subject.
+     * "contain" shows the whole image with no cropping, letterboxed on the
+     * hero's own background — right for a graphic (a map, a diagram) where
+     * every part of it is the content and nothing is safe to lose.
+     */
+    fit?: 'cover' | 'contain';
+  };
   tone?: 'warm' | 'navy';
+  /**
+   * Overrides the band's minimum height (default "34rem" — matched to the
+   * home page hero so every band reads as one consistent shape sitewide).
+   * Only affects the desktop two-column layout; mobile always uses its own
+   * fixed image height.
+   */
+  minHeight?: string;
 }
 
-const { eyebrow, title, lede, primary, secondary, image, tone = 'warm' } = Astro.props;
+const { eyebrow, title, lede, primary, secondary, image, tone = 'warm', minHeight } = Astro.props;
 ---
 
-<section class:list={['hero-band', `hero-band--${tone}`, !image && 'hero-band--no-image']}>
+<section
+  class:list={['hero-band', `hero-band--${tone}`, !image && 'hero-band--no-image']}
+  style={minHeight ? `--hb-min-h: ${minHeight}` : undefined}
+>
   <div class="hero-band__text">
     {eyebrow && <p class="hero-band__eyebrow">{eyebrow}</p>}
     <h1 class="hero-band__title">{title}</h1>
@@ -59,7 +84,7 @@ const { eyebrow, title, lede, primary, secondary, image, tone = 'warm' } = Astro
           height={image.height}
           fetchpriority="high"
           decoding="async"
-          style={`--hb-img-w: ${image.width}px`}
+          style={`--hb-img-w: ${image.width}px; --hb-img-pos: ${image.focus ?? 'center'}; --hb-img-fit: ${image.fit ?? 'cover'}`}
         />
       </div>
     ) : (
@@ -77,7 +102,7 @@ const { eyebrow, title, lede, primary, secondary, image, tone = 'warm' } = Astro
     display: grid;
     grid-template-columns: minmax(20rem, 0.85fr) 1.15fr;
     align-items: stretch;
-    min-block-size: 24rem;
+    min-block-size: var(--hb-min-h, 34rem);
     margin-block-end: var(--s-8);
     background: var(--hb-bg);
     color: var(--hb-ink);
@@ -198,7 +223,8 @@ const { eyebrow, title, lede, primary, secondary, image, tone = 'warm' } = Astro
     inline-size: min(100%, var(--hb-img-w, 100%));
     block-size: 100%;
     margin-inline: auto;
-    object-fit: cover;
+    object-fit: var(--hb-img-fit, cover);
+    object-position: var(--hb-img-pos, center);
   }
 
   /* ---- Without one: a faint topographic-line field, not a blank navy box ---- */

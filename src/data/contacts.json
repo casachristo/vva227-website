@@ -30,16 +30,6 @@
       "note": "The legacy Donation page and the Veteran and Family Support Funds page publish two different addresses for the same person. One is wrong, so neither is published here until the chapter confirms."
     },
     {
-      "id": "newsletter",
-      "label": "Newsletter — The Journey",
-      "person": "Len Ignatowski",
-      "email": null,
-      "phone": null,
-      "status": "conflict",
-      "conflict": ["grunt69@gmail.com", "grunt60@gmail.com"],
-      "note": "Members-Information and Chapter-Publications publish two different addresses for the same person."
-    },
-    {
       "id": "webmaster",
       "label": "Website",
       "person": null,

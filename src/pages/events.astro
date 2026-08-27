@@ -41,7 +41,6 @@ const speakers2024 = [
     title="Events & Meetings"
     lede="Nine dinner meetings a year, each with a speaker worth turning out for, plus the observances and gatherings that make up the chapter's year."
     primary={{ label: 'Join the chapter', href: '/join' }}
-    secondary={{ label: 'The Journey newsletter', href: '/events/news' }}
     image={{
       src: '/images/nationals-ceremony.jpg',
       alt: 'Chapter members and other attendees at the POW/MIA chair dedication ceremony at Nationals Park.',
@@ -124,23 +123,30 @@ const speakers2024 = [
   <!-- ---------- Out in the community ---------- -->
   <section class="stack">
     <h2>Out in the community</h2>
-    <ul class="outreach">
-      {
-        events.outreach.map((item) => (
-          <li>
-            <h3>{item.title}</h3>
-            <p>{item.description}</p>
-            {item.review && <p class="year__flag">Needs confirmation: {item.review}</p>}
-          </li>
-        ))
-      }
-    </ul>
+    <div class="split">
+      <ul class="outreach">
+        {
+          events.outreach.map((item) => (
+            <li>
+              <h3>{item.title}</h3>
+              <p>{item.description}</p>
+              {item.review && <p class="year__flag">Needs confirmation: {item.review}</p>}
+            </li>
+          ))
+        }
+      </ul>
+      <Figure
+        src="/images/fall-festival.jpg"
+        alt="Five Chapter 227 members in chapter jackets and caps standing together in front of the chapter's canopy at a community fall festival."
+        caption="Chapter members at a neighborhood fall festival."
+        maxWidth="100%"
+      />
+    </div>
   </section>
 
   <CallToAction
     title="Come to the next one"
     primary={{ label: 'Join the chapter', href: '/join' }}
-    secondary={{ label: 'Read The Journey', href: '/events/news' }}
   >
     You do not have to be a member and you do not have to call ahead. Anyone is welcome, including spouses.
   </CallToAction>

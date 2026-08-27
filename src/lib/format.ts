@@ -29,17 +29,21 @@ export interface Issue {
 }
 
 /**
- * Turn "The_Journey_202411.pdf" into a dated issue.
+ * Turn "The_Journey_202411.pdf" or "board-minutes-2024-09.pdf" into a dated
+ * issue.
  *
  * The legacy site showed raw filenames to visitors. Deriving the label from the
- * filename means the archive can never disagree with its own labels.
+ * filename means the archive can never disagree with its own labels. The
+ * board-minutes filenames separate year and month with a hyphen where the
+ * newsletter's don't, so the stamp is matched with an optional separator
+ * between the two groups rather than two separate patterns.
  *
  * @returns null when the filename carries no parseable YYYYMM stamp.
  */
 export function parseIssue(file: string): Issue | null {
   if (typeof file !== 'string') return null;
 
-  const match = file.match(/(\d{4})(\d{2})/);
+  const match = file.match(/(\d{4})[-_]?(\d{2})/);
   if (!match) return null;
 
   const year = Number(match[1]);

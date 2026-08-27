@@ -12,6 +12,7 @@
  * than trusted from the source, so the table can never disagree with itself.
  */
 import PageLayout from '../../layouts/PageLayout.astro';
+import HeroBand from '../../components/HeroBand.astro';
 import StatRow from '../../components/StatRow.astro';
 import ReviewNote from '../../components/ReviewNote.astro';
 import CallToAction from '../../components/CallToAction.astro';
@@ -37,9 +38,21 @@ const trend = [...impact.years].sort((a, b) => a.year - b.year);
 <PageLayout
   title="Where Your Money Goes"
   description="An itemized account of VVA Chapter 227's veteran aid — what was spent, on whom, and in what amounts."
-  eyebrow="Ways to give"
-  lede="The chapter is run entirely by volunteers. Money raised from members and neighbors is paid straight back out to veterans in Northern Virginia."
+  hero
 >
+  <HeroBand
+    slot="hero"
+    eyebrow="Ways to give"
+    title="Where Your Money Goes"
+    lede="The chapter is run entirely by volunteers. Money raised from members and neighbors is paid straight back out to veterans in Northern Virginia."
+    image={{
+      src: '/images/impact-family-relief.jpg',
+      alt: 'A couple at home, foreheads together, looking at a piece of paper the man is holding, with their young child on the couch behind them — one visibly moved, illustrating the relief financial assistance can bring to a family facing a sudden expense.',
+      width: 1050,
+      height: 700,
+    }}
+  />
+
   <StatRow stats={stats} />
 
   <!-- ---------- Itemized year ---------- -->
@@ -172,7 +185,6 @@ const trend = [...impact.years].sort((a, b) => a.year - b.year);
   <CallToAction
     title="Give to this"
     primary={{ label: 'Ways to give', href: '/give' }}
-    secondary={{ label: 'Read the annual reports', href: '/about/reports' }}
     tone="clay"
   >
     Every dollar is disbursed by the same volunteers who raised it.

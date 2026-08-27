@@ -38,23 +38,24 @@ describe('normalizePath', () => {
 });
 
 describe('NAV structure', () => {
-  it('has exactly seven top-level sections', () => {
-    // The legacy site had nine, five of which were internal bookkeeping or
-    // jargon. Six was the ceiling until The Foundation was promoted out of
-    // Ways to Give to its own top-level entry — a deliberate content call,
-    // not scope creep, so the ceiling moved rather than being enforced blindly.
-    expect(NAV).toHaveLength(7);
+  it('has exactly six top-level sections', () => {
+    // Get Help and Ways to Give were deliberately dropped as top-level nav
+    // entries (2026-08-27) — this is a low-maintenance informational site for
+    // donors, not a member-services hub. Both pages still exist and are
+    // reachable from in-page calls to action; they're just not advertised as
+    // primary nav destinations any more.
+    expect(NAV).toHaveLength(6);
   });
 
-  it('puts Get Help first, ahead of recruitment and donation', () => {
-    expect(NAV[0].label).toBe('Get Help');
-    expect(NAV[0].href).toBe('/get-help');
+  it('puts Home first', () => {
+    expect(NAV[0].label).toBe('Home');
+    expect(NAV[0].href).toBe('/');
   });
 
   it('gives every item a label and a root-relative href', () => {
     for (const href of allNavHrefs()) {
       expect(href.startsWith('/')).toBe(true);
-      expect(href).not.toMatch(/\/$/); // trailingSlash: 'never'
+      if (href !== '/') expect(href).not.toMatch(/\/$/); // trailingSlash: 'never'
     }
     for (const item of [...NAV, CONTACT_ITEM]) {
       expect(item.label.trim().length).toBeGreaterThan(0);
@@ -88,8 +89,8 @@ describe('NAV structure', () => {
 describe('allNavHrefs', () => {
   it('flattens parents and children, including Contact', () => {
     const hrefs = allNavHrefs();
-    expect(hrefs).toContain('/get-help');
-    expect(hrefs).toContain('/get-help/vet-center');
+    expect(hrefs).toContain('/about');
+    expect(hrefs).toContain('/about/dean-k-phillips');
     expect(hrefs).toContain('/contact');
   });
 

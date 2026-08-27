@@ -117,7 +117,7 @@ describe('the review boxes themselves', () => {
 
   it('are present on the pages that carry unconfirmed content', () => {
     const routes = new Set(notes.map((n) => n.route));
-    for (const route of ['/about', '/about/leadership', '/give', '/give/impact', '/get-help', '/give/nvvvf']) {
+    for (const route of ['/about', '/give', '/give/impact', '/get-help', '/give/nvvvf']) {
       expect(routes.has(route), `${route} has no visible review note`).toBe(true);
     }
   });

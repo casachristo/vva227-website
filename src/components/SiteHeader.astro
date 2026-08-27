@@ -20,7 +20,7 @@ const items = [...NAV, CONTACT_ITEM];
 <header class="header no-print">
   <div class="header__bar">
     <a class="brand" href="/">
-      <span class="brand__mark" aria-hidden="true">227</span>
+      <img class="brand__mark" src="/images/chapter-seal.png" alt="" width="200" height="195" aria-hidden="true" />
       {/*
         Two lockups, exactly one displayed at a time. `display: none` removes
         the hidden one from the accessibility tree too, so a screen reader
@@ -117,18 +117,11 @@ const items = [...NAV, CONTACT_ITEM];
   }
 
   .brand__mark {
-    display: grid;
-    place-items: center;
     inline-size: 2.75rem;
     block-size: 2.75rem;
     flex: none;
     border-radius: 50%;
-    background: var(--c-primary);
-    color: #fff;
-    font-family: var(--font-serif);
-    font-weight: 700;
-    font-size: 1.0625rem;
-    letter-spacing: 0.01em;
+    object-fit: contain;
   }
 
   .brand__text {
@@ -325,7 +318,6 @@ const items = [...NAV, CONTACT_ITEM];
     .brand__mark {
       inline-size: 2.25rem;
       block-size: 2.25rem;
-      font-size: 0.9375rem;
     }
   }
 

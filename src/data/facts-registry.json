@@ -410,21 +410,6 @@
     },
 
     {
-      "id": "officers-roster",
-      "origin": "legacy-site",
-      "fact": "Chapter officers as published on the legacy site",
-      "assert": ["Jay Kalner", "Len Ignatowski", "Bob Tecklenburg", "Chuck Harris", "Bruce I. Waxman"],
-      "source": "Chapter-Officers"
-    },
-    {
-      "id": "directors-roster",
-      "origin": "legacy-site",
-      "fact": "Board of directors as published on the legacy site",
-      "assert": ["Bill Lynch", "Stan Derr", "Tom Stryer", "George Jones", "Bob Pezold"],
-      "source": "Chapter-Officers"
-    },
-
-    {
       "id": "bylaws-annual-meeting",
       "origin": "legacy-site",
       "fact": "The annual meeting is held in April to elect officers and directors",
@@ -461,13 +446,6 @@
     },
 
     {
-      "id": "publications-journey",
-      "origin": "legacy-site",
-      "fact": "The chapter newsletter is called The Journey, subtitled Just In Time",
-      "assert": ["The Journey", "Just In Time"],
-      "source": "Newsletter / The Journey masthead"
-    },
-    {
       "id": "publications-policy",
       "origin": "legacy-site",
       "fact": "Newsletter published monthly except July and August, ten issues a year",
@@ -494,13 +472,6 @@
       "fact": "The chapter is featured quarterly in the Virginia Vietnam Veteran",
       "assert": ["Virginia Vietnam Veteran"],
       "source": "chapter-history"
-    },
-    {
-      "id": "publications-archive",
-      "origin": "legacy-site",
-      "fact": "The Journey archive spans 2017 to November 2024",
-      "assert": ["November 2024", "January 2017"],
-      "source": "Newsletter"
     },
 
     {

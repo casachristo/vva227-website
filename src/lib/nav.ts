@@ -7,20 +7,11 @@
  * Activities hub listed two of its four children, and the home page had a
  * carousel slide whose href was empty.
  *
- * Ordering is deliberate and reflects audience urgency:
- *   1. a veteran who needs help now
- *   2. a veteran considering joining
- *   3. someone who wants to give
- *
- * The Foundation (NVVVF) has both a top-level entry and a child under Ways to
- * Give. The two answer different questions: the top-level "The Foundation"
- * explains the relationship between the two organizations and bridges a
- * prospective donor to the chapter's own spending record; "Give to the
- * Foundation" under Ways to Give is the transactional page — payee, tax
- * status, how to actually send money. The program itself — what a veteran
- * actually receives — stays under Get Help. The header nav is flat, so
- * children surface only in the footer and the mobile disclosure; adding one
- * costs no header space.
+ * This is a low-maintenance informational site aimed at donors to Chapter 227
+ * and NVVVF, not a member-services hub — Get Help and Ways to Give were
+ * deliberately dropped as top-level tabs (2026-08-27). Both pages still exist
+ * and are reachable from in-page calls to action throughout the site; they are
+ * simply no longer advertised as primary nav destinations.
  */
 
 export interface NavItem {
@@ -33,21 +24,41 @@ export interface NavItem {
 
 export const NAV: NavItem[] = [
   {
-    label: 'Get Help',
-    href: '/get-help',
-    blurb: 'Financial assistance, counseling and referrals for veterans and their families.',
+    label: 'Home',
+    href: '/',
+    blurb: 'Who we are and what we do.',
+  },
+  {
+    label: 'About Us',
+    href: '/about',
+    blurb: 'Who we are, where we came from, and who we are named for.',
     children: [
       {
-        label: 'Alexandria Vet Center',
-        href: '/get-help/vet-center',
-        blurb: 'Free counseling for combat veterans and their families.',
+        label: 'Dean K. Phillips',
+        href: '/about/dean-k-phillips',
+        blurb: 'The chapter’s namesake.',
       },
       {
-        label: 'Veterans Treatment Court',
-        href: '/get-help/treatment-court',
-        blurb: 'Mentoring for veterans facing charges in Fairfax County.',
+        label: 'Chapter Documents',
+        href: '/about/documents',
+        blurb: 'By-laws, board minutes and the publication policy.',
       },
     ],
+  },
+  {
+    label: 'What We Do',
+    href: '/programs',
+    blurb: 'VASH support, scholarships, school speakers and community partnerships.',
+  },
+  {
+    label: 'Impact',
+    href: '/give/impact',
+    blurb: 'Every dollar the chapter paid out, itemized.',
+  },
+  {
+    label: 'Foundation',
+    href: '/foundation',
+    blurb: 'A separate 501(c)(3) the chapter created in 2025 — and how the two organizations work together.',
   },
   {
     label: 'Join Us',
@@ -61,68 +72,10 @@ export const NAV: NavItem[] = [
       },
     ],
   },
-  {
-    label: 'Ways to Give',
-    href: '/give',
-    blurb: 'Checks, cash at meetings, vehicles, clothing and household goods.',
-    children: [
-      {
-        label: 'Where Your Money Goes',
-        href: '/give/impact',
-        blurb: 'Every dollar the chapter paid out, itemized.',
-      },
-      {
-        label: 'Give to the Foundation',
-        href: '/give/nvvvf',
-        blurb: 'The 501(c)(3) the chapter created in 2025 to fund emergency assistance.',
-      },
-    ],
-  },
-  {
-    label: 'The Foundation',
-    href: '/foundation',
-    blurb: 'A separate 501(c)(3) the chapter created in 2025 — and how the two organizations work together.',
-  },
-  {
-    label: 'What We Do',
-    href: '/programs',
-    blurb: 'VASH support, scholarships, school speakers and community partnerships.',
-  },
-  {
-    label: 'Events & News',
-    href: '/events',
-    blurb: 'When and where we meet, and the chapter’s annual rhythm.',
-    children: [
-      {
-        label: 'The Journey',
-        href: '/events/news',
-        blurb: 'The chapter newsletter archive, 2017 to 2024.',
-      },
-    ],
-  },
-  {
-    label: 'About',
-    href: '/about',
-    blurb: 'Who we are, where we came from, and who we are named for.',
-    children: [
-      {
-        label: 'Dean K. Phillips',
-        href: '/about/dean-k-phillips',
-        blurb: 'The chapter’s namesake.',
-      },
-      { label: 'Leadership', href: '/about/leadership', blurb: 'Officers, directors and committees.' },
-      { label: 'Annual Reports', href: '/about/reports', blurb: 'The president’s letters, 2020 to 2024.' },
-      {
-        label: 'Chapter Documents',
-        href: '/about/documents',
-        blurb: 'By-laws, board minutes and the publication policy.',
-      },
-    ],
-  },
 ];
 
 export const CONTACT_ITEM: NavItem = {
-  label: 'Contact',
+  label: 'Contact Us',
   href: '/contact',
   blurb: 'Reach the chapter.',
 };

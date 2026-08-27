@@ -15,7 +15,7 @@
 import PageLayout from '../../layouts/PageLayout.astro';
 import DocumentArchive from '../../components/DocumentArchive.astro';
 import ReviewNote from '../../components/ReviewNote.astro';
-import newsletter from '../../data/newsletter.json';
+import boardMinutes from '../../data/board-minutes.json';
 
 const bylaws = [
   { term: 'Annual meeting', detail: 'Held in April, to elect officers and directors.' },
@@ -122,11 +122,11 @@ const policy = [
   <section>
     <h2>Board meeting minutes</h2>
     <DocumentArchive
-      files={newsletter.minutes.files.map((f) => f.file)}
-      baseUrl={newsletter.minutes.baseUrl}
+      files={boardMinutes.minutes.files.map((f) => f.file)}
+      baseUrl={boardMinutes.minutes.baseUrl}
       label="Board meeting minutes archive"
     />
-    <p class="note muted">{newsletter.minutes.note}</p>
+    <p class="note muted">{boardMinutes.minutes.note}</p>
 
     <ReviewNote topic="Minutes archive">
       Only two sets of minutes are online, both from 2024. The current site says older minutes are &ldquo;available

@@ -1,6 +1,3 @@
-import { defineCollection, z } from 'astro:content';
-import { glob } from 'astro/loaders';
-
 /**
  * Content collections.
  *
@@ -12,17 +9,4 @@ import { glob } from 'astro/loaders';
  * their own headings.
  */
 
-const reports = defineCollection({
-  loader: glob({ pattern: '*.md', base: './src/content/reports' }),
-  schema: z.object({
-    /** Calendar year the letter reports on. Drives the URL and the ordering. */
-    year: z.number().int().min(1985).max(2100),
-    /** The president's own headline, kept verbatim. */
-    title: z.string().min(1),
-    /** Some early letters carry no byline. Null is honest; "Unknown" is not. */
-    author: z.string().nullable(),
-    summary: z.string().min(1).max(400),
-  }),
-});
-
-export const collections = { reports };
+export const collections = {};

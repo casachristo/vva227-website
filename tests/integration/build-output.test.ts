@@ -43,17 +43,11 @@ describe('routes', () => {
   });
 
   it('built a meaningful number of pages', () => {
-    expect(pages.length).toBeGreaterThanOrEqual(20);
+    expect(pages.length).toBeGreaterThanOrEqual(18);
   });
 
   it('emits a 404 page for Cloudflare to serve', () => {
     expect(routes.has('/404')).toBe(true);
-  });
-
-  it('emits one page per annual report', () => {
-    for (const year of [2020, 2021, 2022, 2023, 2024]) {
-      expect(routes.has(`/about/reports/${year}`), `missing /about/reports/${year}`).toBe(true);
-    }
   });
 });
 
@@ -320,11 +314,14 @@ describe('cross-references between pages', () => {
 
   it('can actually fail — the selector excludes the footer that links everything', () => {
     // Anti-vacuity, and the specific reason this test is written against main:
-    // every page's footer links /give/nvvvf, so a document-wide selector would
-    // be green even with all seven in-body references deleted.
+    // every page's header and footer link /about (it's a top-level nav item),
+    // so a document-wide selector would be green even with all seven in-body
+    // references deleted. /give/nvvvf itself is no longer a nav item (2026-08-27),
+    // so it can no longer serve as the vacuity check here — /about, still in
+    // NAV, plays the same role.
     const home = pages.find((p) => p.route === '/')!;
-    expect(home.$(`a[href="/give/nvvvf"]`).length, 'the footer should link it everywhere').toBeGreaterThan(0);
-    expect(home.$(`main a[href="/give/nvvvf"]`).length, 'the home page deliberately does not').toBe(0);
+    expect(home.$(`a[href="/about"]`).length, 'the header/footer should link it everywhere').toBeGreaterThan(0);
+    expect(home.$(`main a[href="/about"]`).length, 'the home page deliberately does not').toBe(0);
   });
 });
 
