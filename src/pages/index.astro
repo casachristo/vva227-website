@@ -2,61 +2,29 @@
 /**
  * Home.
  *
- * The legacy home page was a seven-slide carousel with no alt text and three
- * text links. It contained no welcome copy, no mission statement, no meeting
- * details, and no mention that the chapter pays out nearly $40,000 a year to
- * veterans. Everything a first-time visitor needed was somewhere else.
- *
- * This page answers, in order: who are you, what have you actually done, what
- * do I do next, and when do you meet.
+ * Rebuilt 2026-08-28 per the chapter's written direction: a concise, evergreen
+ * front door that presents Chapter 227 as active and credible without any
+ * figure that needs periodic updating — no membership counts, financial
+ * totals, chapter rankings, or meeting schedule. Those live on their own
+ * pages (About, Impact, Events) instead, sourced from data that already
+ * carries them.
  */
 import BaseLayout from '../layouts/BaseLayout.astro';
 import HeroBand from '../components/HeroBand.astro';
-import StatRow from '../components/StatRow.astro';
-import Card from '../components/Card.astro';
-import CardGrid from '../components/CardGrid.astro';
-import MeetingCard from '../components/MeetingCard.astro';
 import CallToAction from '../components/CallToAction.astro';
-import { currency, ordinal } from '../lib/format';
 import site from '../data/site.json';
-import impact from '../data/impact.json';
-
-const latest = impact.years[0];
-
-const stats = [
-  {
-    value: currency(latest.totalSupport),
-    label: 'paid directly to veterans and their families',
-    note: `In ${latest.year} — a chapter record`,
-  },
-  {
-    value: String(latest.members),
-    label: 'members',
-    note: 'The largest VVA chapter in Virginia',
-  },
-  {
-    value: ordinal(latest.nationalRank),
-    label: 'largest chapter in the country',
-    note: 'Of more than 700 nationally',
-  },
-  {
-    value: '1985',
-    label: 'serving Northern Virginia since',
-    note: 'Founded at the Fort Myer NCO Club',
-  },
-];
 ---
 
 <BaseLayout
   title="Home"
-  description="VVA Chapter 227, the Dean K. Phillips Memorial Chapter, serves veterans and their families across Northern Virginia. In 2024 the chapter paid out over $39,700 in direct support."
+  description="VVA Chapter 227, the Dean K. Phillips Memorial Chapter, has served veterans and their families across Northern Virginia for decades — guiding veterans to help, honoring those who served, and delivering hope in partnership with the Northern Virginia Vietnam Veterans Foundation."
 >
   <!-- ---------- Hero ---------- -->
   <HeroBand
-    eyebrow="Vietnam Veterans of America &middot; Chapter 227"
+    eyebrow="Veterans Serving Veterans"
     title="We served then. We serve now."
-    lede="The Dean K. Phillips Memorial Chapter has supported veterans, service members and their families across Northern Virginia since 1985 — with rent when it is short, a ride to the VA, a mentor in court, and a room full of people who understand."
-    primary={{ label: 'Join the chapter', href: '/join' }}
+    lede="The Dean K. Phillips Memorial Chapter has served veterans and their families across Northern Virginia for decades. Rooted in the experience of Vietnam veterans, Chapter 227 continues that tradition by helping veterans in need, honoring those who served, and strengthening the veteran community."
+    primary={{ label: 'About Chapter 227', href: '/about' }}
     image={{
       src: '/images/memorial-wall-visit.jpg',
       alt: 'Chapter 227 members in their Vietnam Veterans of America vests, viewed from behind, standing before the Vietnam Veterans Memorial Wall with an American flag flying beside them.',
@@ -64,107 +32,69 @@ const stats = [
       height: 591,
     }}
   />
+
+  <!-- ---------- Quote / transition ---------- -->
   <div class="container">
-    <p class="home-motto">&ldquo;{site.motto}&rdquo;</p>
+    <p class="home-motto">&ldquo;{site.motto}.&rdquo;</p>
   </div>
 
-  <!-- ---------- Impact ---------- -->
+  <!-- ---------- Three pillars ---------- -->
+  <section class="section">
+    <div class="container">
+      <h2 class="section__title">Veterans Helping Veterans</h2>
+      <p class="section__lede lede">
+        Service has always been at the heart of Chapter 227. Today, that commitment is reflected in three enduring
+        principles.
+      </p>
+      <div class="pillars">
+        <article class="pillar">
+          <img class="pillar__icon" src="/images/icon-guiding-compass.jpg" alt="" width="400" height="400" />
+          <h3>Guiding Veterans</h3>
+          <p>Connecting veterans with the help and resources they need.</p>
+        </article>
+        <article class="pillar">
+          <img class="pillar__icon" src="/images/icon-honoring-coin.jpg" alt="" width="400" height="400" />
+          <h3>Honoring Service</h3>
+          <p>Preserving the legacy of those who served.</p>
+        </article>
+        <article class="pillar">
+          <img class="pillar__icon" src="/images/icon-hope-stamp.jpg" alt="" width="400" height="400" />
+          <h3>Delivering Hope</h3>
+          <p>Helping veterans and families through unexpected hardship.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- ---------- Partnership ---------- -->
   <section class="section section--sunken">
     <div class="container">
-      <h2 class="section__title">What that has meant</h2>
-      <p class="section__lede lede">
-        The chapter raises money from its own members and neighbors, and pays it straight back out to veterans in
-        Northern Virginia. Every figure below comes from the treasurer&rsquo;s annual report.
-      </p>
-      <StatRow stats={stats} />
-      <p class="section__more">
-        <a href="/give/impact">See exactly where the money went &rarr;</a>
-      </p>
+      <div class="partnership">
+        <p class="eyebrow">Chapter 227 &amp; NVVVF</p>
+        <h2 class="section__title">Stronger Together</h2>
+        <p>
+          VVA Chapter 227 and the Northern Virginia Vietnam Veterans Foundation (NVVVF) are independent nonprofit
+          organizations working in close partnership to support veterans and their families throughout Northern
+          Virginia.
+        </p>
+        <p class="section__more">
+          <a href="/foundation">Learn About Our Partnership &rarr;</a>
+        </p>
+      </div>
     </div>
   </section>
 
-  <!-- ---------- Three doors ---------- -->
-  <section class="section">
-    <div class="container">
-      <h2 class="section__title">How can we help?</h2>
-      <CardGrid min="19rem">
-        <Card title="I am a veteran who needs help" href="/get-help" eyebrow="Get help">
-          <p>
-            The chapter helps with rent, utilities, car repairs and medical costs, and can point you to counseling,
-            housing and benefits support. You do not have to be a member.
-          </p>
-        </Card>
-        <Card title="I served during the Vietnam era" href="/join" eyebrow="Join us">
-          <p>
-            Life membership is $50, once, with no further dues. In-country service is not required &mdash; anyone who
-            served during the era is eligible.
-          </p>
-        </Card>
-        <Card title="I want to support this work" href="/give" eyebrow="Ways to give">
-          <p>
-            Checks, cash at meetings, a vehicle you no longer drive, or clothing and household goods collected from
-            your door.
-          </p>
-        </Card>
-      </CardGrid>
-    </div>
-  </section>
-
-  <!-- ---------- What we do ---------- -->
-  <section class="section">
-    <div class="container">
-      <h2 class="section__title">What the chapter does</h2>
-      <CardGrid min="17rem">
-        <Card
-          title="Scholarships and school speakers"
-          href="/programs"
-          image="/images/student-awards.jpg"
-          imageAlt="A chapter member stands with eight high-school students in an art classroom during a student awards presentation."
-        >
-          <p>
-            Chapter members have been telling students what the Vietnam War was actually like since 1987, and funding
-            scholarships for Northern Virginia students since 1985.
-          </p>
-        </Card>
-        <Card
-          title="Remembrance"
-          href="/events"
-          image="/images/pow-chair-dedication.jpg"
-          imageAlt="Five chapter members standing beside a POW/MIA chair and dedication plaque in the stands at Nationals Park."
-        >
-          <p>
-            The chapter marks Memorial Day and Veterans Day at The Wall, and dedicated the POW/MIA chair at Nationals
-            Park &mdash; a seat that stays empty on purpose.
-          </p>
-        </Card>
-        <Card title="Mentoring veterans in court" href="/get-help/treatment-court">
-          <p>
-            Chapter members serve as one-to-one mentors in the Fairfax County Veterans Treatment Docket, which helps
-            veterans facing charges tied to addiction and PTSD.
-          </p>
-        </Card>
-      </CardGrid>
-    </div>
-  </section>
-
-  <!-- ---------- Meetings ---------- -->
-  <section class="section">
-    <div class="container">
-      <h2 class="section__title">Come to a meeting</h2>
-      <p class="section__lede lede">
-        You do not need to be a member, and you do not need to call ahead. Come for dinner, stay for the speaker.
-      </p>
-      <MeetingCard />
-    </div>
-  </section>
-
+  <!-- ---------- Closing ---------- -->
   <div class="container">
     <CallToAction
-      title="Nine meetings a year, and forty years of showing up"
-      primary={{ label: 'Ways to give', href: '/give' }}
+      title="A Legacy of Service. A Commitment That Continues."
+      primary={{ label: 'What We Do', href: '/programs' }}
+      secondary={{ label: 'Our Impact', href: '/give/impact' }}
       tone="green"
     >
-      Chapter 227 is run entirely by its members. Every dollar donated is paid out by the same people who raised it.
+      Chapter 227 was built on a simple principle: veterans look after veterans. From honoring the service and
+      sacrifice of those who came before us to helping veterans and families facing challenges today, that principle
+      continues to guide everything we do.
     </CallToAction>
   </div>
 </BaseLayout>
@@ -195,19 +125,67 @@ const stats = [
     margin-block-end: var(--s-6);
   }
 
-  .section__title + :global(.stats),
-  .section__title + :global(.grid) {
-    margin-block-start: var(--s-6);
-  }
-
   .section__more {
     margin-block-start: var(--s-6);
     font-weight: 600;
   }
 
+  /* ---------- Three pillars ---------- */
+
+  .pillars {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--s-7);
+    margin-block-start: var(--s-6);
+  }
+
+  .pillar {
+    text-align: center;
+  }
+
+  .pillar__icon {
+    inline-size: 9rem;
+    block-size: 9rem;
+    border-radius: var(--r-lg);
+    object-fit: cover;
+    margin-inline: auto;
+    margin-block-end: var(--s-5);
+    border: 1px solid var(--c-border);
+    box-shadow: var(--shadow-md);
+  }
+
+  .pillar h3 {
+    margin-block-end: var(--s-2);
+  }
+
+  .pillar p {
+    color: var(--c-ink-soft);
+    font-size: 1rem;
+    line-height: 1.6;
+  }
+
+  /* ---------- Partnership ---------- */
+
+  .partnership {
+    max-width: var(--w-prose);
+  }
+
+  .partnership p {
+    margin-block-start: var(--s-4);
+  }
+
+  .partnership p:first-of-type {
+    margin-block-start: 0;
+  }
+
   @media (max-width: 60rem) {
     .home-motto {
       margin-block-start: var(--s-5);
+    }
+
+    .pillars {
+      grid-template-columns: 1fr;
+      gap: var(--s-6);
     }
   }
 </style>
