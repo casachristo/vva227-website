@@ -30,13 +30,6 @@
       "source": "chapter-history"
     },
     {
-      "id": "org-incorporated",
-      "origin": "legacy-site",
-      "fact": "Incorporated as a Virginia non-profit in January 1986",
-      "assert": ["January 1986"],
-      "source": "chapter-history"
-    },
-    {
       "id": "org-motto",
       "origin": "legacy-site",
       "fact": "Founding motto",
@@ -178,13 +171,6 @@
       "fact": "2020: about $25,000 provided, 329 members, 22nd nationally",
       "assert": ["$25,000", "329", "22nd"],
       "source": "2020-year-in-review"
-    },
-    {
-      "id": "impact-largest-va",
-      "origin": "legacy-site",
-      "fact": "Largest VVA chapter in Virginia",
-      "assert": ["largest VVA chapter in Virginia"],
-      "source": "annual letters"
     },
 
     {
@@ -471,21 +457,6 @@
       "origin": "legacy-site",
       "fact": "The chapter is featured quarterly in the Virginia Vietnam Veteran",
       "assert": ["Virginia Vietnam Veteran"],
-      "source": "chapter-history"
-    },
-
-    {
-      "id": "events-memorial-day",
-      "origin": "legacy-site",
-      "fact": "Memorial Day and Veterans Day observances: brunch, wreath, The Wall, potluck",
-      "assert": ["wreath", "potluck"],
-      "source": "chapter-history"
-    },
-    {
-      "id": "events-social",
-      "origin": "legacy-site",
-      "fact": "Annual picnic in June or July, awards banquet in June, holiday party in December",
-      "assert": ["picnic", "awards banquet", "Holiday party"],
       "source": "chapter-history"
     },
     {

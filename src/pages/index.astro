@@ -48,17 +48,23 @@ import site from '../data/site.json';
       </p>
       <div class="pillars">
         <article class="pillar">
-          <img class="pillar__icon" src="/images/icon-guiding-compass.jpg" alt="" width="400" height="400" />
+          <div class="pillar__figure">
+            <img class="pillar__icon pillar__icon--compass" src="/images/pillar-compass.png" alt="" width="700" height="467" />
+          </div>
           <h3>Guiding Veterans</h3>
           <p>Connecting veterans with the help and resources they need.</p>
         </article>
         <article class="pillar">
-          <img class="pillar__icon" src="/images/icon-honoring-coin.jpg" alt="" width="400" height="400" />
+          <div class="pillar__figure">
+            <img class="pillar__icon pillar__icon--coin" src="/images/pillar-coin.png" alt="" width="700" height="674" />
+          </div>
           <h3>Honoring Service</h3>
           <p>Preserving the legacy of those who served.</p>
         </article>
         <article class="pillar">
-          <img class="pillar__icon" src="/images/icon-hope-stamp.jpg" alt="" width="400" height="400" />
+          <div class="pillar__figure">
+            <img class="pillar__icon pillar__icon--stamp" src="/images/pillar-stamp.png" alt="" width="700" height="700" />
+          </div>
           <h3>Delivering Hope</h3>
           <p>Helping veterans and families through unexpected hardship.</p>
         </article>
@@ -143,15 +149,31 @@ import site from '../data/site.json';
     text-align: center;
   }
 
-  .pillar__icon {
-    inline-size: 9rem;
-    block-size: 9rem;
-    border-radius: var(--r-lg);
-    object-fit: cover;
-    margin-inline: auto;
+  /* A fixed-height stage per pillar, so the three headings start on the same
+     line below regardless of how each graphic's own proportions differ —
+     the compass/map is wide, the coin photo carries a lot of its own margin,
+     and the stamp is tall. Centering within an equal-height box keeps them
+     aligned without cropping or forcing identical image dimensions. */
+  .pillar__figure {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    block-size: 10.5rem;
     margin-block-end: var(--s-5);
-    border: 1px solid var(--c-border);
-    box-shadow: var(--shadow-md);
+  }
+
+  .pillar__icon {
+    display: block;
+    inline-size: auto;
+    max-inline-size: 100%;
+  }
+
+  /* All three photos are tightly framed around their subject, so an equal
+     block-size reads as equal visual weight without any further adjustment. */
+  .pillar__icon--compass,
+  .pillar__icon--stamp,
+  .pillar__icon--coin {
+    block-size: 9.5rem;
   }
 
   .pillar h3 {

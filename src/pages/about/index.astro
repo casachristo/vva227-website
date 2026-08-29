@@ -2,44 +2,29 @@
 /**
  * About — "Who We Are".
  *
- * This is copy the legacy site never had. Its "Chapter Basics" page was a
- * heading, the literal string "Click for More Details:", and a list of eight
- * links — no explanation of what the chapter is, who it serves, or when it
- * meets. The real founding narrative was two levels down on a page called
- * "chapter history", which also carried duplicate paragraphs pasted from
- * Community Outreach.
+ * Rebuilt 2026-08-29 per the chapter's written direction: one continuous
+ * story — how the chapter began, who Dean K. Phillips was, why the chapter
+ * carries his name, and how that legacy continues today — with nothing that
+ * needs routine updating. Membership counts, rankings, meeting schedules,
+ * officer names and newsletter details now live only on the pages built to
+ * carry them (Impact, Events, About Us's own governance page), not here.
  */
 import PageLayout from '../../layouts/PageLayout.astro';
 import HeroBand from '../../components/HeroBand.astro';
-import Card from '../../components/Card.astro';
-import CardGrid from '../../components/CardGrid.astro';
-import StatRow from '../../components/StatRow.astro';
-import ReviewNote from '../../components/ReviewNote.astro';
-import CallToAction from '../../components/CallToAction.astro';
+import Figure from '../../components/Figure.astro';
 import site from '../../data/site.json';
-import { ordinal } from '../../lib/format';
-import impact from '../../data/impact.json';
-
-const latest = impact.years[0];
-
-const stats = [
-  { value: String(latest.members), label: 'members', note: `As of ${latest.year}` },
-  { value: '#1', label: 'largest VVA chapter in Virginia', note: `${ordinal(latest.nationalRank)} nationally` },
-  { value: '40', label: 'years serving Northern Virginia', note: 'Founded 1985' },
-];
 ---
 
 <PageLayout
   title="About the Chapter"
-  description="VVA Chapter 227, the Dean K. Phillips Memorial Chapter, was formed in 1985 by fifteen people at the Fort Myer NCO Club. It is now the largest VVA chapter in Virginia."
+  description="VVA Chapter 227, the Dean K. Phillips Memorial Chapter, has carried forward a commitment born from the experience of Vietnam veterans for more than four decades."
   hero
 >
   <HeroBand
     slot="hero"
-    eyebrow="About"
-    title="About the Chapter"
-    lede="Fifteen people in a club room at Fort Myer, forty years ago. Four hundred and eighteen members now, and the largest Vietnam Veterans of America chapter in the Commonwealth."
-    primary={{ label: 'Our Namesake', href: '/about/dean-k-phillips' }}
+    eyebrow="Our Story"
+    title="About Chapter 227"
+    lede="For more than four decades, the Dean K. Phillips Memorial Chapter has carried forward a commitment born from the experience of Vietnam veterans: to serve veterans and their families, honor those who served, and strengthen the community we share."
     image={{
       src: '/images/phillips-plaque-drop-zone.jpg',
       alt: 'The bronze Captain Dean K. Phillips Parachute Drop Zone plaque at Fort Meade, with an American flag and a POW/MIA flag flying beside it.',
@@ -49,109 +34,129 @@ const stats = [
     }}
   />
 
+  <!-- ---------- How it began ---------- -->
   <section class="stack">
-    <h2>How it started</h2>
+    <h2>How It Began</h2>
     <p>
-      On <strong>24 July 1985</strong>, approximately fifteen people met at the Fort Myer NCO Club in Arlington,
-      Virginia to form a local chapter of the only congressionally chartered Vietnam-veteran service organization in
-      the United States. The chapter was incorporated as a non-profit in the Commonwealth of Virginia in
-      <strong> January 1986</strong>.
+      In 1985, a small group of Vietnam veterans gathered at the Fort Myer NCO Club in Arlington, Virginia, to
+      establish a local chapter of Vietnam Veterans of America.
     </p>
     <p>
-      It took the name of <a href="/about/dean-k-phillips">Captain Dean K. Phillips</a> &mdash; 101st Airborne in
-      Vietnam, author of the Vietnam Era Veterans&rsquo; Readjustment Assistance Act, and one of the people who got
-      the Vietnam Veterans Memorial approved. He died a month after the chapter was founded.
+      They shared more than military service. They shared a determination that the experiences of Vietnam veterans
+      would lead to something lasting &mdash; a commitment to fellowship, advocacy, remembrance and service to fellow
+      veterans.
     </p>
-
-    <ReviewNote topic="Founding date">{site.founded.review}</ReviewNote>
-  </section>
-
-  <section class="stack">
-    <h2>Where it stands now</h2>
-    <StatRow stats={stats} />
-    <p class="muted note">
-      Membership has grown every year for five years — from 329 in 2020 to 418 in 2024 — at a time when most
-      Vietnam-era veterans organizations are shrinking.
+    <p>
+      The new organization became the <strong>Dean K. Phillips Memorial Chapter</strong>, honoring a fellow Vietnam
+      veteran whose life embodied that commitment to continued service.
     </p>
   </section>
 
-  <section class="stack">
-    <h2>And what came next</h2>
-    <p>
-      In June 2025, in the chapter&rsquo;s fortieth year, its members created a separate charitable organization
-      &mdash; the <strong>Northern Virginia Vietnam Veterans Foundation</strong> &mdash; to raise money for veterans
-      facing a sudden financial emergency, and to carry that work past the current generation of chapter leaders.
-    </p>
-    <p>
-      It answers, at least in part, a question the chapter put to itself at a town hall in September 2023: how the
-      mission continues after the eventual dissolution of VVA National later in the decade.
-    </p>
-    <p><a href="/give/nvvvf">About the Foundation &rarr;</a></p>
-  </section>
+  <!-- ---------- The man behind our name ---------- -->
+  <section class="stack namesake">
+    <p class="eyebrow">The Man Behind Our Name</p>
+    <h2>Captain Dean K. Phillips</h2>
 
-  <section class="stack">
-    <h2>What we are for</h2>
-    <blockquote class="mission">
-      <p>{site.mission}</p>
-    </blockquote>
-    <p>
-      In practice that means three things: money paid directly to veterans and families who need it, a room full of
-      people who understand once a month, and telling the truth about the war to anyone who will listen.
-    </p>
-    <p>
-      The chapter helps <em>all</em> needy and homeless veterans in Northern Virginia, not only Vietnam veterans,
-      and it has no paid staff. Everything is done by members.
-    </p>
-  </section>
-
-  <section class="stack">
-    <h2>Traditions</h2>
-    <div class="traditions">
-      <div>
-        <h3>Memorial Day and Veterans Day</h3>
+    <div class="namesake__split">
+      <div class="namesake__text">
         <p>
-          Members, family and friends spend the day together. It starts with brunch and building a commemorative
-          wreath, moves to the Vietnam Veterans Memorial to join other veterans groups in paying homage, and ends in
-          the late afternoon with a potluck dinner at a member&rsquo;s home.
+          Dean K. Phillips served with the 101st Airborne Division in Vietnam, where he volunteered for dangerous
+          assignments with a long-range reconnaissance platoon. His Vietnam service was recognized with two Silver
+          Stars, two Bronze Stars, a Purple Heart, an Air Medal and an Army Commendation Medal.
         </p>
-      </div>
-      <div>
-        <h3>The social year</h3>
+        <p>But his commitment to veterans did not end when he returned home.</p>
         <p>
-          A picnic in June or July, an awards banquet in June, the anniversary dinner in October, and a holiday
-          party in December — with other events scattered through the year.
+          Phillips earned graduate and law degrees and became a determined advocate for veterans. His work took him
+          from veterans issues in Colorado to Washington, where he served in the Veterans Administration, worked
+          with veterans organizations and testified before Congress. He was also involved in the effort to establish
+          the Vietnam Veterans Memorial.
         </p>
-      </div>
-      <div>
-        <h3>Publications</h3>
         <p>
-          The chapter publishes <strong>The Journey</strong> for its members. Through the Virginia State Council
-          network the chapter is featured quarterly in the <em>Virginia Vietnam Veteran</em>, and members receive
-          the national magazine, <em>The VVA Veteran</em>.
+          Phillips later returned to uniform with the Army Reserve&rsquo;s 11th Special Forces Group at Fort Meade,
+          Maryland, where his leadership earned the respect of the soldiers with whom he served.
         </p>
+        <p>
+          Dean Phillips died in 1985 at the age of 42. Chapter 227 carries his name not simply to remember him, but
+          because his life represents a principle that remains at the heart of the Chapter:
+        </p>
+        <p class="namesake__emphasis">Service does not end when military service ends.</p>
+
+        <aside class="legacy-note">
+          <h3>Preserving His Legacy</h3>
+          <p>
+            Years after Dean Phillips&rsquo; death, Chapter 227 members helped restore the memorial bearing his name.
+            When the original plaque had deteriorated, Chapter members supported its replacement with a larger
+            bronze memorial plaque, installed in 2006 at the former Fort Meade parachute drop zone named in his
+            honor.
+          </p>
+        </aside>
       </div>
+
+      <Figure
+        src="/images/dean-phillips-sgt.png"
+        alt="A black-and-white photograph of Sgt. Dean K. Phillips in uniform, hands on hips, standing on a porch."
+        caption="Sgt. Dean K. Phillips, probably early 1970s."
+        credit="Courtesy of Frank Phillips."
+        maxWidth="22rem"
+      />
     </div>
   </section>
 
+  <!-- ---------- A legacy that continues ---------- -->
   <section class="stack">
-    <h2>Go deeper</h2>
-    <CardGrid min="17rem">
-      <Card title="Captain Dean K. Phillips" href="/about/dean-k-phillips" eyebrow="Namesake">
-        <p>Who the chapter is named for, and the plaque its members restored at Fort Meade in 2006.</p>
-      </Card>
-      <Card title="Chapter documents" href="/about/documents" eyebrow="Governance">
-        <p>By-laws, board meeting minutes, and the chapter publication policy.</p>
-      </Card>
-    </CardGrid>
+    <h2>A Legacy That Continues</h2>
+    <p>
+      Chapter 227 was created by Vietnam veterans, but the commitment they established reaches far beyond one
+      generation.
+    </p>
+    <p>
+      Through veteran assistance, advocacy, fellowship, remembrance, community service and partnerships with other
+      veteran-serving organizations, Chapter 227 continues to put the experience of veterans to work for veterans
+      and families who need help.
+    </p>
+    <p class="legacy-emphasis">The methods may evolve. The commitment does not.</p>
   </section>
 
-  <CallToAction
-    title="Forty years, and still meeting"
-    primary={{ label: 'Join the chapter', href: '/join' }}
-    secondary={{ label: 'Come to a meeting', href: '/events' }}
-  >
-    Membership is open to anyone who served during the Vietnam era. Life membership is $50, once.
-  </CallToAction>
+  <!-- ---------- A community of veterans ---------- -->
+  <section class="stack">
+    <h2>A Community of Veterans</h2>
+    <p>
+      Chapter 227 is also a community. Our membership brings together men and women who served during the Vietnam
+      era in the U.S. Army, Navy, Air Force, Marine Corps and Coast Guard, united by shared experience and a
+      continuing commitment to veterans.
+    </p>
+    <p>
+      Members come together regularly for Chapter meetings, fellowship, veteran-service activities and opportunities
+      to remain connected with fellow veterans and the broader Northern Virginia veteran community.
+    </p>
+    <p>
+      That community also includes the Associates of Vietnam Veterans of America (AVVA). AVVA is a national,
+      independent nonprofit veterans-support organization whose members include veterans of all eras, family
+      members, friends and others who share a commitment to veterans and their families.
+    </p>
+    <p>
+      AVVA members affiliated with Chapter 227 work alongside Chapter members, supporting veterans and their
+      families, Chapter activities, community service and fellowship. Together, VVA and AVVA broaden the community
+      of people able to carry forward the principle that has guided Vietnam veterans for decades:
+    </p>
+    <p class="legacy-emphasis">&ldquo;Never again will one generation of veterans abandon another.&rdquo;</p>
+  </section>
+
+  <!-- ---------- What we stand for ---------- -->
+  <section class="container">
+    <div class="stand-for">
+      <h2>What We Stand For</h2>
+      <p class="stand-for__quote">&ldquo;{site.mission}&rdquo;</p>
+      <p class="stand-for__body">
+        That purpose has guided Chapter 227 from its beginning. It continues to shape how we honor the past, serve
+        veterans today and help ensure that the tradition of veterans helping veterans continues.
+      </p>
+      <div class="stand-for__actions">
+        <a class="stand-for__btn stand-for__btn--solid" href="/programs">What We Do</a>
+        <a class="stand-for__btn stand-for__btn--ghost" href="/give/impact">Our Impact</a>
+      </div>
+    </div>
+  </section>
 </PageLayout>
 
 <style>
@@ -163,11 +168,6 @@ const stats = [
     margin-block-end: var(--s-4);
   }
 
-  h3 {
-    font-size: var(--t-lg);
-    margin-block-end: var(--s-3);
-  }
-
   p {
     max-width: var(--w-prose);
   }
@@ -176,35 +176,123 @@ const stats = [
     margin-block-start: var(--s-4);
   }
 
-  .note {
-    font-size: var(--t-sm);
-    margin-block-start: var(--s-5);
-  }
-
-  .mission {
-    margin: 0 0 var(--s-5);
-    padding: var(--s-5) var(--s-6);
-    background: var(--c-primary-tint);
-    border-radius: var(--r-lg);
+  .namesake__emphasis {
     font-family: var(--font-serif);
-    font-size: var(--t-xl);
-    line-height: 1.35;
+    font-size: var(--t-lg);
+    font-style: italic;
     color: var(--c-primary-dark);
   }
 
-  .mission p {
-    max-width: none;
+  .legacy-emphasis {
+    font-family: var(--font-serif);
+    font-size: var(--t-lg);
+    font-style: italic;
+    color: var(--c-primary-dark);
+    margin-block-start: var(--s-5);
   }
 
-  .traditions {
+  /* ---------- The man behind our name ---------- */
+
+  .namesake__split {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(min(18rem, 100%), 1fr));
-    gap: var(--s-6);
+    grid-template-columns: 1.15fr 0.85fr;
+    gap: var(--s-7);
+    align-items: start;
+    margin-block-start: var(--s-5);
   }
 
-  .traditions p {
+  .namesake__text p {
     max-width: none;
-    font-size: 1rem;
+  }
+
+  .legacy-note {
+    margin-block-start: var(--s-6);
+    padding-inline-start: var(--s-4);
+    border-inline-start: 3px solid var(--c-gold);
+  }
+
+  .legacy-note h3 {
+    font-size: var(--t-base);
+    margin-block-end: var(--s-2);
+  }
+
+  .legacy-note p {
+    max-width: none;
+    font-size: var(--t-sm);
     color: var(--c-ink-soft);
+  }
+
+  /* ---------- What we stand for ---------- */
+
+  .stand-for {
+    padding: var(--s-8) var(--s-7);
+    background: var(--c-primary);
+    border-radius: var(--r-lg);
+    color: #fff;
+    text-align: center;
+  }
+
+  .stand-for h2 {
+    color: #fff;
+  }
+
+  .stand-for__quote {
+    max-width: 46ch;
+    margin-inline: auto;
+    font-family: var(--font-serif);
+    font-size: var(--t-2xl);
+    line-height: 1.35;
+    color: var(--c-gold);
+  }
+
+  .stand-for__body {
+    max-width: 46ch;
+    margin-inline: auto;
+    margin-block-start: var(--s-4);
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 1rem;
+    line-height: 1.6;
+  }
+
+  .stand-for__actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: var(--s-3);
+    margin-block-start: var(--s-6);
+  }
+
+  .stand-for__btn {
+    display: inline-block;
+    padding: var(--s-3) var(--s-5);
+    border-radius: var(--r-md);
+    font-weight: 700;
+    font-size: 1rem;
+    text-decoration: none;
+    transition: background var(--dur) var(--ease), color var(--dur) var(--ease);
+  }
+
+  .stand-for__btn--solid {
+    background: #fff;
+    color: var(--c-primary-dark);
+  }
+
+  .stand-for__btn--solid:hover {
+    background: var(--c-surface-sunken);
+  }
+
+  .stand-for__btn--ghost {
+    border: 2px solid rgba(255, 255, 255, 0.6);
+    color: #fff;
+  }
+
+  .stand-for__btn--ghost:hover {
+    background: rgba(255, 255, 255, 0.12);
+  }
+
+  @media (max-width: 56rem) {
+    .namesake__split {
+      grid-template-columns: 1fr;
+    }
   }
 </style>

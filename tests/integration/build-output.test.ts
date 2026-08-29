@@ -290,7 +290,6 @@ describe('cross-references between pages', () => {
   const IN_BODY: ReadonlyArray<{ from: string; to: string; why: string }> = [
     { from: '/give', to: '/give/nvvvf', why: 'a donor choosing between two payees' },
     { from: '/give/impact', to: '/give/nvvvf', why: 'why the chapter figures stop at 2024' },
-    { from: '/about', to: '/give/nvvvf', why: 'the chapter created it in its fortieth year' },
     { from: '/programs', to: '/give/nvvvf', why: 'how emergency aid is funded' },
     { from: '/give/nvvvf', to: '/get-help', why: 'a veteran who lands on the donor page' },
     { from: '/give/nvvvf', to: '/give', why: 'giving to the chapter rather than the Foundation' },

@@ -117,7 +117,10 @@ describe('the review boxes themselves', () => {
 
   it('are present on the pages that carry unconfirmed content', () => {
     const routes = new Set(notes.map((n) => n.route));
-    for (const route of ['/about', '/give', '/give/impact', '/get-help', '/give/nvvvf']) {
+    // /about carried a note on its founding date until the chapter confirmed
+    // it (2026-08-29); it's off this list now because the page has no other
+    // unconfirmed content, not because the list stopped mattering.
+    for (const route of ['/give', '/give/impact', '/get-help', '/give/nvvvf']) {
       expect(routes.has(route), `${route} has no visible review note`).toBe(true);
     }
   });
