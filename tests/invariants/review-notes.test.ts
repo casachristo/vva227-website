@@ -88,9 +88,13 @@ describe('every recorded disagreement reaches the page', () => {
     // A renamed key would silently reduce this to zero and make every
     // assertion below pass against nothing.
     expect(markers.length, 'no review markers found — has a key been renamed?').toBeGreaterThanOrEqual(9);
+    // impact.json carried two of these (a donations figure and a membership
+    // count that disagreed between annual letters) until both were retired
+    // along with the dollar/membership figures they argued about
+    // (2026-08-29) — nvvvf.json alone is enough to prove the walk finds
+    // markers across more than one file.
     const files = new Set(markers.map((m) => m.file));
     expect([...files].sort()).toContain('nvvvf.json');
-    expect([...files].sort()).toContain('impact.json');
   });
 
   it('renders every one of them somewhere in the built site', () => {
@@ -117,10 +121,12 @@ describe('the review boxes themselves', () => {
 
   it('are present on the pages that carry unconfirmed content', () => {
     const routes = new Set(notes.map((n) => n.route));
-    // /about carried a note on its founding date until the chapter confirmed
-    // it (2026-08-29); it's off this list now because the page has no other
-    // unconfirmed content, not because the list stopped mattering.
-    for (const route of ['/give', '/give/impact', '/get-help', '/give/nvvvf']) {
+    // /about (founding date, confirmed 2026-08-29) and /give/impact (the
+    // conflicting-figures notes, retired along with the annual dollar/
+    // membership figures they argued about, 2026-08-29) are off this list
+    // because those pages no longer carry any unconfirmed content — not
+    // because the list stopped mattering.
+    for (const route of ['/give', '/get-help', '/give/nvvvf']) {
       expect(routes.has(route), `${route} has no visible review note`).toBe(true);
     }
   });

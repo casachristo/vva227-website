@@ -28,8 +28,8 @@ import registry from '../../src/data/facts-registry.json';
 // Both are set to the EXACT current count. Slack in a ratchet is a hole — with
 // 70 against 79 covered, a registry entry and its content could be deleted
 // together and both assertions would still pass.
-const MIN_LEGACY_FACTS = 71;
-const MIN_COVERED_FACTS = 79;
+const MIN_LEGACY_FACTS = 57;
+const MIN_COVERED_FACTS = 65;
 
 /** A needle matching most of the site proves nothing — "227" hits every header. */
 const MAX_PAGES_PER_NEEDLE = 6;

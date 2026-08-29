@@ -131,116 +131,11 @@
     },
 
     {
-      "id": "impact-2024",
-      "origin": "legacy-site",
-      "fact": "2024: over $39,700 in direct support, 418 members, 17th largest nationally",
-      "assert": ["$39,700", "418", "17th"],
-      "source": "2024-year-in-review"
-    },
-    {
-      "id": "impact-2023-total",
-      "origin": "legacy-site",
-      "fact": "2023 itemized veteran support totaled $33,068",
-      "assert": ["$33,068"],
-      "source": "Veteran-and-Family-Support-Funds"
-    },
-    {
-      "id": "impact-2023-lines",
-      "origin": "legacy-site",
-      "fact": "2023 line items: veterans in need, VASH back to school, VASH holiday cards, Wounded Warrior, treatment docket, Adopt a Soldier, Lamb Center",
-      "assert": ["$13,059", "$6,600", "$8,375", "$3,000", "$1,000", "$250", "$784"],
-      "source": "Veteran-and-Family-Support-Funds"
-    },
-    {
-      "id": "impact-2022",
-      "origin": "legacy-site",
-      "fact": "2022: $31,000 in direct support, 359 members",
-      "assert": ["$31,000", "359"],
-      "source": "2022-year-in-review"
-    },
-    {
-      "id": "impact-2021",
-      "origin": "legacy-site",
-      "fact": "2021: about $28,000 provided, 349 members",
-      "assert": ["$28,000", "349"],
-      "source": "2021-year-in-review"
-    },
-    {
-      "id": "impact-2020",
-      "origin": "legacy-site",
-      "fact": "2020: about $25,000 provided, 329 members, 22nd nationally",
-      "assert": ["$25,000", "329", "22nd"],
-      "source": "2020-year-in-review"
-    },
-
-    {
-      "id": "program-vash",
-      "origin": "legacy-site",
-      "fact": "VASH is about half of chapter funds, sustained over ten years, cards distributed twice a year",
-      "assert": ["VA Supportive Housing", "twice a year"],
-      "source": "Support-to-VA-VASH"
-    },
-    {
-      "id": "program-scholarships",
-      "origin": "legacy-site",
-      "fact": "Scholarships for needy Northern Virginia students since 1985, extended to summer English classes",
-      "assert": ["scholarships", "English"],
-      "source": "chapter-history / Community-Outreach"
-    },
-    {
-      "id": "program-speakers",
-      "origin": "legacy-site",
-      "fact": "Members have shared Tour of Duty experiences since 1987",
-      "assert": ["Tour of Duty", "1987"],
-      "source": "Community-Outreach"
-    },
-    {
-      "id": "program-speaker-venues",
-      "origin": "legacy-site",
-      "fact": "Speaking venues include The Wall, Arlington and Fairfax schools, GMU, NOVA, Trinity and Maryland",
-      "assert": [
-        "Vietnam Veterans Memorial",
-        "George Mason University",
-        "Northern Virginia Community College",
-        "Trinity College",
-        "University of Maryland"
-      ],
-      "source": "Community-Outreach"
-    },
-    {
       "id": "program-lamb-center",
       "origin": "legacy-site",
       "fact": "The Lamb Center in Fairfax is a day shelter supported by chapter AVVA members",
       "assert": ["Lamb Center"],
       "source": "AVVA-Chapter-membership"
-    },
-    {
-      "id": "program-mitre",
-      "origin": "legacy-site",
-      "fact": "MITRE Corporation care package partnership",
-      "assert": ["MITRE"],
-      "source": "2024-year-in-review"
-    },
-    {
-      "id": "program-suits",
-      "origin": "legacy-site",
-      "fact": "Suits for Veterans provided over 150 donated suits to Walter Reed and Bethesda",
-      "assert": ["Suits for Veterans", "Walter Reed"],
-      "source": "accomplishments sheet"
-    },
-    {
-      "id": "program-kickstart",
-      "origin": "legacy-site",
-      "fact": "Operation Kick-Start gives $25 to each new homeless veteran resident at Compassion House",
-      "assert": ["Operation Kick-Start", "Compassion House"],
-      "source": "accomplishments sheet"
-    },
-    {
-      "id": "program-writers",
-      "origin": "legacy-site",
-      "fact": "The chapter funds the Memorial Day Writers Project tent at The Wall",
-      "assert": ["Memorial Day Writers"],
-      "source": "The Journey September 2019"
     },
 
     {

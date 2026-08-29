@@ -144,11 +144,15 @@ describe('static assets', () => {
 
   it('keeps the photographs the audit specifically recovered', () => {
     // Named individually because each was a finding: the fall-festival photo is
-    // the home hero, the student-awards photo appears on no live legacy page and
-    // was pulled out of the Internet Archive, and the plaque photographs are the
-    // only record of the chapter's namesake the old site never explained.
+    // the home hero, and the plaque photographs are the only record of the
+    // chapter's namesake the old site never explained. The student-awards
+    // photo (Internet Archive, school-speakers program) was on this list until
+    // the chapter retired Tour of Duty/school speakers entirely (2026-08-29,
+    // What We Do rebuild) — the program it depicted no longer exists on the
+    // site to hang a photo of it from, and there was nowhere else to place it
+    // without touching a page outside that rebuild's scope.
     const html = pages.map((p) => p.html).join('\n');
-    const orphans = ['fall-festival.jpg', 'student-awards.jpg', 'pow-chair-dedication.jpg', 'phillips-plaque.jpg'].filter(
+    const orphans = ['fall-festival.jpg', 'pow-chair-dedication.jpg', 'phillips-plaque.jpg'].filter(
       (file) => !html.includes(file),
     );
     expect(orphans, `images shipped but never used: ${orphans.join(', ')}`).toEqual([]);
@@ -289,7 +293,7 @@ describe('cross-references between pages', () => {
   // proves nothing — hence `main`.
   const IN_BODY: ReadonlyArray<{ from: string; to: string; why: string }> = [
     { from: '/give', to: '/give/nvvvf', why: 'a donor choosing between two payees' },
-    { from: '/give/impact', to: '/give/nvvvf', why: 'why the chapter figures stop at 2024' },
+    { from: '/give/impact', to: '/give/nvvvf', why: 'the Foundation partnership behind emergency assistance' },
     { from: '/programs', to: '/give/nvvvf', why: 'how emergency aid is funded' },
     { from: '/give/nvvvf', to: '/get-help', why: 'a veteran who lands on the donor page' },
     { from: '/give/nvvvf', to: '/give', why: 'giving to the chapter rather than the Foundation' },

@@ -1,50 +1,41 @@
 ---
 /**
- * Where Your Money Goes.
+ * Impact.
  *
- * The chapter's strongest asset with donors — an itemized account of every
- * dollar paid out — existed on the legacy site only as a bare table on a page
- * called "Veteran and Family Support Funds", reachable four clicks deep, and
- * carried figures two years out of date while the donate page quoted a
- * different number for the same year.
- *
- * The breakdown total is recomputed from the line items at build time rather
- * than trusted from the source, so the table can never disagree with itself.
+ * Rebuilt 2026-08-29 per the chapter's written direction: replaces the old
+ * itemized-ledger/annual-comparison page (dollar tables, membership counts,
+ * national rankings, and the unresolved question of how the chapter's own
+ * figures relate to the Foundation's) with a page that answers a different
+ * question — what difference does the chapter's work actually make — using
+ * only evergreen facts that don't require a yearly refresh. The hero image
+ * is a temporary placeholder; a new one will be chosen separately.
  */
 import PageLayout from '../../layouts/PageLayout.astro';
 import HeroBand from '../../components/HeroBand.astro';
 import StatRow from '../../components/StatRow.astro';
-import ReviewNote from '../../components/ReviewNote.astro';
-import CallToAction from '../../components/CallToAction.astro';
-import { currency, ordinal } from '../../lib/format';
-import impact from '../../data/impact.json';
 
-const latest = impact.years[0];
-const itemized = impact.years.find((y) => Array.isArray(y.breakdown) && y.breakdown.length > 0)!;
-const rows = itemized.breakdown ?? [];
-const computedTotal = rows.reduce((sum, row) => sum + row.amount, 0);
-const vash = impact.programs.vash;
-
-const stats = [
-  { value: currency(latest.totalSupport), label: 'paid out in ' + latest.year, note: 'A chapter record' },
-  { value: '~50%', label: 'goes to families in VA Supportive Housing', note: 'Sustained for over ten years' },
-  { value: '$0', label: 'spent on salaries', note: 'The chapter has no paid staff' },
+const glance = [
+  { value: '21', label: 'Counties & Independent Cities', note: 'Our Northern Virginia service area' },
+  {
+    value: '200+',
+    label: 'VASH Gift Cards Each Year',
+    note: 'Back-to-school and holiday support for veteran families',
+  },
+  { value: '48 Hours', label: 'Goal for Urgent Assistance', note: 'Moving quickly when a veteran faces a financial crisis' },
+  { value: 'Since 1985', label: 'Veterans Serving Veterans', note: 'A tradition of service that continues today' },
 ];
-
-// Every year the chapter has reported, oldest first, for the trend table.
-const trend = [...impact.years].sort((a, b) => a.year - b.year);
 ---
 
 <PageLayout
-  title="Where Your Money Goes"
-  description="An itemized account of VVA Chapter 227's veteran aid — what was spent, on whom, and in what amounts."
+  title="Impact"
+  description="What difference does Chapter 227 make for veterans, families and the Northern Virginia veteran community? Rapid assistance, family support, community partnerships and a legacy carried forward."
   hero
 >
   <HeroBand
     slot="hero"
-    eyebrow="Ways to give"
-    title="Where Your Money Goes"
-    lede="The chapter is run entirely by volunteers. Money raised from members and neighbors is paid straight back out to veterans in Northern Virginia."
+    eyebrow="Our Impact"
+    title="Service That Makes a Difference"
+    lede="For decades, Chapter 227 has turned the commitment of veterans helping veterans into action—responding to urgent needs, supporting veteran families, strengthening the Northern Virginia veteran community and honoring the legacy of those who served."
     image={{
       src: '/images/impact-family-relief.jpg',
       alt: 'A couple at home, foreheads together, looking at a piece of paper the man is holding, with their young child on the couch behind them — one visibly moved, illustrating the relief financial assistance can bring to a family facing a sudden expense.',
@@ -53,215 +44,240 @@ const trend = [...impact.years].sort((a, b) => a.year - b.year);
     }}
   />
 
-  <StatRow stats={stats} />
-
-  <!-- ---------- Itemized year ---------- -->
-  <section class="stack">
-    <h2>{itemized.year} in detail</h2>
-    <p>
-      This is the chapter&rsquo;s most recent fully itemized year — the treasurer&rsquo;s line-by-line account of
-      every category of veteran aid.
-    </p>
-
-    <div class="scroll-x">
-      <table class="ledger">
-        <caption class="visually-hidden">Chapter 227 veteran support by category, {itemized.year}</caption>
-        <thead>
-          <tr>
-            <th scope="col">Category</th>
-            <th scope="col">Who it reached</th>
-            <th scope="col" class="num">Amount</th>
-          </tr>
-        </thead>
-        <tbody>
-          {
-            rows.map((row) => (
-              <tr>
-                <th scope="row">{row.item}</th>
-                <td class="muted">{row.detail ?? '—'}</td>
-                <td class="num">{currency(row.amount)}</td>
-              </tr>
-            ))
-          }
-        </tbody>
-        <tfoot>
-          <tr>
-            <th scope="row" colspan="2">Total veteran support</th>
-            <td class="num">{currency(computedTotal)}</td>
-          </tr>
-        </tfoot>
-      </table>
+  <!-- ---------- Impact at a glance ---------- -->
+  <section class="section">
+    <div class="container glance">
+      <StatRow stats={glance} />
     </div>
   </section>
 
-  <!-- ---------- Trend ---------- -->
-  <section class="stack">
-    <h2>Five years of giving</h2>
-    <div class="scroll-x">
-      <table class="ledger">
-        <caption class="visually-hidden">Chapter 227 annual direct support and membership, 2020 to 2024</caption>
-        <thead>
-          <tr>
-            <th scope="col">Year</th>
-            <th scope="col" class="num">Direct support</th>
-            <th scope="col" class="num">Members</th>
-            <th scope="col" class="num">National rank</th>
-          </tr>
-        </thead>
-        <tbody>
-          {
-            trend.map((y) => (
-              <tr>
-                <th scope="row">{y.year}</th>
-                <td class="num">{y.totalSupportDisplay}</td>
-                <td class="num">{y.members}</td>
-                <td class="num">{y.nationalRank ? ordinal(y.nationalRank) : '—'}</td>
-              </tr>
-            ))
-          }
-        </tbody>
-      </table>
+  <!-- ---------- When a Veteran Needs Help ---------- -->
+  <section class="section">
+    <div class="container">
+      <p class="eyebrow">Rapid Assistance</p>
+      <h2>When a Veteran Needs Help</h2>
+      <p>
+        A missed rent payment, utility shutoff or unexpected car repair can quickly become a crisis for a veteran or
+        family.
+      </p>
+      <p>
+        Chapter 227 works with trusted veteran-service professionals and the
+        <a href="/give/nvvvf">Northern Virginia Vietnam Veterans Foundation (NVVVF)</a> to help interrupt that chain
+        of events before temporary hardship becomes a lasting crisis.
+      </p>
+      <p class="emphasis-line">
+        The impact isn&rsquo;t simply a bill being paid. It may mean a veteran remains housed, keeps the lights on,
+        gets to work or avoids another financial setback.
+      </p>
     </div>
-    <p class="muted note">
-      Aid has risen every year for five years, from about $25,000 to over $39,700, while membership grew from 329 to
-      418.
-    </p>
   </section>
 
-  <!-- ---------- VASH ---------- -->
-  <section class="stack">
-    <h2>The biggest single channel: {vash.name}</h2>
-    <p>
-      About half of everything the chapter spends goes through the VA Supportive Housing program, and it has done
-      for {vash.runningFor}.
-    </p>
-    <p>{vash.howItWorks}</p>
-    <p>
-      Cards are distributed {vash.cadence}. The chapter never contacts recipient families directly — VASH
-      caseworkers do that, which keeps the help private for the people receiving it.
-    </p>
+  <!-- ---------- Helping Veteran Families ---------- -->
+  <section class="section">
+    <div class="container">
+      <p class="eyebrow">Supporting Families</p>
+      <h2>Helping Veteran Families</h2>
+      <p>The impact of Chapter 227&rsquo;s work often reaches beyond the veteran.</p>
+      <p>
+        Through support for families participating in VA Supportive Housing (VASH), Chapter 227 helps parents
+        provide school supplies and other necessities for their children and helps veteran families enjoy the
+        holiday season with greater security and dignity.
+      </p>
+      <p>
+        Chapter 227 also provides holiday assistance to wounded warrior families facing financial or personal
+        challenges.
+      </p>
+      <p class="emphasis-line">
+        Sometimes impact is measured not by dollars, but by a child starting school prepared or a family being able
+        to celebrate the holidays together.
+      </p>
+    </div>
   </section>
 
-  <!-- ---------- The Foundation ---------- -->
-  <section class="stack">
-    <h2>How emergency assistance is funded</h2>
-    <p>
-      Every figure on this page is Chapter 227&rsquo;s own, taken from the treasurer&rsquo;s annual letters, by
-      calendar year, through {latest.year}.
-    </p>
-    <p>
-      Since June 2025 one of the programs behind those figures &mdash; emergency financial assistance &mdash; has
-      been funded in part through a separate charity the chapter created, the Northern Virginia Vietnam Veterans
-      Foundation, which says the chapter still receives and verifies every request and still pays the creditor
-      &mdash; a description <a href="/get-help">Get Help</a> does not yet agree with.
-      <strong>The Foundation reports its own totals, over its own period, and none of them appear on this page.</strong>
-      Nobody has yet said how the two sets of figures relate, so they are not shown together and must never be
-      added.
-    </p>
-    <p><a href="/give/nvvvf">About the Foundation &rarr;</a></p>
+  <!-- ---------- Stronger Together Across Northern Virginia ---------- -->
+  <section class="section">
+    <div class="container">
+      <p class="eyebrow">Community Impact</p>
+      <h2>Stronger Together Across Northern Virginia</h2>
+      <p>
+        Chapter 227&rsquo;s impact extends across a Northern Virginia service area encompassing 21 counties and
+        independent cities.
+      </p>
+      <p>
+        That reach is strengthened through relationships with veteran-service professionals, Veterans of Foreign
+        Wars and American Legion posts, AVVA, NVVVF and other organizations serving veterans and their families.
+      </p>
+      <p>
+        Those relationships matter because no single organization can meet every need. By sharing experience,
+        connections and resources, Northern Virginia&rsquo;s veteran community can often accomplish more together
+        than any organization could accomplish alone.
+      </p>
+    </div>
   </section>
 
-  <!-- ---------- Conflicts ---------- -->
-  <ReviewNote topic="Figures that disagree">
-    <p>
-      The chapter&rsquo;s own annual letters do not agree with each other, and these need resolving before the
-      figures go in front of donors or grant-makers:
-    </p>
-    <ul>
-      {impact.years.flatMap((y) => (y.conflicts ?? []).map((c) => <li>{c}</li>))}
-      <li>
-        Every donor-facing page on the current site still reports 2023 figures. There are no published 2025 numbers
-        at all.
-      </li>
-      <li>
-        The Northern Virginia Vietnam Veterans Foundation reports its own assistance totals since June 2025. Nobody
-        has said whether those grants are also counted in the chapter&rsquo;s direct-support figures, whether the
-        households overlap the VASH families counted here, or whether the chapter&rsquo;s 2025 and 2026 letters
-        will include them. Until that is answered the two sets of figures cannot appear on one page.
-      </li>
-    </ul>
-  </ReviewNote>
+  <!-- ---------- A Legacy Carried Forward ---------- -->
+  <section class="section">
+    <div class="container">
+      <p class="eyebrow">Beyond the Numbers</p>
+      <h2>A Legacy Carried Forward</h2>
+      <p>Not every form of impact can be measured in dollars or statistics.</p>
+      <p>
+        It is found in veterans who remain connected to one another, in friendships strengthened through
+        fellowship, in service and sacrifice that continue to be remembered, and in veterans who continue to serve
+        their communities long after their military service has ended.
+      </p>
+      <p>
+        Through remembrance, commemorations, fellowship and continued service, Chapter 227 helps carry forward the
+        experience and values of the Vietnam veteran generation.
+      </p>
+      <p class="emphasis-strong">
+        One generation of veterans continuing to look after another may be one of the Chapter&rsquo;s most enduring
+        forms of impact.
+      </p>
+    </div>
+  </section>
 
-  <CallToAction
-    title="Give to this"
-    primary={{ label: 'Ways to give', href: '/give' }}
-    tone="clay"
-  >
-    Every dollar is disbursed by the same volunteers who raised it.
-  </CallToAction>
+  <!-- ---------- Closing ---------- -->
+  <section class="container">
+    <div class="closing">
+      <p class="closing__eyebrow">The Mission Continues</p>
+      <h2>
+        The Needs Change.<br />
+        The Commitment Does Not.
+      </h2>
+      <p class="closing__body">
+        Since 1985, Chapter 227 has adapted the ways it serves while holding to a simple principle: veterans
+        helping veterans.
+      </p>
+      <div class="closing__actions">
+        <a class="closing__btn closing__btn--solid" href="/programs">What We Do</a>
+        <a class="closing__btn closing__btn--ghost" href="/foundation">Foundation</a>
+      </div>
+    </div>
+  </section>
 </PageLayout>
 
 <style>
-  section {
-    margin-block-start: var(--s-8);
+  section + section {
+    /* Was --s-8 (4rem); --s-7 (3rem) is a 25% reduction, particularly felt
+       between "When a Veteran Needs Help"/"Helping Veteran Families" and
+       between "Stronger Together"/"A Legacy Carried Forward". */
+    margin-block-start: var(--s-7);
   }
 
   h2 {
     margin-block-end: var(--s-4);
   }
 
+  /* StatRow is a shared component (used elsewhere), so its own defaults stay
+     untouched — these :global() overrides apply only within this page's
+     "Impact at a glance" band. */
+  .glance :global(.stat__value) {
+    font-size: var(--t-3xl);
+  }
+
+  .glance :global(.stat__label) {
+    font-size: 1.0625rem;
+    line-height: 1.4;
+  }
+
   p {
-    max-width: var(--w-prose);
+    max-width: 78ch;
+    font-size: var(--t-base);
+    line-height: var(--lh-body);
   }
 
   p + p {
     margin-block-start: var(--s-4);
   }
 
-  .note {
-    margin-block-start: var(--s-4);
-    font-size: var(--t-sm);
-  }
-
-  /* ---- Ledger tables ---- */
-
-  .ledger {
-    inline-size: 100%;
-    min-inline-size: 34rem;
-    border-collapse: collapse;
+  .emphasis-line {
     margin-block-start: var(--s-5);
-    font-size: 1rem;
+    max-width: 78ch;
+    font-family: var(--font-serif);
+    font-style: italic;
+    font-size: var(--t-lg);
+    color: var(--c-primary-dark);
   }
 
-  .ledger th,
-  .ledger td {
-    padding: var(--s-3) var(--s-4);
-    text-align: start;
-    border-block-end: 1px solid var(--c-border);
+  .emphasis-strong {
+    margin-block-start: var(--s-5);
+    max-width: 78ch;
+    font-family: var(--font-serif);
+    font-style: italic;
+    font-size: var(--t-xl);
+    line-height: 1.35;
+    color: var(--c-primary-dark);
   }
 
-  .ledger thead th {
+  /* ---------- Closing ---------- */
+
+  .closing {
+    padding: var(--s-8) var(--s-7);
+    background: var(--c-primary);
+    border-radius: var(--r-lg);
+    color: #fff;
+    text-align: center;
+  }
+
+  .closing__eyebrow {
     font-family: var(--font-sans);
     font-size: var(--t-xs);
     font-weight: 700;
     letter-spacing: var(--tracking-caps);
     text-transform: uppercase;
-    color: var(--c-ink-faint);
-    border-block-end: 2px solid var(--c-border-strong);
+    color: var(--c-gold);
+    margin-block-end: var(--s-3);
   }
 
-  .ledger tbody th {
-    font-weight: 600;
+  .closing h2 {
+    color: #fff;
+    font-size: var(--t-2xl);
+    line-height: 1.25;
   }
 
-  .ledger .num {
-    text-align: end;
-    font-variant-numeric: tabular-nums;
-    white-space: nowrap;
+  .closing__body {
+    max-width: 46ch;
+    margin-inline: auto;
+    margin-block-start: var(--s-5);
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 1rem;
+    line-height: 1.6;
   }
 
-  .ledger tfoot th,
-  .ledger tfoot td {
-    padding-block-start: var(--s-4);
-    border-block-end: none;
-    border-block-start: 2px solid var(--c-border-strong);
-    font-family: var(--font-serif);
-    font-size: var(--t-lg);
+  .closing__actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: var(--s-3);
+    margin-block-start: var(--s-6);
+  }
+
+  .closing__btn {
+    display: inline-block;
+    padding: var(--s-3) var(--s-5);
+    border-radius: var(--r-md);
     font-weight: 700;
+    font-size: 1rem;
+    text-decoration: none;
+    transition: background var(--dur) var(--ease), color var(--dur) var(--ease);
+  }
+
+  .closing__btn--solid {
+    background: #fff;
     color: var(--c-primary-dark);
   }
 
-  .ledger tbody tr:hover {
+  .closing__btn--solid:hover {
     background: var(--c-surface-sunken);
+  }
+
+  .closing__btn--ghost {
+    border: 2px solid rgba(255, 255, 255, 0.6);
+    color: #fff;
+  }
+
+  .closing__btn--ghost:hover {
+    background: rgba(255, 255, 255, 0.12);
   }
 </style>

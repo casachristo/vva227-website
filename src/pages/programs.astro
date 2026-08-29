@@ -2,76 +2,81 @@
 /**
  * What We Do.
  *
- * Consolidates chapter-history's outreach section, Community-Outreach and
- * Support-to-VA-VASH. The scholarship and school-speaker paragraphs appeared
- * word-for-word on two separate pages, including the same "it's/its" typo.
+ * Rebuilt 2026-08-29 per the chapter's written direction: five areas of
+ * service, presented in order of scale rather than as five identical cards —
+ * emergency financial assistance first and largest, VASH family support
+ * next, then Wounded Warrior support, AVVA community service and outside
+ * partnerships presented more compactly. Tour of Duty, scholarships, and the
+ * older one-off partnerships (MITRE, Suits for Veterans, Operation
+ * Kick-Start, the Memorial Day Writers' Project) are retired along with
+ * their dollar figures and family counts — none of it is evergreen, and the
+ * one vacant contact role (school speakers) had no replacement to offer.
  *
- * The legacy Community Outreach page hedged its own currency in its opening
- * sentence — "is currently involved in multiple community oriented programs (or
- * was in the past)" — which is flagged rather than quietly tidied away, because
- * nobody outside the chapter knows which programs are still running.
+ * Revised 2026-08-29 (second pass): this was a financial-assistance page and
+ * needed to also read as a community — added "Serving Northern Virginia
+ * Together" (the chapter's reach and its partner organizations) and
+ * "Fellowship, Remembrance & Community" (meetings, camaraderie, observances)
+ * as two new sections, and enlarged the five-image overview. Everything else
+ * — hero, Emergency Assistance, VASH, the compact three, and the closing
+ * panel — keeps its existing copy.
  */
 import PageLayout from '../layouts/PageLayout.astro';
 import HeroBand from '../components/HeroBand.astro';
-import Figure from '../components/Figure.astro';
-import ReviewNote from '../components/ReviewNote.astro';
-import ContactList from '../components/ContactList.astro';
-import CallToAction from '../components/CallToAction.astro';
-import Card from '../components/Card.astro';
-import CardGrid from '../components/CardGrid.astro';
-import impact from '../data/impact.json';
 
-const vash = impact.programs.vash;
-
-const venues = [
-  'The Vietnam Veterans Memorial — The Wall',
-  'Arlington County Public Schools',
-  'Fairfax County Public Schools',
-  'George Mason University',
-  'Northern Virginia Community College',
-  'University of Maryland',
-  'Trinity College',
-];
-
-const partners = [
+const overview = [
   {
-    title: 'The Lamb Center',
-    body: 'A day shelter in Fairfax for homeless men and women, many of them veterans. The chapter’s AVVA members collect cash and household goods at every monthly meeting.',
+    image: '/images/overview-emergency.jpg',
+    width: 450,
+    height: 300,
+    alt: 'An envelope stamped PAID in red ink, in front of a folded American flag.',
+    heading: 'Emergency Assistance',
+    description: 'Rapid help for urgent needs',
   },
   {
-    title: 'Wounded Warrior families',
-    body: 'The chapter funds the Santa Lists of wounded warrior families each December — $3,000 across three families in 2024.',
+    image: '/images/overview-vash.jpg',
+    width: 437,
+    height: 300,
+    alt: 'A backpack filled with school supplies beside a wrapped gift tied with a red ribbon.',
+    heading: 'VASH Families',
+    description: 'Back-to-school and holiday support for veteran families',
   },
   {
-    title: 'MITRE Care Packages',
-    body: 'A partnership sending care packages to deployed troops. The chapter helps pay shipping, disburses the funds collected, and sends the acknowledgment letters.',
+    image: '/images/overview-wounded-warrior.jpg',
+    width: 435,
+    height: 300,
+    alt: 'A wrapped gift tagged "Thank You For Your Service," with a Christmas tree and American flag behind it.',
+    heading: 'Wounded Warrior Families',
+    description: 'Holiday assistance for military families facing challenges',
   },
   {
-    title: 'Memorial Day Writers’ Project',
-    body: 'The chapter has funded the tent at The Wall where veterans read poetry, short stories and music. Many chapter members helped form it.',
+    image: '/images/overview-avva.jpg',
+    width: 449,
+    height: 300,
+    alt: 'A box labeled "Caring For Our Community" filled with donated household goods.',
+    heading: 'AVVA Community Service',
+    description: 'Supporting veterans and neighbors through service and giving',
   },
   {
-    title: 'Suits for Veterans',
-    body: 'Business attire gift certificates and more than 150 donated suits for patients at Walter Reed and Bethesda Naval Hospital.',
-  },
-  {
-    title: 'Operation Kick-Start',
-    body: 'A $25 grant to every new homeless veteran resident at Compassion House, for personal items.',
+    image: '/images/overview-community.jpg',
+    width: 511,
+    height: 300,
+    alt: 'A memorial wreath and American flag beside the Vietnam Veterans Memorial Wall.',
+    heading: 'Supporting the Veteran Community',
+    description: 'Partnerships and contributions that honor veterans and their legacy',
   },
 ];
 ---
 
 <PageLayout
   title="What We Do"
-  description="VVA Chapter 227 supports families in VA Supportive Housing, funds scholarships for Northern Virginia students, and sends Vietnam veterans into classrooms to tell students what the war was actually like."
+  description="Chapter 227 turns commitment into action by helping veterans in need, supporting veteran families, serving our community and honoring those who served."
   hero
 >
   <HeroBand
     slot="hero"
     eyebrow="Programs"
     title="What We Do"
-    lede="Four decades of the same idea: money where it is needed, and veterans telling the truth about what happened to them."
-    primary={{ label: 'Where Your Money Goes', href: '/give/impact' }}
+    lede="Chapter 227 turns commitment into action by helping veterans in need, supporting veteran families, serving our community and honoring those who served."
     image={{
       src: '/images/coin-map-detail.jpg',
       alt: "A Dean K. Phillips Memorial Chapter 227 challenge coin and a compass resting on a map of the Northern Virginia counties and cities the chapter serves — Fairfax, Arlington, Alexandria, Prince William, and beyond.",
@@ -80,135 +85,200 @@ const partners = [
     }}
   />
 
-  <!-- ---------- VASH ---------- -->
-  <section class="stack">
-    <p class="eyebrow">The largest commitment</p>
-    <h2>{vash.name}</h2>
-    <p class="lede">{vash.shareOfFunds}, sustained for {vash.runningFor}.</p>
-    <p>{vash.howItWorks}</p>
-    <p>
-      Cards go out {vash.cadence}. The chapter never meets the families — VASH caseworkers handle distribution,
-      which keeps the help private for the people receiving it.
-    </p>
-    <ReviewNote topic="VASH amounts">{vash.note}</ReviewNote>
-  </section>
-
-  <!-- ---------- Speakers ---------- -->
-  <section class="stack">
-    <p class="eyebrow">Since 1987</p>
-    <h2>Tour of Duty: veterans in classrooms</h2>
-
-    <div class="split">
-      <div class="split__text">
-        <p>
-          Chapter members have shared their Tour of Duty experiences with audiences from elementary school students
-          to senior citizens groups. Past speakers have included nurses, Red Cross service personnel, and men and
-          women who served in every capacity in each of the services, from combat to logistical support. Each one
-          had a story worth hearing.
-        </p>
-        <p>
-          As Vietnam veterans, the chapter&rsquo;s aim is to ensure an accurate and balanced understanding of the
-          war. A typical program covers each veteran&rsquo;s road to Vietnam, his tour of duty, and questions from
-          the floor. The agenda is flexible.
-        </p>
-        <p>
-          Those who served during the Vietnam War are one of the greatest resources for understanding what happened
-          during that period. Having members share their experiences can help a group gain respect and understanding
-          for service, and learn lessons in character and civic responsibility.
-        </p>
-      </div>
-
-      <Figure
-        src="/images/student-awards.jpg"
-        alt="A chapter member stands at the right of eight high-school students in a school art room, holding presentation cards, with student photography displayed on a projector screen behind them."
-        caption="Chapter members present awards to Northern Virginia students."
-        maxWidth="100%"
-      />
-    </div>
-
-    <h3>Where members have spoken</h3>
-    <ul class="venues">
-      {venues.map((v) => <li>{v}</li>)}
-    </ul>
-
-    <h3>Request a speaker</h3>
-    <ContactList only={['school-speakers']} />
-
-    <ReviewNote topic="Speaker program contact">
-      The legacy site ended the sentence &ldquo;Contact Tom Stryer at&rdquo; with nothing after it — and Tom Stryer
-      has since resigned from this role, per the chapter&rsquo;s 2026-08-17 board &amp; POC directory. This is one of
-      the chapter&rsquo;s strongest community stories, and it currently has no working call to action at all. The
-      chapter needs to name a new coordinator.
-    </ReviewNote>
-  </section>
-
-  <!-- ---------- Scholarships ---------- -->
-  <section class="stack">
-    <p class="eyebrow">Since 1985</p>
-    <h2>Scholarships</h2>
-    <p>
-      Chapter 227 has been involved in scholarships for needy Northern Virginia students since it was founded. To
-      meet the chapter&rsquo;s goal of assisting veteran families and providing community service, members
-      fundraise specifically for scholarship purposes.
-    </p>
-    <p>
-      The program has since been extended to fund summer English teaching classes at area schools, giving students
-      an opportunity to improve their English and become better students.
-    </p>
-  </section>
-
-  <!-- ---------- Partners ---------- -->
-  <section class="stack">
-    <h2>Where else the money goes</h2>
-    <p>
-      Beyond direct aid, the chapter funds and staffs a long list of smaller commitments. Emergency aid to
-      individual veterans is described under <a href="/get-help">Get Help</a>; since June 2025 it has been funded in
-      part through <a href="/give/nvvvf">a separate foundation the chapter created</a>.
-    </p>
-    <CardGrid min="17rem">
+  <!-- ---------- Five areas of service: visual overview ---------- -->
+  <section class="section overview">
+    <div class="container container--wide overview__grid">
       {
-        partners.map((p) => (
-          <Card title={p.title}>
-            <p>{p.body}</p>
-          </Card>
+        overview.map((item, i) => (
+          <div class="overview__item">
+            <div class="overview__figure">
+              <img src={item.image} width={item.width} height={item.height} alt={item.alt} loading="lazy" decoding="async" />
+            </div>
+            <span class="overview__number" aria-hidden="true">{i + 1}</span>
+            <p class="overview__heading">{item.heading}</p>
+            <p class="overview__description">{item.description}</p>
+          </div>
         ))
       }
-    </CardGrid>
+    </div>
   </section>
 
-  <ReviewNote topic="Which programs are still running">
-    <p>
-      The current Community Outreach page opens by saying the chapter &ldquo;is currently involved in multiple
-      community oriented programs <em>(or was in the past)</em>&rdquo;. That parenthesis means no reader can tell
-      which of these are live.
-    </p>
-    <p>
-      Several entries above come from an undated accomplishments sheet and may describe work from years ago. The
-      chapter should mark each program as active or historic before this page is published.
-    </p>
-  </ReviewNote>
+  <!-- ---------- Emergency Financial Assistance (primary) ---------- -->
+  <section class="section emphasis-primary">
+    <div class="container">
+      <h2>Emergency Financial Assistance</h2>
+      <p class="lede">
+        Chapter 227 provides rapid financial assistance to Northern Virginia veterans and families facing
+        unexpected hardship.
+      </p>
+      <p>
+        Working in close partnership with the <strong><a href="/give/nvvvf">Northern Virginia Vietnam Veterans Foundation (NVVVF)</a></strong>,
+        Chapter 227 helps review requests, verify needs, determine appropriate assistance and arrange approved
+        payments directly to creditors.
+      </p>
+      <p>
+        Assistance may help with urgent needs such as housing, utilities, transportation, food, medical expenses and
+        other essentials that can quickly turn a temporary setback into a lasting crisis.
+      </p>
+      <p class="emphasis-line">
+        The goal is simple: get meaningful help to a veteran quickly, often within 48 hours.
+      </p>
+    </div>
+  </section>
 
-  <CallToAction
-    title="This is what donations pay for"
-    primary={{ label: 'Ways to give', href: '/give' }}
-    secondary={{ label: 'See the numbers', href: '/give/impact' }}
-  >
-    None of it is funded by grants or government money. It comes from members and neighbors.
-  </CallToAction>
+  <!-- ---------- Serving Northern Virginia Together ---------- -->
+  <section class="section reach">
+    <div class="container">
+      <p class="eyebrow">Our Reach</p>
+      <h2>Serving Northern Virginia Together</h2>
+      <p>
+        Chapter 227&rsquo;s work extends across a broad Northern Virginia region encompassing 21 counties and
+        independent cities. That reach depends on strong relationships with veteran-service professionals,
+        community organizations and fellow veterans organizations throughout the region.
+      </p>
+      <p>
+        Chapter 227 works with Veterans of Foreign Wars (VFW) and American Legion posts throughout Northern
+        Virginia, along with other veteran-serving organizations and community partners. When a veteran is facing
+        hardship, those relationships help connect people with resources and, when appropriate, allow organizations
+        to work together to provide assistance.
+      </p>
+      <p class="emphasis-line">
+        No single organization can meet every need. By working together, Northern Virginia&rsquo;s veteran
+        community can often accomplish more for a veteran or family than any one organization could accomplish
+        alone.
+      </p>
+    </div>
+  </section>
+
+  <!-- ---------- Supporting Veterans in VA Supportive Housing ---------- -->
+  <section class="section emphasis-secondary">
+    <div class="container">
+      <h2>Supporting Veterans in VA Supportive Housing</h2>
+      <p>
+        Veteran families working with the VA Supportive Housing (VASH) program sometimes face expenses that go
+        beyond the immediate need for housing.
+      </p>
+      <p>
+        Chapter 227 helps those families by providing gift cards for two important times of the year:
+        <strong>back-to-school and the holiday season</strong>. The cards help parents provide school supplies and
+        other necessities for their children and help ensure that those children can celebrate the holidays much
+        like other families.
+      </p>
+      <p>
+        Each year, Chapter 227 provides <strong>at least 200 gift cards</strong> to VASH representatives, who
+        distribute them directly to veteran families based on their needs.
+      </p>
+      <p>Working through VASH protects the privacy of the families while allowing assistance to reach those who need it.</p>
+    </div>
+  </section>
+
+  <!-- ---------- Fellowship, Remembrance & Community ---------- -->
+  <section class="section section--sunken fellowship">
+    <div class="container">
+      <p class="eyebrow">Chapter Life</p>
+      <h2>Fellowship, Remembrance &amp; Community</h2>
+      <p>
+        Chapter 227 is built on relationships formed through shared experience and a continuing commitment to
+        service. Members gather regularly not only to conduct Chapter business, but to
+        <strong>share a meal, renew friendships and enjoy the camaraderie of fellow veterans</strong>.
+      </p>
+      <p>
+        Chapter meetings often feature guest speakers on topics of interest to veterans and the community.
+        Throughout the year, members also come together for activities ranging from the Chapter&rsquo;s annual
+        holiday gathering to participation in national VVA meetings and veteran commemorations.
+      </p>
+      <p>
+        Remembrance remains an important part of Chapter life. Members participate in observances including
+        National Vietnam War Veterans Day, Memorial Day and Veterans Day, and on occasion join other veterans in
+        the tradition of washing the Vietnam Veterans Memorial in Washington, D.C.
+      </p>
+      <p class="emphasis-line">
+        These activities are different from financial assistance, but they reflect the same principle: maintaining
+        the bonds among veterans, honoring those who served and carrying the tradition of service forward.
+      </p>
+    </div>
+  </section>
+
+  <!-- ---------- Wounded Warrior / AVVA / Community (compact) ---------- -->
+  <section class="section">
+    <div class="container">
+      <div class="compact-grid">
+        <div class="compact-item">
+          <h3>Supporting Wounded Warrior Families</h3>
+          <p>
+            During the holiday season, Chapter 227 helps support wounded warrior families facing added financial or
+            personal challenges.
+          </p>
+          <p>
+            Through holiday assistance and Santa List support, the Chapter helps families focus on what matters
+            most &mdash; healing, hope and time together &mdash; while helping ensure that children and families can
+            enjoy the season with dignity.
+          </p>
+        </div>
+        <div class="compact-item">
+          <h3>Serving Our Community with AVVA</h3>
+          <p>
+            Associates of Vietnam Veterans of America (AVVA) members affiliated with Chapter 227 play an important
+            role in serving veterans and the broader community.
+          </p>
+          <p>
+            Their support includes collecting cash, household goods and other needed items for organizations such as
+            <strong>The Lamb Center</strong>, a Fairfax-area day shelter serving people experiencing homelessness,
+            including veterans. AVVA members work alongside Chapter members through service, giving, fellowship and
+            support for veterans and their families.
+          </p>
+        </div>
+        <div class="compact-item">
+          <h3>Supporting the Veteran Community</h3>
+          <p>Chapter 227&rsquo;s commitment extends beyond its own activities.</p>
+          <p>
+            From time to time, the Chapter provides financial or other support to nonprofit organizations and
+            initiatives whose work advances veteran services, preserves military history or strengthens the veteran
+            community. Organizations supported have included the <strong>Vietnam Veterans Memorial Fund</strong> and
+            other veteran-serving charities and initiatives.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ---------- Closing ---------- -->
+  <section class="container">
+    <div class="closing">
+      <h2>
+        Guiding Veterans.<br />
+        Honoring Service.<br />
+        Delivering Hope.
+      </h2>
+      <p class="closing__body">
+        Whether the need is immediate financial assistance, support for veteran families, community service or
+        preserving the legacy of those who served, Chapter 227 continues to put experience, compassion and
+        commitment into action.
+      </p>
+      <div class="closing__actions">
+        <a class="closing__btn closing__btn--solid" href="/give/impact">Our Impact</a>
+        <a class="closing__btn closing__btn--ghost" href="/foundation">Foundation</a>
+      </div>
+    </div>
+  </section>
 </PageLayout>
 
 <style>
   section + section {
-    margin-block-start: var(--s-9);
+    /* Was --s-9 (6rem) — read as dead air between the narrative sections
+       rather than a considered gap; --s-8 (4rem) is a ~33% reduction, still
+       generous, and matches an existing step on the spacing scale rather
+       than inventing a one-off value. */
+    margin-block-start: var(--s-8);
   }
 
   h2 {
-    margin-block: var(--s-2) var(--s-4);
+    margin-block-end: var(--s-4);
   }
 
   h3 {
-    margin-block-start: var(--s-6);
-    margin-block-end: var(--s-4);
+    font-size: var(--t-lg);
+    margin-block-end: var(--s-3);
   }
 
   p {
@@ -219,37 +289,212 @@ const partners = [
     margin-block-start: var(--s-4);
   }
 
-  .split {
-    display: grid;
-    grid-template-columns: 1.15fr 0.85fr;
-    align-items: start;
-    gap: var(--s-6);
+  /* Emergency Assistance, Serving Northern Virginia Together and VASH were
+     reading as narrow text columns stranded in a wide container. A modestly
+     wider measure fills more of the available width without stretching into
+     an uncomfortable line length. */
+  .emphasis-primary p,
+  .reach p,
+  .emphasis-secondary p {
+    max-width: 78ch;
   }
 
-  .split__text p {
+  .lede {
+    font-size: var(--t-lg);
+    color: var(--c-ink-soft);
+  }
+
+  .emphasis-line {
+    margin-block-start: var(--s-5);
+    font-family: var(--font-serif);
+    font-style: italic;
+    font-size: var(--t-lg);
+    color: var(--c-primary-dark);
+  }
+
+  /* ---------- Overview ---------- */
+
+  .overview {
+    padding-block-start: var(--s-7);
+  }
+
+  .overview__grid {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: var(--s-7) var(--s-6);
+  }
+
+  .overview__item {
+    flex: 0 1 18rem;
+    text-align: center;
+  }
+
+  .overview__figure {
+    aspect-ratio: 3 / 2;
+    overflow: hidden;
+    border-radius: var(--r-md);
+    background: var(--c-surface-sunken);
+  }
+
+  .overview__figure img {
+    inline-size: 100%;
+    block-size: 100%;
+    object-fit: cover;
+  }
+
+  .overview__number {
+    display: grid;
+    place-items: center;
+    inline-size: 2rem;
+    block-size: 2rem;
+    margin-block: -1rem var(--s-3);
+    margin-inline: auto;
+    border-radius: 50%;
+    background: var(--c-primary);
+    color: #fff;
+    font-weight: 700;
+    font-size: var(--t-sm);
+    box-shadow: 0 0 0 3px var(--c-surface);
+  }
+
+  .overview__heading {
     max-width: none;
+    font-size: 1.0625rem;
+    font-weight: 700;
+    margin-block-end: var(--s-1);
   }
 
-  .venues {
+  .overview__description {
+    max-width: none;
+    margin-block-start: 0;
+    font-size: 1.0625rem;
+    color: var(--c-ink-soft);
+    line-height: 1.55;
+  }
+
+  /* ---------- Hierarchy: primary / secondary / compact ---------- */
+
+  .emphasis-primary h2 {
+    font-size: var(--t-2xl);
+  }
+
+  .emphasis-secondary h2 {
+    font-size: var(--t-xl);
+  }
+
+  .compact-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(min(15rem, 100%), 1fr));
-    gap: var(--s-2) var(--s-5);
-    list-style: none;
-    margin: 0;
-    padding: 0;
-    max-width: var(--w-content);
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--s-8);
   }
 
-  .venues li {
-    padding-inline-start: var(--s-4);
-    border-inline-start: 2px solid var(--c-gold);
+  .compact-item {
+    padding-inline-start: var(--s-6);
+    border-inline-start: 1px solid var(--c-border);
+  }
+
+  .compact-item:first-child {
+    padding-inline-start: 0;
+    border-inline-start: none;
+  }
+
+  .compact-item p {
+    /* No font-size override — this was pinned to 1rem/16px ("captions only,
+       never body copy" per the type-scale comment); it now inherits the
+       site's standard 18px/1.65 body copy like every other paragraph. */
+    max-width: none;
+    color: var(--c-ink-soft);
+  }
+
+  /* ---------- Closing ---------- */
+
+  .closing {
+    padding: var(--s-8) var(--s-7);
+    background: var(--c-primary);
+    border-radius: var(--r-lg);
+    color: #fff;
+    text-align: center;
+  }
+
+  .closing h2 {
+    color: #fff;
+    font-size: var(--t-2xl);
+    line-height: 1.25;
+  }
+
+  .closing__body {
+    max-width: 46ch;
+    margin-inline: auto;
+    margin-block-start: var(--s-5);
+    color: rgba(255, 255, 255, 0.9);
     font-size: 1rem;
-    line-height: 1.5;
+    line-height: 1.6;
   }
 
-  @media (max-width: 56rem) {
-    .split {
+  .closing__actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: var(--s-3);
+    margin-block-start: var(--s-6);
+  }
+
+  .closing__btn {
+    display: inline-block;
+    padding: var(--s-3) var(--s-5);
+    border-radius: var(--r-md);
+    font-weight: 700;
+    font-size: 1rem;
+    text-decoration: none;
+    transition: background var(--dur) var(--ease), color var(--dur) var(--ease);
+  }
+
+  .closing__btn--solid {
+    background: #fff;
+    color: var(--c-primary-dark);
+  }
+
+  .closing__btn--solid:hover {
+    background: var(--c-surface-sunken);
+  }
+
+  .closing__btn--ghost {
+    border: 2px solid rgba(255, 255, 255, 0.6);
+    color: #fff;
+  }
+
+  .closing__btn--ghost:hover {
+    background: rgba(255, 255, 255, 0.12);
+  }
+
+  /* Raised from 56rem: at full 18px body copy, three columns started feeling
+     cramped before the old breakpoint kicked in — stacking a little earlier
+     keeps each column at a comfortable reading width instead of shrinking
+     the text to make three columns fit. */
+  @media (max-width: 64rem) {
+    .compact-grid {
       grid-template-columns: 1fr;
+      gap: var(--s-6);
+    }
+
+    .compact-item {
+      padding-inline-start: 0;
+      border-inline-start: none;
+      padding-block-start: var(--s-6);
+      border-block-start: 1px solid var(--c-border);
+    }
+
+    .compact-item:first-child {
+      padding-block-start: 0;
+      border-block-start: none;
+    }
+  }
+
+  @media (max-width: 30rem) {
+    .overview__item {
+      flex-basis: 100%;
+      max-inline-size: 20rem;
     }
   }
 </style>
