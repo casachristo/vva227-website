@@ -35,9 +35,9 @@ describe('happy path — the real data file', () => {
   it('validates, and the page gets every field it renders', () => {
     expect(view).toMatchObject({
       fullName: 'Northern Virginia Vietnam Veterans Foundation (NVVVF)',
-      taxLine: '501(c)(3) · EIN 33-2320012',
+      taxLine: '501(c)(3) · EIN 33-2520012',
       websiteText: 'nvvvf.org',
-      websiteHref: null,
+      websiteHref: 'https://nvvvf.org',
       postal: ['NVVVF', 'PO Box 2111', 'Reston, VA 20195'],
     });
     expect(view.referralSentence).toContain('Virginia Department of Veterans Services');

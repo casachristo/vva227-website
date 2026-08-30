@@ -57,7 +57,7 @@ export interface NvvvfData {
   source: { document: string; kind: string; supplied: string; confirmedByChapter: boolean };
   founded: { display: string; detail: string; review: string };
   taxStatus: { designation: string; ein: string; deductibleClaim: string; review: string };
-  url: { value: string; confirmedLive: boolean; review: string };
+  url: { value: string; confirmedLive: boolean; review?: string };
   mailingAddress: { payee: string; line1: string; city: string; state: string; zip: string };
   purpose: { summary: string; crisisFrame: string };
   division: {
@@ -79,7 +79,7 @@ export interface NvvvfData {
 export interface NvvvfView {
   /** "Northern Virginia Vietnam Veterans Foundation (NVVVF)" */
   fullName: string;
-  /** "501(c)(3) · EIN 33-2320012" */
+  /** "501(c)(3) · EIN 33-2520012" */
   taxLine: string;
   /** Always the bare host, for display: "nvvvf.org". */
   websiteText: string;
@@ -173,13 +173,20 @@ export function validateNvvvf(raw: unknown): NvvvfData {
   for (const path of [
     'founded.review',
     'taxStatus.review',
-    'url.review',
     'division.review',
     'referralPartners.review',
     'operating.review',
     'governance.review',
   ]) {
     str(raw, path, { min: MIN_EXPLANATION });
+  }
+
+  // url.review is the one exception: optional, because the chapter has fully
+  // confirmed this field (canonical host chosen, liveness confirmed
+  // 2026-08-30) — there is no remaining open question to explain. If a future
+  // edit reopens a question here, add the string back and it's required again.
+  if (get(get(raw, 'url'), 'review') !== undefined) {
+    str(raw, 'url.review', { min: MIN_EXPLANATION });
   }
 
   const ein = str(raw, 'taxStatus.ein');
@@ -319,7 +326,7 @@ export function buildNvvvfView(data: NvvvfData): NvvvfView {
       data.division.review,
       data.founded.review,
       data.taxStatus.review,
-      data.url.review,
+      ...(data.url.review ? [data.url.review] : []),
       data.referralPartners.review,
       data.operating.review,
       data.governance.review,

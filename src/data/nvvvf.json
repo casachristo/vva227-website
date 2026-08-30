@@ -23,17 +23,16 @@
 
   "taxStatus": {
     "designation": "501(c)(3)",
-    "ein": "33-2320012",
+    "ein": "33-2520012",
     "deductibleClaim": "The Foundation states that gifts to it are tax-deductible and are used to pay veterans’ verified creditors.",
-    "source": "One Year Later, closing appeal: NVVVF is a 501(c)(3) organization, EIN 33-2320012",
-    "review": "Neither the exemption nor the EIN has been independently verified, and the EIN itself is now in dispute: One Year Later gives 33-2320012, but the 2026 PenFed Foundation grant proposal gives 33-2520012 — a one-digit difference that changes which entity the number identifies. This must be checked directly against the IRS Tax Exempt Organization Search and the Foundation's own IRS determination letter before either figure is published; it is not a typo to guess at. Separately: the chapter has never published its OWN tax status, and stating the Foundation’s deductibility beside the chapter’s own donate routes invites a reader to assume both are deductible."
+    "source": "One Year Later gave 33-2320012; the 2026 PenFed Foundation grant proposal gave 33-2520012. The chapter confirmed 33-2520012 as correct, 2026-08-30.",
+    "review": "The 501(c)(3) exemption itself has not been independently verified against the IRS Tax Exempt Organization Search or the Foundation's own IRS determination letter. Separately: the chapter has never published its OWN tax status, and stating the Foundation’s deductibility beside the chapter’s own donate routes invites a reader to assume both are deductible."
   },
 
   "url": {
     "value": "https://nvvvf.org",
-    "source": "One Year Later, “Momentum Is Growing”: Visit https://nvvvf.org",
-    "confirmedLive": false,
-    "review": "The newsletter writes the address two ways in one document — https://nvvvf.org in the body, www.nvvvf.org in the closing appeal and the footer — and One Year Later v11 goes further and claims the new public site is already live. Confirmed directly with the chapter as of August 2026: nvvvf.org is a development build, not yet public. It stays printed here as text, not a link, until the chapter confirms it is live and states the canonical host."
+    "source": "One Year Later, “Momentum Is Growing”: Visit https://nvvvf.org — confirmed live and linkable by the chapter, 2026-08-30",
+    "confirmedLive": true
   },
 
   "mailingAddress": {

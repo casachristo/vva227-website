@@ -96,10 +96,10 @@ test.describe('the disclosure a donor has to be able to see', () => {
     }
   });
 
-  test('the Foundation website is named but not linked', async ({ page }) => {
+  test('the Foundation website is named and linked, now that it is confirmed live', async ({ page }) => {
     await page.goto('/give/nvvvf');
     await expect(page.getByText('nvvvf.org').first()).toBeVisible();
-    await expect(page.locator('main a[href*="nvvvf.org"]')).toHaveCount(0);
+    await expect(page.locator('main a[href*="nvvvf.org"]').first()).toHaveAttribute('href', 'https://nvvvf.org');
   });
 });
 

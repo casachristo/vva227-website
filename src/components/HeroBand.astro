@@ -16,9 +16,13 @@
 interface Props {
   eyebrow?: string;
   title: string;
+  /** A short, bold, uppercase line under the title — a rallying-cry tagline distinct from the softer `lede` paragraph. */
+  tagline?: string;
   lede?: string;
-  primary?: { label: string; href: string };
-  secondary?: { label: string; href: string };
+  /** An optional second paragraph, styled the same as `lede`, for a hero that needs two beats of copy rather than one. */
+  body?: string;
+  primary?: { label: string; href: string; rel?: string };
+  secondary?: { label: string; href: string; rel?: string };
   image?: {
     src: string;
     alt: string;
@@ -45,7 +49,7 @@ interface Props {
   minHeight?: string;
 }
 
-const { eyebrow, title, lede, primary, secondary, image, tone = 'warm', minHeight } = Astro.props;
+const { eyebrow, title, tagline, lede, body, primary, secondary, image, tone = 'warm', minHeight } = Astro.props;
 ---
 
 <section
@@ -55,17 +59,19 @@ const { eyebrow, title, lede, primary, secondary, image, tone = 'warm', minHeigh
   <div class="hero-band__text">
     {eyebrow && <p class="hero-band__eyebrow">{eyebrow}</p>}
     <h1 class="hero-band__title">{title}</h1>
+    {tagline && <p class="hero-band__tagline">{tagline}</p>}
     {lede && <p class="hero-band__lede">{lede}</p>}
+    {body && <p class="hero-band__lede">{body}</p>}
     {
       (primary || secondary) && (
         <div class="hero-band__actions">
           {primary && (
-            <a class="hero-band__btn hero-band__btn--solid" href={primary.href}>
+            <a class="hero-band__btn hero-band__btn--solid" href={primary.href} rel={primary.rel}>
               {primary.label}
             </a>
           )}
           {secondary && (
-            <a class="hero-band__btn hero-band__btn--ghost" href={secondary.href}>
+            <a class="hero-band__btn hero-band__btn--ghost" href={secondary.href} rel={secondary.rel}>
               {secondary.label}
             </a>
           )}
@@ -157,6 +163,15 @@ const { eyebrow, title, lede, primary, secondary, image, tone = 'warm', minHeigh
     font-size: var(--t-3xl);
     line-height: var(--lh-tight);
     letter-spacing: -0.02em;
+  }
+
+  .hero-band__tagline {
+    font-family: var(--font-sans);
+    font-size: var(--t-xl);
+    font-weight: 700;
+    letter-spacing: var(--tracking-caps);
+    text-transform: uppercase;
+    color: var(--c-gold);
   }
 
   .hero-band__lede {

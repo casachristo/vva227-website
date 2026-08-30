@@ -218,11 +218,10 @@ These documents do not resolve **1.6** — they add a third, disagreeing reading
 
 Two new problems, not previously flagged:
 
-- **The EIN does not match.** One Year Later gives `33-2320012`; the PenFed
-  proposal gives `33-2520012`. These must be checked against the IRS Tax
-  Exempt Organization Search and the Foundation's own determination letter —
-  this is not a typo either document's reader could safely guess at, and it sits
-  on a page asking for tax-deductible gifts.
+- **The EIN does not match — resolved, 2026-08-30.** One Year Later gave
+  `33-2320012`; the PenFed proposal gave `33-2520012`. The chapter confirmed
+  `33-2520012` is correct; `nvvvf.json` and every page that prints the EIN now
+  carry that figure.
 - **A chapter title conflicted with the chapter's own roster — resolved.** The
   newsletter's "Foundation and Chapter 227 Team" list gave Bruce Waxman the
   chapter title "Director"; `officers.json` had him as "Immediate Past

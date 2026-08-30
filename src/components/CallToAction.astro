@@ -6,8 +6,8 @@
  */
 interface Props {
   title: string;
-  primary: { label: string; href: string };
-  secondary?: { label: string; href: string };
+  primary: { label: string; href: string; rel?: string };
+  secondary?: { label: string; href: string; rel?: string };
   tone?: 'green' | 'clay';
 }
 
@@ -20,8 +20,8 @@ const { title, primary, secondary, tone = 'green' } = Astro.props;
     <p class="cta__body"><slot /></p>
   </div>
   <div class="cta__actions">
-    <a class="btn btn--solid" href={primary.href}>{primary.label}</a>
-    {secondary && <a class="btn btn--ghost" href={secondary.href}>{secondary.label}</a>}
+    <a class="btn btn--solid" href={primary.href} rel={primary.rel}>{primary.label}</a>
+    {secondary && <a class="btn btn--ghost" href={secondary.href} rel={secondary.rel}>{secondary.label}</a>}
   </div>
 </aside>
 

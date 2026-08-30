@@ -2,42 +2,126 @@
 /**
  * The Foundation — the relationship hub.
  *
- * This page exists because NVVVF is now visible enough in the chapter's own
- * work that it deserves a top-level answer to "what is NVVVF, and how does it
- * relate to Chapter 227?" — not just a child page under Ways to Give.
+ * Rebuilt 2026-08-30 per the chapter's approved draft and implementation
+ * directions ("Draft Foundation Page Content" / "Foundation Directions").
+ * Fresh, chapter-confirmed copy throughout — this page no longer draws on
+ * src/data/nvvvf.json, which exists specifically to hold the Foundation's
+ * OWN disputed newsletter figures pending board confirmation. Nothing here
+ * repeats those figures, and nothing here uses "steward"/"stewards"/
+ * "stewardship" — the newsletter's own wording for how NVVVF handles funds,
+ * which the chapter asked to retire in favor of describing what each
+ * organization actually does.
  *
- * It deliberately does NOT duplicate what NVVVF's own site says about itself:
- * nvvvf.org is where a visitor learns the Foundation's full story. This page
- * exists to do the one thing nvvvf.org cannot — show a donor how the money
- * NVVVF raises actually moves once it reaches Chapter 227, and point at the
- * chapter's own itemized spending record. It also does not repeat the full
- * disputed-figures disclosure that already lives on /give/nvvvf; that stays
- * the one place those numbers are argued over, so there is a single source of
- * truth for the review conversation rather than two copies that can drift.
+ * Two things this page is careful never to say, per the chapter's own
+ * correction: NVVVF funds moving to Chapter 227 pay for veteran assistance,
+ * never Chapter 227's operating costs — that direction runs the other way,
+ * with Chapter 227 covering NVVVF's operating expenses so a donation to the
+ * Foundation goes entirely to veterans.
+ *
+ * The former "Where a gift to the Foundation ends up" section is removed
+ * entirely, per the chapter's direction. Every fact it and the rest of the
+ * old page carried from src/data/facts-registry.json (nvvvf-name,
+ * nvvvf-founded, nvvvf-status, nvvvf-mailing, nvvvf-committee,
+ * nvvvf-creditor-rule, nvvvf-volunteer, nvvvf-referrals) is independently
+ * covered on /give/nvvvf, which is unchanged — confirmed before this rebuild
+ * by grepping the built site for each fact's assert strings.
+ *
+ * Hero minHeight (2026-08-30 revision): the hero graphic is 1050x700 (3:2).
+ * At the sitewide default 34rem band height, a fixed height paired with a
+ * column that keeps growing wider on large monitors eventually crops past
+ * that 3:2 ratio — cutting into the sky above the in-image headline, which
+ * had little margin to begin with. 38vw tracks the image column's width
+ * closely enough to keep the graphic's full aspect ratio intact through
+ * about 1900px; the clamp floor leaves ordinary laptop widths at the
+ * unchanged 34rem, and the cap keeps ultra-wide screens from growing the
+ * hero indefinitely.
  */
 import PageLayout from '../layouts/PageLayout.astro';
 import HeroBand from '../components/HeroBand.astro';
 import CallToAction from '../components/CallToAction.astro';
-import { validateNvvvf, buildNvvvfView } from '../lib/nvvvf';
-import raw from '../data/nvvvf.json';
+import ProcessIcon from '../components/ProcessIcon.astro';
 
-const nvvvf = validateNvvvf(raw);
-const view = buildNvvvfView(nvvvf);
+const orgs = [
+  {
+    key: 'chapter',
+    icon: 'chapter',
+    name: 'Chapter 227',
+    tax: '501(c)(19) Veterans Organization',
+    role: 'Chapter 227 carries out the veteran-assistance mission.',
+    items: [
+      'Receive requests for assistance',
+      'Review and verify the need',
+      'Approve appropriate grants',
+      'Arrange payment directly to creditors or service providers',
+      'Work to resolve urgent needs quickly',
+    ],
+  },
+  {
+    key: 'nvvvf',
+    icon: 'foundation',
+    name: 'NVVVF',
+    tax: '501(c)(3) Charitable Foundation',
+    role: 'NVVVF builds the financial resources that make that assistance possible.',
+    items: [
+      'Raises charitable contributions',
+      'Provides funds for veteran financial assistance',
+      'Supports Chapter 227’s ability to respond to urgent veteran needs',
+      'Directs donated resources toward veteran support',
+    ],
+  },
+];
+
+// Each card pairs its original label/body/note (verbatim from the approved
+// copy) with one condensed "prominent" line for at-a-glance scanning, per the
+// chapter's second-pass direction naming these three statements as the ones
+// that most need to stand out. Volunteer Led carries no such statement, so it
+// keeps its original subhead instead — the fourth card was never asked to
+// carry one.
+const cards = [
+  {
+    icon: 'heart',
+    label: '100% For Veterans',
+    prominent: '100% of donations devoted to veteran assistance',
+    body: 'Chapter 227 covers NVVVF&rsquo;s operating expenses so Foundation donations can be devoted to veteran assistance.',
+    note: 'NVVVF funds are never used for Chapter 227 operating expenses.',
+  },
+  {
+    icon: 'hands',
+    label: 'Volunteer Led',
+    subhead: 'No Salaried Leadership',
+    body: 'Chapter 227 and NVVVF are led by unpaid volunteers committed to serving fellow veterans and their families.',
+  },
+  {
+    icon: 'veteran',
+    label: 'All Eras. All Veterans.',
+    prominent: 'If You Served, You Are Eligible. Period.',
+    body: 'Chapter 227 assists veterans of every generation. Service&mdash;not when or where you served&mdash;is what matters.',
+    note: 'Assistance is not limited to Vietnam veterans.',
+  },
+  {
+    icon: 'clock',
+    label: '48 Hours',
+    prominent: 'Goal: Within 48 Hours',
+    body: "Once an urgent request has been received and verified, Chapter 227&rsquo;s goal is to act within 48 hours.",
+    note: 'Local decision-making and a streamlined process help prevent temporary hardship from becoming a lasting crisis.',
+  },
+];
 ---
 
 <PageLayout
   title="The Foundation"
-  description="Chapter 227 and the Northern Virginia Vietnam Veterans Foundation are separate organizations with one mission. Here's how they work together, and where a gift to the Foundation actually ends up."
+  description="Chapter 227 and the Northern Virginia Vietnam Veterans Foundation are separate organizations with one mission — helping veterans when help is needed. Here's how the partnership works."
   hero
 >
   <HeroBand
     slot="hero"
     tone="warm"
     eyebrow="Chapter 227 & NVVVF"
-    title="One mission, two organizations"
-    lede="In June 2025, Chapter 227 created a separate charity — the Northern Virginia Vietnam Veterans Foundation — to raise money for one thing: getting a veteran past a sudden financial emergency before it becomes a permanent one."
-    primary={{ label: 'Where Your Money Goes', href: '/give/impact' }}
-    secondary={{ label: 'Give to the Foundation', href: '/give/nvvvf' }}
+    title="One Mission. Two Organizations. One Commitment to Veterans."
+    lede="Chapter 227 and the Northern Virginia Vietnam Veterans Foundation work together to provide timely financial assistance to veterans and their families throughout Northern Virginia."
+    primary={{ label: 'Visit the NVVVF Website', href: 'https://nvvvf.org', rel: 'noopener' }}
+    secondary={{ label: 'How the Partnership Works', href: '#how-it-works' }}
+    minHeight="clamp(34rem, 38vw, 46rem)"
     image={{
       src: '/images/nvvvf-partnership-wide.jpg',
       alt: 'A graphic captioned "One Mission. Two Organizations. One Commitment to Veterans." — two people shaking hands over a sunlit mountain landscape, with the Vietnam Veterans of America Chapter 227 seal and the Northern Virginia Vietnam Veterans Foundation seal side by side above them.',
@@ -46,96 +130,589 @@ const view = buildNvvvfView(nvvvf);
     }}
   />
 
-  <!-- ---------- What it is ---------- -->
-  <section class="stack">
-    <h2>227 runs the program. The Foundation sustains it.</h2>
-    <p>
-      Chapter 227 has been verifying needs and paying veterans&rsquo; creditors directly since long before the
-      Foundation existed. NVVVF doesn&rsquo;t run the emergency assistance program — it exists to raise the money
-      that keeps the chapter&rsquo;s own program funded, so the volunteers with decades of experience doing this work
-      can keep doing it.
-    </p>
-    <p>
-      {view.fullName} is a <strong>separate 501(c)(3) corporation</strong> from Vietnam Veterans of America Chapter
-      227, with its own board and its own mailing address. Chapter 227 created it, and most of its leadership also
-      serves the chapter in some capacity — but legally, financially and administratively, the two are distinct.
-    </p>
-    <p>{nvvvf.purpose.crisisFrame}</p>
-    <p class="muted note">
-      Emergency financial assistance is one program among several. Chapter 227 has also run monthly member dinners,
-      guest speakers and holiday events since 1985 — see <a href="/events">Events &amp; News</a> and
-      <a href="/programs">What We Do</a> for the rest of what the chapter does.
-    </p>
+  <!-- ---------- 1. A Partnership Built to Serve Veterans ---------- -->
+  <section class="section section--sunken intro">
+    <div class="container">
+      <p class="eyebrow">A Partnership Built to Serve Veterans</p>
+      <h2>Decades of Experience. A New Way to Expand the Mission.</h2>
+      <p>
+        Vietnam Veterans of America Chapter 227 has served veterans and their families in Northern Virginia since
+        1985.
+      </p>
+      <p>
+        In 2025, the Northern Virginia Vietnam Veterans Foundation (NVVVF) was created as an independent 501(c)(3)
+        charitable organization to expand the resources available for that work and strengthen the ability to
+        respond when veterans face urgent financial hardship.
+      </p>
+      <p>
+        Chapter 227 is a tax-exempt veterans organization under Section 501(c)(19) of the Internal Revenue Code. The
+        two organizations are legally independent, but work in close partnership toward the same purpose:
+      </p>
+      <p class="emphasis-line">Helping veterans when help is needed.</p>
+    </div>
   </section>
 
-  <!-- ---------- How they work together ---------- -->
-  <section class="stack">
-    <h2>How the two organizations work together</h2>
-    <p><strong>{nvvvf.division.foundation}</strong> {nvvvf.division.chapter}</p>
-    <p>{nvvvf.division.creditorRule}</p>
-    <p>
-      Requests reach the chapter through community partners, including {view.referralSentence}. Full detail on how
-      to give — and the Foundation&rsquo;s tax status — is on
-      <a href="/give/nvvvf">Give to the Foundation &rarr;</a>.
-    </p>
+  <!-- ---------- 2. Two Organizations. Different Roles. One Commitment. ---------- -->
+  <section class="section roles">
+    <div class="container">
+      <h2>Two Organizations. Different Roles. One Commitment.</h2>
+      <div class="orgs">
+        {
+          orgs.map((org) => (
+            <div class={`org org--${org.key}`}>
+              <div class="org__icon">
+                <ProcessIcon name={org.icon} />
+              </div>
+              <p class="org__name">{org.name}</p>
+              <p class="org__tax">{org.tax}</p>
+              <p class="org__role">{org.role}</p>
+              <ul>
+                {org.items.map((item) => (
+                  <li>{item}</li>
+                ))}
+              </ul>
+            </div>
+          ))
+        }
+      </div>
+      <div class="shared">
+        <p class="shared__label">Shared Principle</p>
+        <p class="shared__emphasis">Both organizations are led by unpaid volunteers.</p>
+        <p>
+          NVVVF funds provided to Chapter 227 are used for veteran financial assistance&mdash;not Chapter 227
+          operating expenses.
+        </p>
+      </div>
+    </div>
   </section>
 
-  <!-- ---------- History ---------- -->
-  <section class="stack">
-    <h2>Forty years, then a foundation</h2>
-    <p>Chapter 227 was formed in 1985. The Foundation was created in the chapter&rsquo;s fortieth year, in {nvvvf.founded.display}.</p>
-    <p>{nvvvf.succession.summary}</p>
-    <p>
-      The Foundation is also building a public website of its own, where it will tell its own story directly. It is
-      still in development, so this page does not link to it yet.
-    </p>
+  <!-- ---------- 3. How the Partnership Works ---------- -->
+  <section id="how-it-works" class="section section--sunken how">
+    <div class="container">
+      <p class="eyebrow">How the Partnership Works</p>
+      <h2>Two Tracks. One Purpose.</h2>
+
+      <div class="track">
+        <p class="track__label">Track 1 &mdash; Charitable Funding</p>
+        <div class="flow">
+          <div class="flow__node">
+            <ProcessIcon name="donor" />
+            <span>Donors</span>
+          </div>
+          <span class="flow__arrow" aria-hidden="true">&rarr;</span>
+          <div class="flow__node">
+            <ProcessIcon name="foundation" />
+            <span>NVVVF</span>
+          </div>
+          <span class="flow__arrow" aria-hidden="true">&rarr;</span>
+          <div class="flow__node">
+            <ProcessIcon name="fund" />
+            <span>Veteran Assistance Funds</span>
+          </div>
+        </div>
+        <p>
+          NVVVF raises charitable contributions to build and maintain the pool of funds available for veteran
+          assistance.
+        </p>
+        <p>Donations are not tied to individual veteran cases.</p>
+      </div>
+
+      <div class="connector">
+        <span class="connector__arrow" aria-hidden="true">&darr;</span>
+        <p class="connector__label">NVVVF funds support Chapter 227&rsquo;s approved veteran assistance.</p>
+        <p class="connector__note">
+          NVVVF may provide veteran-assistance funding to Chapter 227 periodically or in response to Chapter funding
+          needs. Those funds are restricted to veteran assistance and are not used for Chapter 227 operating
+          expenses.
+        </p>
+      </div>
+
+      <div class="track">
+        <p class="track__label">Track 2 &mdash; Veteran Assistance</p>
+        <div class="flow">
+          <div class="flow__node">
+            <ProcessIcon name="veteran" />
+            <span>Veteran Request</span>
+          </div>
+          <span class="flow__arrow" aria-hidden="true">&rarr;</span>
+          <div class="flow__node">
+            <ProcessIcon name="checklist" />
+            <span>Review &amp; Verification</span>
+          </div>
+          <span class="flow__arrow" aria-hidden="true">&rarr;</span>
+          <div class="flow__node">
+            <ProcessIcon name="chapter" />
+            <span>Chapter 227 Approval</span>
+          </div>
+          <span class="flow__arrow" aria-hidden="true">&rarr;</span>
+          <div class="flow__node flow__node--multi">
+            <div class="flow__icons">
+              <ProcessIcon name="house" />
+              <ProcessIcon name="utility" />
+              <ProcessIcon name="vehicle" />
+            </div>
+            <span>Creditor or Provider Paid</span>
+          </div>
+        </div>
+        <p>
+          Chapter 227 receives requests for assistance, verifies the need, determines appropriate support and
+          arranges payment directly to the landlord, utility company, repair facility or other creditor or service
+          provider.
+        </p>
+      </div>
+    </div>
   </section>
 
-  <!-- ---------- The bridge ---------- -->
-  <section class="stack">
-    <h2>Where a gift to the Foundation ends up</h2>
-    <p>
-      A gift to NVVVF funds one thing: Chapter 227&rsquo;s emergency financial assistance program. The Foundation
-      raises and stewards the money; the chapter&rsquo;s own volunteers verify each request and pay the veteran&rsquo;s
-      landlord, utility company or repair shop directly. If you&rsquo;re considering a gift to the Foundation, the
-      most direct way to see what that money supports is the chapter&rsquo;s own record of what it has paid out.
-    </p>
-    <p class="muted note">
-      The Foundation also reports its own impact figures. Several of those numbers currently disagree across the
-      Foundation&rsquo;s own source documents and have not been published here for that reason — the full disclosure
-      is on <a href="/give/nvvvf">Give to the Foundation</a>.
-    </p>
+  <!-- ---------- 4. What Makes This Model Different ---------- -->
+  <section class="section discriminators">
+    <div class="container container--wide">
+      <h2>What Makes This Model Different</h2>
+      <div class="cards">
+        {
+          cards.map((card) => (
+            <div class="card">
+              <div class="card__icon">
+                <ProcessIcon name={card.icon} />
+              </div>
+              <p class="card__label">{card.label}</p>
+              {card.subhead && <p class="card__subhead" set:html={card.subhead} />}
+              {card.prominent && <p class="card__prominent">{card.prominent}</p>}
+              <p class="card__body" set:html={card.body} />
+              {card.note && <p class="card__note">{card.note}</p>}
+            </div>
+          ))
+        }
+      </div>
+    </div>
+  </section>
+
+  <!-- ---------- 5. Veterans Helping Veterans ---------- -->
+  <section class="section closing-copy">
+    <div class="container">
+      <h2>Veterans Helping Veterans</h2>
+      <p>
+        The partnership works because it combines charitable resources with decades of experience serving veterans.
+      </p>
+      <p>
+        An overdue rent payment, utility shutoff, unexpected vehicle repair or other emergency can quickly create
+        additional problems for a veteran or family.
+      </p>
+      <p>Chapter 227&rsquo;s role is practical:</p>
+      <p class="centerpiece">Verify the need. Make the decision. Get help where it needs to go. Fast.</p>
+      <p>It is a modern extension of the principle that has guided the Chapter since 1985:</p>
+      <p class="emphasis-line">Veterans helping veterans.</p>
+    </div>
   </section>
 
   <CallToAction
-    title="See where the chapter's own money goes"
-    primary={{ label: 'Where Your Money Goes', href: '/give/impact' }}
-    secondary={{ label: 'Give to the Foundation', href: '/give/nvvvf' }}
+    title="Learn More About NVVVF"
+    primary={{ label: 'Visit NVVVF.org →', href: 'https://nvvvf.org', rel: 'noopener' }}
     tone="clay"
   >
-    An itemized, year-by-year account of every dollar Chapter 227 has paid out — the same volunteers who verify
-    NVVVF-funded emergency assistance requests.
+    The Northern Virginia Vietnam Veterans Foundation provides the charitable resources that help Chapter 227 respond
+    when veterans and their families face urgent financial hardship. To learn more about the Foundation, its
+    mission, impact and ways to support Northern Virginia veterans, visit the NVVVF website.
   </CallToAction>
+
+  <p class="legal-note">
+    NVVVF (the Northern Virginia Vietnam Veterans Foundation) is a 501(c)(3) organization, EIN 33-2520012, PO Box
+    2111, Reston, VA 20195.
+  </p>
 </PageLayout>
 
 <style>
-  .stack + .stack {
-    margin-block-start: var(--s-8);
+  section + section {
+    margin-block-start: var(--s-7);
   }
 
   h2 {
     margin-block-end: var(--s-4);
   }
 
-  .stack > p {
+  .eyebrow {
+    font-family: var(--font-sans);
+    font-size: var(--t-xs);
+    font-weight: 700;
+    letter-spacing: var(--tracking-caps);
+    text-transform: uppercase;
+    color: var(--c-accent-dark);
+    margin-block-end: var(--s-2);
+  }
+
+  .container > p {
     max-width: var(--w-prose);
   }
 
-  .stack > p + p {
+  .container > p + p {
     margin-block-start: var(--s-4);
   }
 
-  .note {
+  .emphasis-line {
+    margin-block-start: var(--s-5);
+    font-family: var(--font-serif);
+    font-style: italic;
+    font-size: var(--t-lg);
+    color: var(--c-primary-dark);
+  }
+
+  /* ---------- 1. Intro / transition ---------- */
+  /* A sunken cream band (the same transition device used on "How the
+     Partnership Works" below) reads as a considered bridge between the hero
+     and the two-organization section, rather than the hero simply ending
+     into blank page. A wider measure than the sitewide 68ch default gives
+     the paragraphs more presence in a section with no cards or image of its
+     own to fill the width. */
+  .intro p {
+    max-width: 78ch;
+  }
+
+  /* ---------- 2. Two organizations ---------- */
+
+  .orgs {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(18rem, 100%), 1fr));
+    gap: var(--s-5);
+    margin-block-start: var(--s-5);
+  }
+
+  .org {
+    display: flex;
+    flex-direction: column;
+    padding: var(--s-5);
+    background: var(--c-surface);
+    border: 1px solid var(--c-border);
+    border-block-start: 4px solid var(--c-primary);
+    border-radius: var(--r-lg);
+  }
+
+  .org--nvvvf {
+    border-block-start-color: var(--c-gold);
+  }
+
+  .org__icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    inline-size: 3.25rem;
+    block-size: 3.25rem;
+    margin-block-end: var(--s-3);
+    border-radius: 50%;
+    background: var(--c-primary-tint);
+    color: var(--c-primary);
+  }
+
+  .org--nvvvf .org__icon {
+    background: color-mix(in srgb, var(--c-gold) 18%, var(--c-surface));
+    color: var(--c-gold);
+  }
+
+  .org__name {
+    font-size: var(--t-lg);
+    font-weight: 700;
+  }
+
+  .org__tax {
+    margin-block-start: var(--s-1);
     font-size: var(--t-sm);
+    font-variant-numeric: tabular-nums;
+    color: var(--c-ink-faint);
+  }
+
+  .org__role {
+    margin-block-start: var(--s-3);
+    font-weight: 600;
+  }
+
+  .org ul {
+    margin-block-start: var(--s-3);
+    padding-inline-start: 1.2em;
+    color: var(--c-ink-soft);
+  }
+
+  .org li + li {
+    margin-block-start: var(--s-2);
+  }
+
+  .shared {
+    margin-block-start: var(--s-5);
+    padding: var(--s-5);
+    background: var(--c-primary-tint);
+    border-inline-start: 3px solid var(--c-primary);
+    border-radius: var(--r-sm);
+  }
+
+  .shared__label {
+    font-family: var(--font-sans);
+    font-size: var(--t-xs);
+    font-weight: 700;
+    letter-spacing: var(--tracking-caps);
+    text-transform: uppercase;
+    color: var(--c-primary-dark);
+    margin-block-end: var(--s-2);
+  }
+
+  .shared > p:not(.shared__label) {
+    max-width: var(--w-prose);
+  }
+
+  .shared > p + p {
+    margin-block-start: var(--s-2);
+  }
+
+  .shared__emphasis {
+    font-family: var(--font-serif);
+    font-style: italic;
+    font-weight: 700;
+    font-size: var(--t-lg);
+    color: var(--c-primary-dark);
+  }
+
+  /* ---------- 3. How the partnership works (unchanged) ---------- */
+
+  .how {
+    padding-block: var(--s-7);
+  }
+
+  .track {
+    margin-block-start: var(--s-5);
+  }
+
+  .track:first-of-type {
+    margin-block-start: var(--s-5);
+  }
+
+  .track__label {
+    font-family: var(--font-sans);
+    font-size: var(--t-xs);
+    font-weight: 700;
+    letter-spacing: var(--tracking-caps);
+    text-transform: uppercase;
+    color: var(--c-accent-dark);
+    max-width: none;
+  }
+
+  .flow {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--s-3);
+    margin-block: var(--s-4);
+  }
+
+  .flow__node {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--s-2);
+    padding: var(--s-4);
+    min-inline-size: 9rem;
+    text-align: center;
+    background: var(--c-surface);
+    border: 1px solid var(--c-border);
+    border-radius: var(--r-md);
+    font-weight: 600;
+    font-size: 1rem;
+    color: var(--c-ink);
+  }
+
+  .flow__node :global(.process-icon) {
+    color: var(--c-primary);
+  }
+
+  .flow__icons {
+    display: flex;
+    gap: var(--s-1);
+  }
+
+  .flow__arrow {
+    flex-shrink: 0;
+    font-size: var(--t-xl);
+    color: var(--c-border-strong);
+  }
+
+  .connector {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--s-2);
+    max-width: var(--w-prose);
+    margin-inline: auto;
+    padding-block: var(--s-4);
+    text-align: center;
+  }
+
+  .connector__arrow {
+    font-size: var(--t-2xl);
+    line-height: 1;
+    color: var(--c-gold);
+  }
+
+  .connector__label {
+    max-width: none;
+    font-weight: 700;
+    color: var(--c-primary-dark);
+  }
+
+  .connector__note {
+    max-width: none;
+    font-size: var(--t-sm);
+    color: var(--c-ink-faint);
+  }
+
+  /* ---------- 4. What makes this model different ---------- */
+  /* Redesigned per the chapter's second-pass direction: wider, shorter cards
+     (container--wide on the section gives the row more room) with a
+     restrained icon badge at the top and centered text, so each card reads
+     as one scannable unit rather than a column of left-aligned paragraphs.
+     Two-across between mobile and the full four-across row, rather than
+     jumping straight from four columns to one. */
+
+  .cards {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: var(--s-5);
+    margin-block-start: var(--s-5);
+  }
+
+  .card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: var(--s-5) var(--s-4);
+    background: var(--c-surface);
+    border: 1px solid var(--c-border);
+    border-radius: var(--r-lg);
+    box-shadow: var(--shadow-sm);
+    text-align: center;
+  }
+
+  .card__icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    inline-size: 3.25rem;
+    block-size: 3.25rem;
+    margin-block-end: var(--s-3);
+    border-radius: 50%;
+    background: var(--c-primary-tint);
+    color: var(--c-primary);
+  }
+
+  .card__label {
+    font-family: var(--font-sans);
+    font-size: var(--t-sm);
+    font-weight: 700;
+    letter-spacing: var(--tracking-caps);
+    text-transform: uppercase;
+    color: var(--c-accent-dark);
+    max-width: none;
+  }
+
+  .card__subhead {
+    margin-block-start: var(--s-2);
+    max-width: none;
+    font-weight: 700;
+    font-size: 1.0625rem;
+  }
+
+  /* The card's one scannable statement — the chapter singled out three of
+     these across the four cards as needing to be immediately noticeable to
+     someone scanning the page. Volunteer Led has no such statement and keeps
+     its subhead instead. */
+  .card__prominent {
+    margin-block-start: var(--s-2);
+    max-width: none;
+    font-family: var(--font-serif);
+    font-style: italic;
+    font-weight: 700;
+    font-size: var(--t-lg);
+    line-height: 1.3;
+    color: var(--c-primary-dark);
+  }
+
+  .card__body {
+    margin-block-start: var(--s-3);
+    max-width: none;
+    color: var(--c-ink-soft);
+  }
+
+  .card__note {
+    margin-block-start: var(--s-2);
+    max-width: none;
+    font-size: var(--t-sm);
+    color: var(--c-ink-faint);
+  }
+
+  /* ---------- 5. Veterans Helping Veterans ---------- */
+  /* Center-aligned and narrower than the operational sections above it, so
+     it reads as a closing human note rather than another explanatory block.
+     margin-inline:auto is needed alongside text-align:center because these
+     paragraphs already carry a max-width (from .container > p / the local
+     override below) — text-align only centers text within a box, not the
+     box itself within its parent. */
+
+  .closing-copy {
+    text-align: center;
+  }
+
+  .closing-copy .container > p {
+    max-width: 60ch;
+    margin-inline: auto;
+  }
+
+  .closing-copy h2 {
+    max-width: 34ch;
+    margin-inline: auto;
+  }
+
+  .closing-copy .emphasis-line {
+    margin-inline: auto;
+    font-size: var(--t-lg);
+  }
+
+  /* The line the chapter asked to make the section's visual centerpiece. */
+  .closing-copy .centerpiece {
+    max-width: 44ch;
+    margin: var(--s-6) auto;
+    padding-block: var(--s-5);
+    border-block: 1px solid var(--c-border);
+    font-family: var(--font-serif);
+    font-weight: 700;
+    font-size: var(--t-2xl);
+    line-height: var(--lh-snug);
+    color: var(--c-primary-dark);
+  }
+
+  @media (max-width: 40rem) {
+    .flow {
+      flex-direction: column;
+    }
+
+    .flow__arrow {
+      transform: rotate(90deg);
+    }
+
+    .flow__node {
+      inline-size: 100%;
+    }
+  }
+
+  @media (max-width: 72rem) {
+    .cards {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  @media (max-width: 40rem) {
+    .cards {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .legal-note {
+    margin-block-start: var(--s-5);
+    max-width: var(--w-prose);
+    font-size: var(--t-sm);
+    color: var(--c-ink-faint);
   }
 </style>

@@ -1,194 +1,457 @@
 ---
 /**
- * Join the Chapter.
+ * Join Us.
  *
- * Consolidates four legacy pages. The membership pitch was split across
- * "Membership" (three sentences and no next step), "VVA 227 Chapter membership"
- * (a pasted recruiting email telling the reader to complete "the attached
- * application", which was attached to nothing), "Membership Invitation" (filed
- * as a child of Fairfax Court), and the application PDF itself — which lived in
- * the sidebar of a page about restoring a memorial plaque in Maryland.
+ * Rebuilt 2026-08-30 per the chapter's direction: reframe the page around
+ * three distinct ways to become part of the Chapter 227 / NVVVF community
+ * (VVA membership, AVVA, and volunteering with the Foundation) rather than a
+ * single membership pitch, and put the welcome before the paperwork.
  *
- * Bill Lynch's own words are kept where they are better than anything a
- * redesign would write.
+ * The hero (image, copy, buttons) is unchanged from the prior revision — this
+ * pass only replaces the body.
+ *
+ * What changed from the previous body, and why:
+ *   - The "Who can join" testimonial quoting Bill Lynch by name (Admiral
+ *     Zumwalt, missile crews in Germany) is retired. It named a membership
+ *     director who may not hold that role indefinitely, and its specifics
+ *     added nothing the plain eligibility statement doesn't already cover.
+ *     The underlying fact this page must still carry — that where a veteran
+ *     served does not matter, in-country or otherwise — is preserved in
+ *     ordinary prose instead of an attributed quote.
+ *   - "Mail it to the membership director / He processes..." is retired for
+ *     the same reason (named, gendered, and the mailing address itself is an
+ *     unresolved question — see REVIEW.md 4.2). Replaced with a durable
+ *     "Contact Chapter 227" link, which is correct regardless of who holds
+ *     the role or which address the chapter eventually settles on.
+ *   - The "Questions" / <ContactList only={['membership']}> block, which
+ *     rendered Bill Lynch's name and personal email directly, is removed for
+ *     the same reason. contacts.json is untouched — his entry still renders
+ *     on /contact, where a named role contact is expected — this page just
+ *     no longer duplicates it.
+ *   - The Mission BBQ / Tank Farm outreach cards are dropped in favor of a
+ *     general "you'll find us in the community" note. Both facts remain
+ *     covered on /events, which still renders the same events.json entries.
+ *   - facts-registry.json's "membership-zumwalt" entry is retired along with
+ *     the anecdote — confirmed via grep that "Zumwalt" and "three-star
+ *     general" appeared nowhere else on the site before removing it, and the
+ *     migration-coverage ratchet was lowered by one to match (see that file).
  */
 import PageLayout from '../../layouts/PageLayout.astro';
 import HeroBand from '../../components/HeroBand.astro';
+import ProcessIcon from '../../components/ProcessIcon.astro';
 import MeetingCard from '../../components/MeetingCard.astro';
-import Card from '../../components/Card.astro';
-import CardGrid from '../../components/CardGrid.astro';
 import ReviewNote from '../../components/ReviewNote.astro';
-import ContactList from '../../components/ContactList.astro';
-import events from '../../data/events.json';
+
+const pathways = [
+  {
+    key: 'vva',
+    icon: 'chapter',
+    label: 'Join Chapter 227',
+    subhead: 'For Vietnam-Era Veterans',
+    body: 'Veterans who meet Vietnam Veterans of America membership requirements can join Chapter 227 and become part of a community built on service, fellowship and remembrance.',
+    button: { label: 'Learn About VVA Membership', href: '#vva-membership' },
+  },
+  {
+    key: 'avva',
+    icon: 'hands',
+    label: 'Join AVVA',
+    subhead: 'For Family, Friends & Supporters',
+    body: 'You do not have to be a Vietnam veteran—or a veteran at all—to become part of the Chapter 227 community. Associates of Vietnam Veterans of America welcomes people who believe in the mission and those who want to honor or remain connected to a Vietnam veteran—a spouse, parent, grandparent, brother, sister, other relative or friend.',
+    emphasis: 'If the mission matters to you, there is a place for you here.',
+    button: { label: 'Learn About AVVA', href: '/join/avva' },
+  },
+  {
+    key: 'nvvvf',
+    icon: 'foundation',
+    label: 'Volunteer With NVVVF',
+    subhead: 'Help Build the Mission for the Future',
+    body: 'NVVVF is growing and welcomes volunteers who want to help strengthen its ability to support veterans throughout Northern Virginia. Volunteers may be veterans or non-veterans, men or women, and may contribute experience in areas such as communications, fundraising, technology, grant writing, community outreach, administration, social media or business development.',
+    emphasis: 'Different backgrounds. Shared commitment.',
+    button: { label: 'Volunteer With NVVVF', href: '/foundation' },
+  },
+];
+
+const pillars = [
+  {
+    icon: 'heart',
+    title: 'Service',
+    body: 'Continue serving by helping veterans and veteran families.',
+  },
+  {
+    icon: 'hands',
+    title: 'Fellowship',
+    body: 'Build friendships, share meals, enjoy conversation and stay connected through a welcoming veteran community.',
+  },
+  {
+    icon: 'flag',
+    title: 'Remembrance & Community',
+    body: 'Honor those who served and remain engaged with the broader Northern Virginia veteran community.',
+  },
+];
 ---
 
 <PageLayout
-  title="Join the Chapter"
-  description="Membership in VVA Chapter 227 is open to anyone who served during the Vietnam era. Life membership is $50, once, with no further dues."
+  title="Join Us"
+  description="Chapter 227 welcomes veterans, families, friends and supporters. Join as a VVA member, become an AVVA associate, or volunteer with the Northern Virginia Vietnam Veterans Foundation."
   hero
 >
   <HeroBand
     slot="hero"
-    eyebrow="Membership"
-    title="Join the Chapter"
-    lede="Life membership is $50. You pay it once and never again. In-country service is not required."
-    primary={{ label: 'Come to a meeting', href: '/events' }}
-    secondary={{ label: 'AVVA membership', href: '/join/avva' }}
+    tone="warm"
+    eyebrow="Chapter 227"
+    title="Join Us."
+    tagline="Together, we can do more."
+    lede="Veterans helping veterans. Be part of the mission."
+    body="There are many ways to get involved—volunteer, attend an event, spread the word, or support our work. Your time and support make a difference."
+    primary={{ label: 'Get Involved Today', href: '/events' }}
+    secondary={{ label: 'Explore Opportunities', href: '/join/avva' }}
+    minHeight="clamp(34rem, 55vw, 55rem)"
+    image={{
+      src: '/images/join-us-gathering.jpg',
+      alt: 'Chapter 227 members and guests, men and women together, talking and smiling at a chapter social gathering, with the American flag and the Chapter 227 and Northern Virginia Vietnam Veterans Foundation seals on the wall behind them.',
+      width: 1050,
+      height: 1017,
+    }}
   />
 
-  <!-- ---------- Eligibility ---------- -->
-  <section class="stack">
-    <h2>Who can join</h2>
-    <p>
-      Membership is open to any service member who served during the Vietnam era. Where you served does not matter.
-      As the chapter&rsquo;s membership director puts it:
-    </p>
-    <blockquote>
+  <!-- ---------- 1. There Is a Place for You Here ---------- -->
+  <section class="section section--sunken intro">
+    <div class="container">
+      <h2>There Is a Place for You Here</h2>
       <p>
-        It does not matter whether they served in-country or elsewhere. Someone had to keep the bullets flowing and
-        the Russians out of Europe. We have two members who served on missile crews in Germany. Admiral Zumwalt,
-        deceased, was a member even after he moved to North Carolina. Our ranks range from privates to a three-star
-        general and admiral.
+        Chapter 227 is more than a membership organization. It is a community of veterans, families, friends and
+        supporters who share a commitment to service, fellowship, remembrance and helping veterans.
       </p>
-      <cite>Bill Lynch, membership director</cite>
-    </blockquote>
-    <p>
-      The chapter itself serves more broadly than it recruits: it helps homeless and needy veterans across Northern
-      Virginia, not only Vietnam veterans.
-    </p>
-  </section>
-
-  <!-- ---------- Cost and benefits ---------- -->
-  <section class="stack">
-    <h2>What it costs, and what you get</h2>
-    <div class="price">
-      <p class="price__amount">$50</p>
-      <p class="price__label">Life membership &mdash; a single payment, no additional fees ever</p>
+      <p>
+        Whether you are a Vietnam-era veteran, someone connected to a Vietnam veteran, or simply believe in the
+        mission, there are ways to become involved.
+      </p>
     </div>
-
-    <ul class="benefits">
-      <li><strong>The VVA Veteran</strong> — the national magazine, mailed to you</li>
-      <li>A weekly email from VVA National with links to key veteran resources</li>
-      <li><strong>The Journey</strong> — the chapter newsletter</li>
-      <li>Nine dinner meetings a year with a speaker, open to spouses and guests</li>
-      <li>A vote in chapter elections at the April annual meeting</li>
-    </ul>
   </section>
 
-  <!-- ---------- How to join ---------- -->
-  <section class="stack">
-    <h2>How to join</h2>
-    <ol class="steps">
-      <li>
-        <h3>Fill in the application</h3>
-        <p>
-          <a class="doc" href="/docs/vva227-membership-application.pdf">
-            Download the membership application <span>PDF</span>
-          </a>
-        </p>
-      </li>
-      <li>
-        <h3>Add payment</h3>
-        <p>
-          Enclose a check made out to <strong>Vietnam Veterans of America</strong>, or fill in the credit card
-          section on the application itself.
-        </p>
-      </li>
-      <li>
-        <h3>Include a copy of your DD214</h3>
-        <p>You may black out your Social Security number.</p>
-      </li>
-      <li>
-        <h3>Mail it to the membership director</h3>
-        <p>He processes the application and tracks it through VVA headquarters.</p>
-      </li>
-    </ol>
+  <!-- ---------- 2. Find Your Place ---------- -->
+  <section class="section pathways">
+    <div class="container container--wide">
+      <h2>Find Your Place</h2>
+      <div class="paths">
+        {
+          pathways.map((path) => (
+            <div class={`path path--${path.key}`}>
+              <div class="path__icon">
+                <ProcessIcon name={path.icon} />
+              </div>
+              <p class="path__label">{path.label}</p>
+              <p class="path__subhead">{path.subhead}</p>
+              <p class="path__body">{path.body}</p>
+              {path.emphasis && <p class="path__emphasis">{path.emphasis}</p>}
+              <a class="path__btn" href={path.button.href}>
+                {path.button.label}
+              </a>
+            </div>
+          ))
+        }
+      </div>
+      <p class="emphasis-line">Different paths. One commitment to veterans.</p>
+    </div>
+  </section>
 
-    <ReviewNote topic="Where applications are mailed">
+  <!-- ---------- 3. Why Become Part of Chapter 227? ---------- -->
+  <section class="section section--sunken why">
+    <div class="container">
+      <h2>Why Become Part of Chapter 227?</h2>
+      <div class="pillars">
+        {
+          pillars.map((pillar) => (
+            <div class="pillar">
+              <div class="pillar__icon">
+                <ProcessIcon name={pillar.icon} />
+              </div>
+              <h3>{pillar.title}</h3>
+              <p>{pillar.body}</p>
+            </div>
+          ))
+        }
+      </div>
+    </div>
+  </section>
+
+  <!-- ---------- 4. VVA Membership — How to Join ---------- -->
+  <section id="vva-membership" class="section membership">
+    <div class="container">
+      <h2>VVA Membership &mdash; How to Join</h2>
+
+      <h3>Who Can Join</h3>
       <p>
-        The current site publishes a board member&rsquo;s <strong>home street address</strong> as the public mail-to
-        for applications, and prints it with a malformed ZIP+4. That address is not reproduced here.
+        Membership is open to any service member who served during the Vietnam era. It does not matter whether you
+        served in-country or elsewhere &mdash; every branch, every duty station and every rank has a place in
+        Chapter 227.
       </p>
       <p>
-        The chapter should decide whether to keep using a private home address or route applications to the P.O. box
-        in Arlington. Whichever it chooses, the correct address goes in this step.
+        The chapter itself serves more broadly than it recruits: it helps homeless and needy veterans across
+        Northern Virginia, not only Vietnam veterans.
       </p>
-    </ReviewNote>
 
-    <ReviewNote topic="Application form date">
-      The only application on the site is titled &ldquo;revised 2018&rdquo; and its filename carries a Windows
-      duplicate suffix. Please confirm it is still the current VVA form.
-    </ReviewNote>
+      <h3>Cost and Benefits</h3>
+      <div class="price">
+        <p class="price__amount">$50</p>
+        <p class="price__label">Life membership &mdash; a single payment, no additional fees ever</p>
+      </div>
+      <ul class="benefits">
+        <li><strong>The VVA Veteran</strong> — the national magazine, mailed to you</li>
+        <li>A weekly email from VVA National with links to key veteran resources</li>
+        <li><strong>The Journey</strong> — the chapter newsletter</li>
+        <li>Nine dinner meetings a year with a speaker, open to spouses and guests</li>
+        <li>A vote in chapter elections at the April annual meeting</li>
+      </ul>
 
-    <h3 class="contact-heading">Questions</h3>
-    <ContactList only={['membership']} />
+      <h3>How to Apply</h3>
+      <ol class="steps">
+        <li>
+          <h4>Fill in the application</h4>
+          <p>
+            <a class="doc" href="/docs/vva227-membership-application.pdf">
+              Download the membership application <span>PDF</span>
+            </a>
+          </p>
+        </li>
+        <li>
+          <h4>Add payment</h4>
+          <p>
+            Enclose a check made out to <strong>Vietnam Veterans of America</strong>, or fill in the credit card
+            section on the application itself.
+          </p>
+        </li>
+        <li>
+          <h4>Include a copy of your DD214</h4>
+          <p>You may black out your Social Security number.</p>
+        </li>
+        <li>
+          <h4>Send it in</h4>
+          <p>Mail or deliver your completed application as instructed on the form.</p>
+        </li>
+      </ol>
+
+      <ReviewNote topic="Application form date">
+        The only application on the site is titled &ldquo;revised 2018&rdquo; and its filename carries a Windows
+        duplicate suffix. Please confirm it is still the current VVA form.
+      </ReviewNote>
+
+      <p class="contact-cta">
+        <a class="doc" href="/contact">Contact Chapter 227 About Membership</a>
+      </p>
+    </div>
   </section>
 
-  <!-- ---------- Meetings ---------- -->
-  <section class="stack">
-    <h2>Come to a meeting first</h2>
-    <p>
-      You are welcome at a meeting before you join anything. Come for dinner, hear the speaker, and see whether the
-      room suits you.
-    </p>
-    <MeetingCard showReview={false} />
-  </section>
-
-  <!-- ---------- Where to find us ---------- -->
-  <section class="stack">
-    <h2>Where to find us</h2>
-    <p>Chapter members staff tables out in the community through the year.</p>
-    <CardGrid min="18rem">
-      {
-        events.outreach.map((item) => (
-          <Card title={item.title}>
-            <p>{item.description}</p>
-          </Card>
-        ))
-      }
-      <Card title="Associates of VVA" href="/join/avva" eyebrow="For family and friends">
+  <!-- ---------- 5. AVVA — Another Way to Belong ---------- -->
+  <section class="section avva">
+    <div class="container">
+      <div class="callout">
+        <h2>AVVA &mdash; Another Way to Belong</h2>
         <p>
-          Not a veteran, or a spouse who wants in? AVVA membership is open to anyone who works toward the same goals.
+          Associates of Vietnam Veterans of America (AVVA) is open to people who support the mission or want to
+          maintain a connection to a Vietnam veteran, whether or not they served themselves.
         </p>
-      </Card>
-    </CardGrid>
+        <a class="doc" href="/contact">Contact Chapter 227 to Learn More About AVVA</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ---------- 6. Come Meet Us First ---------- -->
+  <section class="section section--sunken meet">
+    <div class="container">
+      <h2>Come Meet Us First</h2>
+      <p>You do not have to join before getting to know us.</p>
+      <p>
+        Come to a meeting, meet some members, enjoy the fellowship, hear the speaker and see whether Chapter 227
+        feels right for you.
+      </p>
+      <MeetingCard showReview={false} />
+    </div>
+  </section>
+
+  <!-- ---------- 7. You'll Find Us in the Community ---------- -->
+  <section class="section community">
+    <div class="container">
+      <h2>You&rsquo;ll Find Us in the Community</h2>
+      <p>
+        Chapter 227 members participate throughout the year in veteran gatherings, commemorations, community
+        activities and events across Northern Virginia.
+      </p>
+      <p class="emphasis-line">You don&rsquo;t have to join first to get to know us. Come say hello.</p>
+    </div>
   </section>
 </PageLayout>
 
 <style>
   section + section {
-    margin-block-start: var(--s-8);
+    margin-block-start: var(--s-7);
   }
 
   h2 {
     margin-block-end: var(--s-4);
   }
 
-  blockquote {
-    margin: 0;
-    padding-inline-start: var(--s-5);
-    border-inline-start: 3px solid var(--c-gold);
-    font-family: var(--font-serif);
-    font-size: var(--t-lg);
-    line-height: 1.5;
-    color: var(--c-ink-soft);
+  .container > p {
     max-width: var(--w-prose);
   }
 
-  blockquote cite {
-    display: block;
-    margin-block-start: var(--s-3);
-    font-family: var(--font-sans);
+  .container > p + p {
+    margin-block-start: var(--s-4);
+  }
+
+  .emphasis-line {
+    margin-block-start: var(--s-5);
+    font-family: var(--font-serif);
+    font-style: italic;
+    font-size: var(--t-lg);
+    color: var(--c-primary-dark);
+  }
+
+  /* ---------- 2. Find your place ---------- */
+
+  .paths {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(18rem, 100%), 1fr));
+    gap: var(--s-5);
+    margin-block-start: var(--s-5);
+  }
+
+  .path {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: var(--s-5);
+    background: var(--c-surface);
+    border: 1px solid var(--c-border);
+    border-block-start: 4px solid var(--c-primary);
+    border-radius: var(--r-lg);
+    text-align: center;
+  }
+
+  .path--avva {
+    border-block-start-color: var(--c-gold);
+  }
+
+  .path--nvvvf {
+    border-block-start-color: var(--c-accent);
+  }
+
+  .path__icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    inline-size: 3.25rem;
+    block-size: 3.25rem;
+    margin-block-end: var(--s-3);
+    border-radius: 50%;
+    background: var(--c-primary-tint);
+    color: var(--c-primary);
+  }
+
+  .path--avva .path__icon {
+    background: color-mix(in srgb, var(--c-gold) 18%, var(--c-surface));
+    color: var(--c-gold);
+  }
+
+  .path--nvvvf .path__icon {
+    background: var(--c-accent-tint);
+    color: var(--c-accent);
+  }
+
+  .path__label {
+    font-size: var(--t-lg);
+    font-weight: 700;
+    max-width: none;
+  }
+
+  .path__subhead {
+    margin-block-start: var(--s-1);
+    max-width: none;
     font-size: var(--t-sm);
-    font-style: normal;
     color: var(--c-ink-faint);
   }
 
-  p {
-    max-width: var(--w-prose);
+  .path__body {
+    margin-block-start: var(--s-3);
+    max-width: none;
+    color: var(--c-ink-soft);
   }
 
-  /* ---- Price ---- */
+  .path__emphasis {
+    margin-block-start: var(--s-3);
+    max-width: none;
+    font-family: var(--font-serif);
+    font-style: italic;
+    font-weight: 700;
+    color: var(--c-primary-dark);
+  }
+
+  .path__btn {
+    display: inline-block;
+    margin-block-start: var(--s-5);
+    padding: var(--s-3) var(--s-5);
+    border: 2px solid var(--c-primary);
+    border-radius: var(--r-md);
+    font-weight: 700;
+    text-decoration: none;
+    color: var(--c-primary-dark);
+  }
+
+  .path--avva .path__btn {
+    border-color: var(--c-gold);
+  }
+
+  .path--nvvvf .path__btn {
+    border-color: var(--c-accent);
+  }
+
+  .path__btn:hover {
+    background: var(--c-primary-tint);
+  }
+
+  /* ---------- 3. Why become part of Chapter 227 ---------- */
+
+  .pillars {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--s-7);
+    margin-block-start: var(--s-6);
+  }
+
+  .pillar {
+    text-align: center;
+  }
+
+  .pillar__icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    block-size: 2.5rem;
+    margin-block-end: var(--s-3);
+    color: var(--c-primary);
+  }
+
+  .pillar h3 {
+    margin-block-end: var(--s-2);
+  }
+
+  .pillar p {
+    max-width: none;
+    color: var(--c-ink-soft);
+    font-size: 1rem;
+    line-height: 1.6;
+  }
+
+  /* ---------- 4. VVA membership ---------- */
+
+  .membership h3 {
+    margin-block-start: var(--s-7);
+    margin-block-end: var(--s-4);
+  }
+
+  .membership h3:first-of-type {
+    margin-block-start: var(--s-5);
+  }
 
   .price {
     display: flex;
@@ -214,6 +477,7 @@ import events from '../../data/events.json';
   }
 
   .benefits {
+    margin-block-start: var(--s-5);
     max-width: var(--w-prose);
     padding-inline-start: var(--s-5);
   }
@@ -221,8 +485,6 @@ import events from '../../data/events.json';
   .benefits li + li {
     margin-block-start: var(--s-2);
   }
-
-  /* ---- Steps ---- */
 
   .steps {
     counter-reset: step;
@@ -262,7 +524,7 @@ import events from '../../data/events.json';
     font-weight: 700;
   }
 
-  .steps h3 {
+  .steps h4 {
     font-size: var(--t-lg);
     line-height: 2.25rem;
   }
@@ -296,8 +558,38 @@ import events from '../../data/events.json';
     color: var(--c-ink-faint);
   }
 
-  .contact-heading {
+  .contact-cta {
     margin-block-start: var(--s-6);
-    margin-block-end: var(--s-4);
+  }
+
+  /* ---------- 5. AVVA ---------- */
+
+  .callout {
+    max-width: var(--w-prose);
+    padding: var(--s-6);
+    background: color-mix(in srgb, var(--c-gold) 12%, var(--c-ground));
+    border-inline-start: 3px solid var(--c-gold);
+    border-radius: var(--r-sm);
+  }
+
+  .callout h2 {
+    margin-block-end: var(--s-3);
+  }
+
+  .callout .doc {
+    margin-block-start: var(--s-5);
+  }
+
+  /* ---------- 6. Come meet us first ---------- */
+
+  .meet .container > p:last-of-type {
+    margin-block-end: var(--s-5);
+  }
+
+  @media (max-width: 60rem) {
+    .pillars {
+      grid-template-columns: 1fr;
+      gap: var(--s-6);
+    }
   }
 </style>

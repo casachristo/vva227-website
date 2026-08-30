@@ -89,14 +89,14 @@ describe('the Foundation material, which came from one unverified source', () =>
   });
 
   it('prints the EIN in the form the IRS publishes it, not as bare digits', () => {
-    expect(html).toMatch(/\b33-2320012\b/);
-    expect(html, 'an unhyphenated EIN is not the published identifier').not.toMatch(/\b332320012\b/);
+    expect(html).toMatch(/\b33-2520012\b/);
+    expect(html, 'an unhyphenated EIN is not the published identifier').not.toMatch(/\b332520012\b/);
   });
 
-  it('does not link to the Foundation site until the chapter confirms it resolves', () => {
-    // The newsletter says nvvvf.org would go live in September and writes the
-    // address two ways in one document. src/data/nvvvf.json holds the flag; this
-    // is the built-output check that the flag is actually obeyed.
+  it('links to the Foundation site now that the chapter has confirmed it resolves', () => {
+    // src/data/nvvvf.json's url.confirmedLive flipped true 2026-08-30 once the
+    // chapter confirmed nvvvf.org live and linkable. This is the built-output
+    // check that at least one page actually uses that confirmation.
     const anchors: string[] = [];
     for (const page of pages) {
       page.$('a[href]').each((_, el) => {
@@ -104,13 +104,12 @@ describe('the Foundation material, which came from one unverified source', () =>
         if (/nvvvf\.org/i.test(href)) anchors.push(`${page.route} -> ${href}`);
       });
     }
-    expect(anchors, `nvvvf.org is linked before it was confirmed live:\n${anchors.join('\n')}`).toEqual([]);
+    expect(anchors.length, 'nvvvf.org is confirmed live but no page links to it').toBeGreaterThan(0);
   });
 
-  it('will still be safe once that link is turned on', () => {
-    // Vacuous today by design, and armed the moment `confirmedLive` flips: the
-    // Content-Security-Policy below is default-src 'self', so a link is fine but
-    // a hotlinked asset would be blocked in production and nowhere in this suite.
+  it('is safe now that the link is turned on', () => {
+    // Content-Security-Policy below is default-src 'self', so a link is fine
+    // but a hotlinked asset would be blocked in production.
     for (const page of pages) {
       page.$('a[href*="nvvvf.org"]').each((_, el) => {
         const href = page.$(el).attr('href') ?? '';
