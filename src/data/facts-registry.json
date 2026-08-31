@@ -16,13 +16,6 @@
       "source": "site-wide footer"
     },
     {
-      "id": "org-facebook",
-      "origin": "legacy-site",
-      "fact": "Chapter Facebook page",
-      "assert": ["facebook.com/VVA227"],
-      "source": "site-wide footer"
-    },
-    {
       "id": "org-founded",
       "origin": "legacy-site",
       "fact": "Founded 24 July 1985 at the Fort Myer NCO Club by about fifteen people",

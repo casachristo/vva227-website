@@ -16,7 +16,6 @@
 import PageLayout from '../../layouts/PageLayout.astro';
 import HeroBand from '../../components/HeroBand.astro';
 import ProcessIcon from '../../components/ProcessIcon.astro';
-import CallToAction from '../../components/CallToAction.astro';
 import { addressLine } from '../../lib/format';
 import site from '../../data/site.json';
 
@@ -62,12 +61,12 @@ const postal = addressLine([a.line1, a.city, `${a.state} ${a.zip}`]);
             <ProcessIcon name="foundation" />
           </div>
           <h2>Support Veteran Financial Assistance</h2>
-          <p class="path-card__lede">Help a veteran in crisis through NVVVF.</p>
+          <p class="path-card__lede">Help a veteran facing financial hardship through NVVVF.</p>
           <p>
             The Northern Virginia Vietnam Veterans Foundation raises funds so that veterans of every era can be
             helped when a sudden financial emergency threatens their stability. Like Chapter 227, NVVVF is entirely
             volunteer-led, with no paid staff. Because Chapter 227 covers the Foundation&rsquo;s operating costs,
-            contributions to NVVVF go toward veteran assistance.
+            100% of contributions to NVVVF can be devoted to veteran assistance.
           </p>
           <a class="path-card__btn path-card__btn--gold" href="https://nvvvf.org" rel="noopener">
             Give Through NVVVF &rarr;
@@ -127,15 +126,6 @@ const postal = addressLine([a.line1, a.city, `${a.state} ${a.zip}`]);
       </p>
     </div>
   </section>
-
-  <CallToAction
-    title="See exactly where it goes"
-    primary={{ label: 'Where your money goes', href: '/give/impact' }}
-    tone="clay"
-  >
-    The chapter publishes an itemized account of its veteran aid. Every dollar is disbursed by the same volunteers
-    who raised it &mdash; there is no paid staff.
-  </CallToAction>
 </PageLayout>
 
 <style>

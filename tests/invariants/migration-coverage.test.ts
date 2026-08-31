@@ -28,8 +28,8 @@ import registry from '../../src/data/facts-registry.json';
 // Both are set to the EXACT current count. Slack in a ratchet is a hole — with
 // 70 against 79 covered, a registry entry and its content could be deleted
 // together and both assertions would still pass.
-const MIN_LEGACY_FACTS = 52;
-const MIN_COVERED_FACTS = 60;
+const MIN_LEGACY_FACTS = 51;
+const MIN_COVERED_FACTS = 59;
 
 /** A needle matching most of the site proves nothing — "227" hits every header.
  *  Raised from 6 to 8, 2026-08-31: NVVVF itself is now a genuinely cross-cutting

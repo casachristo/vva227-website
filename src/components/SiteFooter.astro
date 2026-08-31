@@ -24,11 +24,8 @@ const year = 2026;
       <p class="footer__motto">&ldquo;{site.motto}&rdquo;</p>
 
       <address class="footer__address">
-        <a href={`tel:${site.phone.replace(/-/g, '')}`}>{site.phone}</a><br />
         {postal}
       </address>
-
-      <a class="footer__social" href={site.facebook} rel="noopener">Facebook</a>
     </div>
 
     <nav class="footer__nav" aria-label="Footer">
@@ -136,12 +133,6 @@ const year = 2026;
     margin-block-start: var(--s-4);
     font-style: normal;
     line-height: 1.7;
-  }
-
-  .footer__social {
-    display: inline-block;
-    margin-block-start: var(--s-3);
-    font-weight: 600;
   }
 
   /* ---- Link columns ---- */
