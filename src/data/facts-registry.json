@@ -182,39 +182,11 @@
       "source": "Donation"
     },
     {
-      "id": "give-paypal",
-      "origin": "legacy-site",
-      "fact": "PayPal handle",
-      "assert": ["paypal.me/VVA227"],
-      "source": "Donation"
-    },
-    {
       "id": "give-cash",
       "origin": "legacy-site",
       "fact": "Cash collection box at monthly meetings plus the 50/50 drawing",
       "assert": ["50/50 drawing"],
       "source": "Cash-and-Check-Donations-to-the-chapter"
-    },
-    {
-      "id": "give-vehicles",
-      "origin": "legacy-site",
-      "fact": "Vehicles for Veterans is Car Donation Foundation tax-exempt program; free towing, receipt within 15 days",
-      "assert": ["Vehicles for Veterans", "Car Donation Foundation", "15 days"],
-      "source": "Donation"
-    },
-    {
-      "id": "give-goods",
-      "origin": "legacy-site",
-      "fact": "VVA Pickup collects used clothes and household goods",
-      "assert": ["VVA Pickup"],
-      "source": "Donation"
-    },
-    {
-      "id": "give-goods-items",
-      "origin": "legacy-site",
-      "fact": "Items wanted for pickup",
-      "assert": ["Clothing and shoes", "Baby items", "Microwaves"],
-      "source": "Donation"
     },
     {
       "id": "give-treasurer-duties",

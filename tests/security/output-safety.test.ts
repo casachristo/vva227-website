@@ -62,11 +62,12 @@ describe('conflicting contact details are not guessed at', () => {
   }
 
   it('still offers a working route for those roles', () => {
-    // Suppressing the address must not leave a dead end — the contact page has
-    // to fall back to the chapter phone number.
+    // Suppressing the address must not leave a dead end. The chapter's own
+    // phone number (703-850-3498) has since stopped working and was removed
+    // from /contact (2026-08-31) — email is now the fallback route.
     const contact = pages.find((p) => p.route === '/contact');
     expect(contact, 'no /contact page').toBeDefined();
-    expect(contact!.text).toContain('703-850-3498');
+    expect(contact!.text).toContain('jaymelissa@aol.com');
   });
 });
 

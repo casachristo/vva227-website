@@ -236,9 +236,9 @@ Two new problems, not previously flagged:
 
 | # | What is missing | Where it shows |
 |---|---|---|
-| 2.1 | **The Venmo handle.** It exists only as pixels inside a QR image with empty alt text, so screen-reader users and desktop visitors cannot donate by Venmo at all. It must be published as text. | `/give` |
-| 2.2 | **Vehicle donation contact.** The site describes Vehicles for Veterans in detail and gives no phone number or URL to start one. | `/give` |
-| 2.3 | **Household goods pickup contact.** Same problem — VVA Pickup is described, with no way to schedule. | `/give` |
+| 2.1 | **The Venmo handle — removed from `/give`, 2026-08-31.** It existed only as pixels inside a QR image with empty alt text, so screen-reader users and desktop visitors could not donate by Venmo at all. Rather than publish an unusable method, the rebuilt Ways to Give page drops it. It can return once the chapter supplies a handle as text. | `/give` |
+| 2.2 | **Vehicle donation contact — removed from `/give`, 2026-08-31.** The site described Vehicles for Veterans in detail and gave no phone number or URL to start one. Dropped from the rebuilt page rather than left as a dead end; can return once the chapter supplies the correct number or link. | `/give` |
+| 2.3 | **Household goods pickup contact — removed from `/give`, 2026-08-31.** Same problem — VVA Pickup was described with no way to schedule. Dropped from the rebuilt page for the same reason; can return once a scheduling link or phone number exists. | `/give` |
 | 2.4 | **Tom Stryer's contact details.** The Community Outreach page ends the sentence "Contact Tom Stryer at" with nothing after it. The school speakers program is one of the chapter's best stories and its only call to action is broken. | `/programs` |
 | 2.5 | **A court contact for the Treatment Docket.** The site describes the program but never links to Fairfax County's own information or gives a court contact. | `/get-help/treatment-court` |
 | 2.6 | **How the chapter took Dean K. Phillips's name.** Captain Phillips died 22 August 1985, about four weeks after the founders met. Nobody has written down how or why the chapter chose to carry his name. This would be the single most compelling piece of writing on the site. | `/about/dean-k-phillips` |

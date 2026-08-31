@@ -2,100 +2,413 @@
 /**
  * Contact.
  *
- * This page exists because the legacy site had no working way to reach the
- * chapter. Its site-wide "Contact" link went to an `email-form` page that
- * returned "Sorry, but the page you requested is not available", and the only
- * functioning email address anywhere on the site belonged to the web vendor.
+ * Rebuilt 2026-08-31 per the chapter's direction: organize the page around
+ * durable REASONS to contact Chapter 227 rather than a directory of current
+ * officeholders. The prior "Who handles what" section named individual
+ * volunteers for general inquiries, treasurer/donations, the website,
+ * Veterans Treatment Court and school speakers — every one of those became a
+ * maintenance point the moment that person's role changed, and the chapter's
+ * published phone number (703-850-3498) has stopped working. Neither is
+ * reproduced here. contacts.json itself is untouched — it still backs the
+ * dedicated contact lists on /get-help and /get-help/treatment-court, which
+ * this rebuild does not touch.
+ *
+ * Two live addresses carry the whole page: jaymelissa@aol.com for everything
+ * general, and vva227bill@outlook.com for membership specifically (the one
+ * named-role exception the chapter asked to keep, shown as an address rather
+ * than a person). Both were supplied directly by the chapter for this
+ * rebuild, not carried over from the legacy site's contacts.json roles.
  */
 import PageLayout from '../layouts/PageLayout.astro';
-import ContactList from '../components/ContactList.astro';
-import ReviewNote from '../components/ReviewNote.astro';
+import HeroBand from '../components/HeroBand.astro';
+import ProcessIcon from '../components/ProcessIcon.astro';
 import { addressLine } from '../lib/format';
 import site from '../data/site.json';
-import contacts from '../data/contacts.json';
 
 const a = site.mailingAddress;
 const postal = addressLine([a.line1, a.city, `${a.state} ${a.zip}`]);
+
+const GENERAL_EMAIL = 'jaymelissa@aol.com';
+const MEMBERSHIP_EMAIL = 'vva227bill@outlook.com';
+
+const helpCards = [
+  {
+    icon: 'message',
+    label: 'General Questions',
+    anchor: 'general-questions',
+    body: 'Questions about Chapter 227, our community activities, speakers, the website, or anything else.',
+    email: GENERAL_EMAIL,
+  },
+  {
+    icon: 'chapter',
+    label: 'Membership & AVVA',
+    body: 'Interested in joining Chapter 227, learning about VVA membership, AVVA, or other ways to become involved?',
+    email: MEMBERSHIP_EMAIL,
+    secondary: { label: 'See ways to join', href: '/join' },
+  },
+  {
+    icon: 'heart',
+    label: 'Need Financial Assistance?',
+    body: 'Veteran or immediate family member experiencing a temporary financial hardship? Assistance begins with one of our trusted veteran-service referral partners.',
+    button: { label: 'Find a Referral Partner', href: '#financial-assistance' },
+  },
+  {
+    icon: 'foundation',
+    label: 'NVVVF — Donate or Volunteer',
+    body: 'Interested in making a charitable contribution, supporting veteran assistance, or volunteering your skills to help the Northern Virginia Vietnam Veterans Foundation grow?',
+    button: { label: 'Visit NVVVF.org', href: 'https://nvvvf.org', rel: 'noopener' },
+  },
+];
+
+const assistanceSteps = [
+  {
+    number: 1,
+    title: 'Contact a Referral Partner',
+    body: 'A veteran-service professional reviews the circumstances and helps determine what assistance may be appropriate.',
+  },
+  {
+    number: 2,
+    title: 'Referral to Chapter 227',
+    body: 'When emergency financial assistance is recommended, the referral partner prepares a referral package and submits it electronically to Chapter 227.',
+  },
+  {
+    number: 3,
+    title: 'Review & Payment',
+    body: 'Chapter 227 reviews the request and supporting documentation. When assistance is approved, payment is generally made directly to the landlord, mortgage company, utility provider, vehicle lender, repair facility, medical provider or other creditor.',
+  },
+];
+
+// Named individuals here are the chapter's own confirmed referral partners at
+// state and county veterans agencies — official public-office contacts at
+// established government offices, not internal chapter volunteer roles, so
+// they are not subject to the site's usual avoid-named-individuals rule for
+// chapter contacts.
+const referralPartners = [
+  {
+    org: 'Virginia Department of Veterans & Family Services',
+    subtitle: 'Northern Region Resource Specialists',
+    person: 'Jennifer Sztalkoper',
+    role: 'Regional Director',
+    address: ['9990 Fairfax Boulevard', 'Fairfax, VA 22030'],
+    email: 'Jennifer.Sztalkoper@dvs.virginia.gov',
+    phones: [{ label: null, number: '804-229-8240' }],
+  },
+  {
+    org: 'Loudoun County Veterans Service Office',
+    person: 'Thomas Grant Jr.',
+    role: 'Loudoun Veterans Services Coordinator',
+    email: 'Thomas.Grant@loudoun.gov',
+    phones: [
+      { label: 'Office', number: '571-627-8893' },
+      { label: 'Cell', number: '703-989-9864' },
+    ],
+  },
+  {
+    org: 'Fairfax County Veterans Service Office',
+    subtitle: 'Community Resource Development Unit',
+    person: 'Christopher E. Pulley',
+    role: 'Veterans Coordinator',
+    address: ['12011 Government Center Parkway', 'Fairfax, VA 22035'],
+    email: 'Christopher.Pulley@fairfaxcounty.gov',
+    phones: [{ label: 'Cell', number: '571-421-5652' }],
+  },
+];
 ---
 
 <PageLayout
-  title="Contact"
-  description="Reach VVA Chapter 227 by phone, post or Facebook, or contact a specific role directly."
-  eyebrow="Get in touch"
-  lede="The chapter is run by volunteers, so the fastest route is usually the phone or a meeting."
+  title="Contact Us"
+  description="Chapter 227 is here to help you find the right connection — membership, veteran assistance, donations, community involvement or a general question."
+  hero
 >
-  <div class="primary">
-    <div class="primary__card">
-      <p class="primary__label">Call</p>
-      <p class="primary__value">
-        <a href={`tel:${site.phone.replace(/-/g, '')}`}>{site.phone}</a>
-      </p>
-    </div>
-    <div class="primary__card">
-      <p class="primary__label">Write</p>
-      <address class="primary__value primary__value--sm">
-        VVA Chapter 227<br />
-        {a.line1}<br />
-        {a.city}, {a.state} {a.zip}
-      </address>
-    </div>
-    <div class="primary__card">
-      <p class="primary__label">Follow</p>
-      <p class="primary__value primary__value--sm">
-        <a href={site.facebook} rel="noopener">facebook.com/VVA227</a>
-      </p>
-    </div>
-    <div class="primary__card primary__card--accent">
-      <p class="primary__label">Just turn up</p>
-      <p class="primary__value primary__value--sm">
-        Anyone is welcome at a monthly meeting, including spouses and guests.
-        <a href="/events">When and where &rarr;</a>
-      </p>
-    </div>
-  </div>
+  <HeroBand
+    slot="hero"
+    tone="warm"
+    eyebrow="Chapter 227"
+    title="Contact Us."
+    tagline="We’d like to hear from you."
+    lede="Whether you're a veteran seeking information, interested in membership, looking for ways to become involved, or simply have a question about Chapter 227, we're here to help you find the right connection."
+    primary={{ label: 'Send Us a Message', href: '#general-questions' }}
+    secondary={{ label: 'Find Other Resources', href: '#how-can-we-help' }}
+    minHeight="clamp(34rem, 56vw, 55rem)"
+    image={{
+      src: '/images/contact-conversation.jpg',
+      alt: 'Two Chapter 227 members talking over coffee and a membership application at a table, with a "Service, Fellowship, Remembrance" sign and the American flag in the background, and mountains visible through a window.',
+      width: 1050,
+      height: 1027,
+    }}
+  />
 
-  <section>
-    <h2>Who handles what</h2>
-    <ContactList />
+  <!-- ---------- How Can We Help? ---------- -->
+  <section id="how-can-we-help" class="section section--sunken help">
+    <div class="container">
+      <h2>How Can We Help?</h2>
+      <p class="subhead">Start Here. We&rsquo;ll Get Your Question to the Right Place.</p>
+      <p>
+        You shouldn&rsquo;t have to know who handles a particular Chapter responsibility before contacting us. Tell
+        us what you need, and we&rsquo;ll help connect you with the right person or resource.
+      </p>
+
+      <div class="cards">
+        {
+          helpCards.map((card) => (
+            <div class="card" id={card.anchor}>
+              <div class="card__icon">
+                <ProcessIcon name={card.icon} />
+              </div>
+              <p class="card__label">{card.label}</p>
+              <p class="card__body">{card.body}</p>
+              {card.button && (
+                <a class="card__btn" href={card.button.href} rel={card.button.rel}>
+                  {card.button.label} &rarr;
+                </a>
+              )}
+              {card.email && (
+                <p class="card__email">
+                  Email: <strong>{card.email}</strong>
+                </p>
+              )}
+              {card.secondary && (
+                <a class="card__secondary" href={card.secondary.href}>
+                  {card.secondary.label} &rarr;
+                </a>
+              )}
+            </div>
+          ))
+        }
+      </div>
+
+      <p class="legal-note">
+        NVVVF (the Northern Virginia Vietnam Veterans Foundation) is a 501(c)(3) organization, EIN 33-2520012, PO Box
+        2111, Reston, VA 20195.
+      </p>
+    </div>
   </section>
 
-  <ReviewNote topic="A working contact form">
-    <p>
-      This mock has no contact form, because the chapter has to decide where submissions should go before one can be
-      built. A form on a static site needs a destination — an inbox, or a service that forwards to one.
-    </p>
-    <p>
-      Worth knowing: the legacy site&rsquo;s &ldquo;Member Stories&rdquo; page accepted <strong>file uploads from
-      anyone</strong>, gated only by a check that an email address was already on file — which is both a security
-      risk and a way to test whether a given person is a member. That endpoint should not be rebuilt as it was.
-    </p>
-  </ReviewNote>
+  <!-- ---------- Need Financial Assistance? ---------- -->
+  <section id="financial-assistance" class="section financial-help">
+    <div class="container">
+      <div class="fa-intro">
+        <div class="fa-intro__icon">
+          <ProcessIcon name="heart" />
+        </div>
+        <div>
+          <h2>Need Financial Assistance?</h2>
+          <p class="subhead">Start With One of Our Referral Partners</p>
+          <p>
+            If you are a veteran or immediate family member experiencing a temporary financial hardship, help may
+            be available.
+          </p>
+          <p>
+            Chapter 227 administers an emergency financial assistance program supported by the Northern Virginia
+            Vietnam Veterans Foundation. Requests begin with one of our trusted veteran-service referral partners
+            rather than with NVVVF or Chapter 227 directly.
+          </p>
+          <p>
+            A Resource Specialist or Veterans Service Officer will work with the veteran or family to understand
+            the circumstances, verify eligibility and immediate needs, identify other resources that may be
+            available, and&mdash;when appropriate&mdash;prepare an electronic referral for Chapter 227.
+          </p>
+        </div>
+      </div>
 
-  <ReviewNote topic="Contact details not republished">
-    <p>The current public site publishes the following. They are not carried over here without the chapter&rsquo;s say-so:</p>
-    <ul>
-      {contacts.withheld.items.map((item) => <li>{item}</li>)}
-    </ul>
-  </ReviewNote>
+      <div class="fa-steps">
+        {
+          assistanceSteps.map((step, i) => (
+            <>
+              <div class="fa-step">
+                <span class="fa-step__number">{step.number}</span>
+                <p class="fa-step__title">{step.title}</p>
+                <p class="fa-step__body">{step.body}</p>
+              </div>
+              {i < assistanceSteps.length - 1 && (
+                <span class="fa-step__arrow" aria-hidden="true">
+                  &rarr;
+                </span>
+              )}
+            </>
+          ))
+        }
+      </div>
 
-  <aside class="crisis-reminder">
-    <h2>If you need help now</h2>
-    <p>
-      The <strong>Veterans Crisis Line</strong> is available 24 hours a day. Dial <a href="tel:988">988</a> then
-      press <strong>1</strong>, text <a href="sms:838255">838255</a>, or
-      <a href={site.crisis.url} rel="noopener">chat online</a>. Do not wait for the chapter to open.
-    </p>
-  </aside>
+      <div class="fa-goal">
+        <div class="fa-goal__icon">
+          <ProcessIcon name="clock" />
+        </div>
+        <div>
+          <p class="fa-goal__label">Goal: Within 48 Hours</p>
+          <p class="fa-goal__body">
+            Most emergency requests are processed within 48 hours after Chapter 227 receives a complete referral
+            package.
+          </p>
+        </div>
+      </div>
+
+      <h3>Contact One of Our Referral Partners</h3>
+      <div class="fa-partners">
+        {
+          referralPartners.map((partner) => (
+            <div class="fa-partner">
+              <p class="fa-partner__org">{partner.org}</p>
+              {partner.subtitle && <p class="fa-partner__subtitle">{partner.subtitle}</p>}
+              <p class="fa-partner__person">{partner.person}</p>
+              <p class="fa-partner__role">{partner.role}</p>
+              {partner.address && (
+                <address class="fa-partner__address">
+                  {partner.address[0]}
+                  <br />
+                  {partner.address[1]}
+                </address>
+              )}
+              <p class="fa-partner__contact">{partner.email}</p>
+              {partner.phones.map((phone) => (
+                <p class="fa-partner__contact">
+                  {phone.label && <>{phone.label}: </>}
+                  <a href={`tel:${phone.number.replace(/-/g, '')}`}>{phone.number}</a>
+                </p>
+              ))}
+            </div>
+          ))
+        }
+      </div>
+      <p class="fa-partners-note">
+        Additional referrals may also originate from accredited Veterans Service Organizations, community agencies,
+        and other approved partners working with Chapter 227.
+      </p>
+
+      <div class="fa-prep">
+        <h3>What Should I Have Available?</h3>
+        <p>
+          Your referral partner may ask for proof of military service, such as a DD-214, information about household
+          finances, documentation of the financial hardship, and information about the creditor or provider that
+          needs to be paid. Your referral partner will guide you through what is needed.
+        </p>
+        <p class="fa-prep__note">
+          Receiving VA disability compensation, Social Security, military retirement, pension income or wages does
+          not automatically disqualify a veteran from consideration.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ---------- Get in Touch ---------- -->
+  <section class="section reach">
+    <div class="container">
+      <h2>Get in Touch</h2>
+      <p class="subhead">One Place to Start</p>
+      <p>
+        Chapter 227 is an all-volunteer organization. The easiest way to reach us is by email. We&rsquo;ll make sure
+        your message gets to the appropriate person.
+      </p>
+
+      <div class="reach-cards reach-cards--pair">
+        <div class="reach-card">
+          <div class="reach-card__icon">
+            <ProcessIcon name="mail" />
+          </div>
+          <p class="reach-card__label">Email Us</p>
+          <p class="reach-card__body">Have a question or aren&rsquo;t sure where to start?</p>
+          <p class="reach-card__value">{GENERAL_EMAIL}</p>
+        </div>
+
+        <div class="reach-card">
+          <div class="reach-card__icon">
+            <ProcessIcon name="letter" />
+          </div>
+          <p class="reach-card__label">Write to Us</p>
+          <address class="reach-card__address">
+            Vietnam Veterans of America<br />
+            Chapter 227<br />
+            {a.line1}<br />
+            {a.city}, {a.state} {a.zip}
+          </address>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ---------- Come Meet Us ---------- -->
+  <section class="section section--sunken meet">
+    <div class="container">
+      <div class="meet-panel">
+        <h2>Come Meet Us</h2>
+        <p class="subhead">Sometimes the Best Way to Connect Is in Person.</p>
+        <p>
+          You don&rsquo;t have to join before getting to know us. Veterans, spouses, family members, friends and
+          guests are welcome to get acquainted with Chapter 227 and the people who make up our community.
+        </p>
+        <a class="btn-outline" href="/join">Explore Ways to Join Us &rarr;</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ---------- Crisis resource ---------- -->
+  <section class="section">
+    <div class="container">
+      <aside class="crisis-reminder">
+        <h2>If You Need Help Right Now</h2>
+        <p>
+          The <strong>Veterans Crisis Line</strong> is available 24 hours a day. Call <a href="tel:988">988</a>,
+          then press <strong>1</strong>. Text <a href="sms:838255">838255</a>, or
+          <a href={site.crisis.url} rel="noopener">chat online</a>. Do not wait for Chapter 227 to respond if you or
+          someone you know is in immediate crisis.
+        </p>
+      </aside>
+    </div>
+  </section>
 </PageLayout>
 
 <style>
-  .primary {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(min(15rem, 100%), 1fr));
-    gap: var(--s-4);
+  section + section {
+    margin-block-start: var(--s-7);
   }
 
-  .primary__card {
+  h2 {
+    margin-block-end: var(--s-3);
+  }
+
+  .subhead {
+    max-width: var(--w-prose);
+    font-family: var(--font-serif);
+    font-size: var(--t-lg);
+    color: var(--c-ink-soft);
+    margin-block-end: var(--s-4);
+  }
+
+  .container > p {
+    max-width: var(--w-prose);
+  }
+
+  .legal-note {
+    margin-block-start: var(--s-6);
+    max-width: var(--w-prose);
+    font-size: var(--t-sm);
+    color: var(--c-ink-faint);
+  }
+
+  /* ---------- How can we help ---------- */
+
+  .cards {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: var(--s-5);
+    margin-block-start: var(--s-6);
+  }
+
+  @media (max-width: 64rem) {
+    .cards {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  @media (max-width: 30rem) {
+    .cards {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .card {
+    display: flex;
+    flex-direction: column;
     padding: var(--s-5);
     background: var(--c-surface);
     border: 1px solid var(--c-border);
@@ -103,43 +416,373 @@ const postal = addressLine([a.line1, a.city, `${a.state} ${a.zip}`]);
     border-radius: var(--r-lg);
   }
 
-  .primary__card--accent {
-    border-block-start-color: var(--c-accent);
+  .card__icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    inline-size: 2.75rem;
+    block-size: 2.75rem;
+    margin-block-end: var(--s-3);
+    border-radius: 50%;
+    background: var(--c-primary-tint);
+    color: var(--c-primary);
   }
 
-  .primary__label {
-    font-size: var(--t-xs);
+  .card__label {
+    font-size: var(--t-lg);
     font-weight: 700;
-    letter-spacing: var(--tracking-caps);
-    text-transform: uppercase;
+  }
+
+  .card__body {
+    margin-block-start: var(--s-2);
+    max-width: none;
+    color: var(--c-ink-soft);
+    font-size: 1rem;
+    line-height: 1.55;
+  }
+
+  .card__btn {
+    display: inline-block;
+    margin-block-start: var(--s-4);
+    font-weight: 700;
+    color: var(--c-primary-dark);
+  }
+
+  .card__btn:hover {
+    color: var(--c-accent-dark);
+  }
+
+  .card__email {
+    margin-block-start: var(--s-4);
+    max-width: none;
+    font-size: 0.9375rem;
+    color: var(--c-ink);
+    overflow-wrap: break-word;
+  }
+
+  .card__secondary {
+    display: inline-block;
+    margin-block-start: var(--s-2);
+    font-size: var(--t-sm);
     color: var(--c-ink-faint);
   }
 
-  .primary__value {
-    margin-block-start: var(--s-3);
-    font-family: var(--font-serif);
-    font-size: var(--t-xl);
-    font-weight: 600;
-    font-style: normal;
-    line-height: 1.3;
+  /* ---------- Get in touch ---------- */
+
+  .reach-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(16rem, 100%), 1fr));
+    gap: var(--s-5);
+    margin-block-start: var(--s-6);
   }
 
-  .primary__value--sm {
-    font-size: 1.0625rem;
-    font-weight: 400;
+  /* With Follow Us removed, two cards stretched across the full row read as
+     a gap where a third belonged. Capping the row width and centering it
+     gives two comfortably wider, deliberately paired cards instead. */
+  .reach-cards--pair {
+    max-width: 48rem;
+    margin-inline: auto;
+  }
+
+  .reach-card {
+    padding: var(--s-5);
+    background: var(--c-surface);
+    border: 1px solid var(--c-border);
+    border-radius: var(--r-lg);
+    text-align: center;
+  }
+
+  .reach-card__icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    inline-size: 2.75rem;
+    block-size: 2.75rem;
+    margin-inline: auto;
+    margin-block-end: var(--s-3);
+    border-radius: 50%;
+    background: var(--c-primary-tint);
+    color: var(--c-primary);
+  }
+
+  .reach-card__label {
+    font-size: var(--t-lg);
+    font-weight: 700;
+  }
+
+  .reach-card__body {
+    margin-block-start: var(--s-2);
+    color: var(--c-ink-soft);
+    font-size: 1rem;
+  }
+
+  .reach-card__value {
+    display: inline-block;
+    margin-block-start: var(--s-3);
+    font-weight: 700;
+    word-break: break-word;
+  }
+
+  .reach-card__address {
+    margin-block-start: var(--s-3);
+    font-style: normal;
     line-height: 1.6;
   }
 
-  section {
-    margin-block-start: var(--s-8);
+  /* ---------- Come meet us ---------- */
+
+  .meet-panel {
+    max-width: 46rem;
   }
 
-  h2 {
-    margin-block-end: var(--s-5);
+  .btn-outline,
+  .btn-solid {
+    display: inline-block;
+    margin-block-start: var(--s-5);
+    padding: var(--s-3) var(--s-5);
+    border-radius: var(--r-md);
+    font-weight: 700;
+    text-decoration: none;
   }
+
+  .btn-outline {
+    border: 2px solid var(--c-primary);
+    color: var(--c-primary-dark);
+  }
+
+  .btn-outline:hover {
+    background: var(--c-primary-tint);
+  }
+
+  .btn-solid {
+    background: var(--c-primary);
+    color: #fff;
+  }
+
+  .btn-solid:hover {
+    background: var(--c-primary-dark);
+  }
+
+  /* ---------- Need financial assistance ---------- */
+
+  .financial-help {
+    background: var(--c-primary-tint);
+  }
+
+  .financial-help h3 {
+    margin-block-start: var(--s-7);
+    margin-block-end: var(--s-4);
+  }
+
+  .fa-intro {
+    display: flex;
+    gap: var(--s-5);
+    align-items: flex-start;
+  }
+
+  .fa-intro__icon {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    inline-size: 3.5rem;
+    block-size: 3.5rem;
+    border-radius: 50%;
+    background: var(--c-surface);
+    color: var(--c-primary);
+  }
+
+  .fa-intro p {
+    max-width: 62ch;
+  }
+
+  .fa-intro p + p {
+    margin-block-start: var(--s-4);
+  }
+
+  /* ---- Three-step process ---- */
+
+  .fa-steps {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: stretch;
+    gap: var(--s-4);
+    margin-block-start: var(--s-7);
+  }
+
+  .fa-step {
+    flex: 1 1 14rem;
+    padding: var(--s-5);
+    background: var(--c-surface);
+    border: 1px solid var(--c-border);
+    border-radius: var(--r-lg);
+  }
+
+  .fa-step__number {
+    display: grid;
+    place-items: center;
+    inline-size: 2.25rem;
+    block-size: 2.25rem;
+    margin-block-end: var(--s-3);
+    border-radius: 50%;
+    background: var(--c-primary);
+    color: #fff;
+    font-family: var(--font-serif);
+    font-weight: 700;
+  }
+
+  .fa-step__title {
+    font-weight: 700;
+    font-size: 1.0625rem;
+  }
+
+  .fa-step__body {
+    margin-block-start: var(--s-2);
+    max-width: none;
+    color: var(--c-ink-soft);
+    font-size: 1rem;
+    line-height: 1.55;
+  }
+
+  .fa-step__arrow {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+    font-size: var(--t-xl);
+    color: var(--c-border-strong);
+  }
+
+  /* ---- 48-hour goal ---- */
+
+  .fa-goal {
+    display: flex;
+    align-items: center;
+    gap: var(--s-4);
+    margin-block-start: var(--s-5);
+    padding: var(--s-5) var(--s-6);
+    background: var(--c-surface);
+    border-inline-start: 4px solid var(--c-gold);
+    border-radius: var(--r-md);
+  }
+
+  .fa-goal__icon {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    inline-size: 3rem;
+    block-size: 3rem;
+    border-radius: 50%;
+    background: color-mix(in srgb, var(--c-gold) 18%, var(--c-surface));
+    color: var(--c-gold);
+  }
+
+  .fa-goal__label {
+    font-family: var(--font-serif);
+    font-weight: 700;
+    font-size: var(--t-lg);
+    color: var(--c-primary-dark);
+  }
+
+  .fa-goal__body {
+    margin-block-start: var(--s-1);
+    max-width: 60ch;
+    color: var(--c-ink-soft);
+  }
+
+  /* ---- Referral partners ---- */
+
+  .fa-partners {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(16rem, 100%), 1fr));
+    gap: var(--s-5);
+  }
+
+  .fa-partner {
+    padding: var(--s-5);
+    background: var(--c-surface);
+    border: 1px solid var(--c-border);
+    border-radius: var(--r-lg);
+  }
+
+  .fa-partner__org {
+    font-weight: 700;
+    line-height: 1.3;
+  }
+
+  .fa-partner__subtitle {
+    margin-block-start: var(--s-1);
+    font-size: var(--t-sm);
+    color: var(--c-ink-faint);
+  }
+
+  .fa-partner__person {
+    margin-block-start: var(--s-3);
+    font-weight: 700;
+    color: var(--c-primary-dark);
+  }
+
+  .fa-partner__role {
+    font-size: var(--t-sm);
+    color: var(--c-ink-faint);
+  }
+
+  .fa-partner__address {
+    margin-block-start: var(--s-2);
+    font-style: normal;
+    font-size: 1rem;
+    line-height: 1.5;
+    color: var(--c-ink-soft);
+  }
+
+  .fa-partner__contact {
+    margin-block-start: var(--s-2);
+    font-size: 1rem;
+    word-break: break-word;
+  }
+
+  .fa-partners-note {
+    margin-block-start: var(--s-5);
+    max-width: 62ch;
+    font-size: var(--t-sm);
+    color: var(--c-ink-faint);
+  }
+
+  /* ---- Preparation note ---- */
+
+  .fa-prep p {
+    max-width: 62ch;
+  }
+
+  .fa-prep__note {
+    margin-block-start: var(--s-4);
+    padding: var(--s-4) var(--s-5);
+    max-width: 62ch;
+    background: var(--c-surface);
+    border-inline-start: 3px solid var(--c-primary);
+    border-radius: var(--r-sm);
+    font-weight: 600;
+    color: var(--c-primary-dark);
+  }
+
+  @media (max-width: 40rem) {
+    .fa-steps {
+      flex-direction: column;
+    }
+
+    .fa-step__arrow {
+      display: none;
+    }
+
+    .fa-goal {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+  }
+
+  /* ---------- Crisis resource ---------- */
 
   .crisis-reminder {
-    margin-block-start: var(--s-8);
     padding: var(--s-5) var(--s-6);
     background: color-mix(in srgb, var(--c-crisis) 7%, var(--c-surface));
     border: 1px solid color-mix(in srgb, var(--c-crisis) 28%, var(--c-border));
@@ -150,10 +793,16 @@ const postal = addressLine([a.line1, a.city, `${a.state} ${a.zip}`]);
   .crisis-reminder h2 {
     font-size: var(--t-lg);
     color: var(--c-crisis);
-    margin-block-end: var(--s-3);
   }
 
   .crisis-reminder p {
     max-width: 62ch;
+  }
+
+  @media (max-width: 40rem) {
+    .assist {
+      flex-direction: column;
+      align-items: flex-start;
+    }
   }
 </style>

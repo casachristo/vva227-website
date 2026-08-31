@@ -258,9 +258,12 @@ describe('self-referential links', () => {
   });
 
   it('does not mistake a chapter email address for a link to this site', () => {
-    // don_sutherland@vva227.org is published on /contact. A substring rule
-    // rather than a host rule would flag it and get itself weakened.
-    const contact = pages.find((p) => p.route === '/contact');
+    // don_sutherland@vva227.org is published on /get-help (via ContactList).
+    // It moved off /contact when that page was rebuilt around durable contact
+    // reasons rather than named roles (2026-08-31) — /get-help's own dedicated
+    // Treatment Court contact is unaffected. A substring rule rather than a
+    // host rule would flag it and get itself weakened.
+    const contact = pages.find((p) => p.route === '/get-help');
     expect(contact!.html).toContain('@vva227.org');
     expect(selfAbsolute().join('\n')).not.toContain('mailto:');
   });

@@ -121,12 +121,14 @@ describe('the review boxes themselves', () => {
 
   it('are present on the pages that carry unconfirmed content', () => {
     const routes = new Set(notes.map((n) => n.route));
-    // /about (founding date, confirmed 2026-08-29) and /give/impact (the
+    // /about (founding date, confirmed 2026-08-29), /give/impact (the
     // conflicting-figures notes, retired along with the annual dollar/
-    // membership figures they argued about, 2026-08-29) are off this list
-    // because those pages no longer carry any unconfirmed content — not
-    // because the list stopped mattering.
-    for (const route of ['/give', '/get-help', '/give/nvvvf']) {
+    // membership figures they argued about, 2026-08-29), and /give (rebuilt
+    // 2026-08-31 around two giving paths — the PayPal/Venmo and vehicle/goods
+    // content that carried its only ReviewNotes was dropped, not reworded)
+    // are off this list because those pages no longer carry any unconfirmed
+    // content — not because the list stopped mattering.
+    for (const route of ['/get-help', '/give/nvvvf']) {
       expect(routes.has(route), `${route} has no visible review note`).toBe(true);
     }
   });

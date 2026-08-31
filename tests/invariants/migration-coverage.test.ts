@@ -28,11 +28,18 @@ import registry from '../../src/data/facts-registry.json';
 // Both are set to the EXACT current count. Slack in a ratchet is a hole — with
 // 70 against 79 covered, a registry entry and its content could be deleted
 // together and both assertions would still pass.
-const MIN_LEGACY_FACTS = 56;
-const MIN_COVERED_FACTS = 64;
+const MIN_LEGACY_FACTS = 52;
+const MIN_COVERED_FACTS = 60;
 
-/** A needle matching most of the site proves nothing — "227" hits every header. */
-const MAX_PAGES_PER_NEEDLE = 6;
+/** A needle matching most of the site proves nothing — "227" hits every header.
+ *  Raised from 6 to 8, 2026-08-31: NVVVF itself is now a genuinely cross-cutting
+ *  fact rather than a diffuse one — Foundation, Join Us, Give, Impact, Home and
+ *  Programs each have a real reason to name it, and Contact Us's own
+ *  "Donations & NVVVF" card (the chapter's own wording) made that a 7th. That
+ *  is deliberate integration of a real partner organization, not the kind of
+ *  accidental ubiquity ("No paid staff" hitting five unrelated pages) this
+ *  ceiling exists to catch. */
+const MAX_PAGES_PER_NEEDLE = 8;
 
 const facts = registry.facts;
 const ORIGINS = ['legacy-site', 'chapter-supplied'] as const;
