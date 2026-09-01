@@ -17,7 +17,7 @@
     "test:contracts": "vitest run tests/contracts",
     "test:security": "vitest run tests/security",
     "test:system": "playwright test",
-    "deploy": "astro build && wrangler pages deploy dist --project-name=vva227-refresh --branch=main --commit-dirty=true"
+    "deploy": "astro build && wrangler pages deploy dist --project-name=vva227-refresh-12g --branch=main --commit-dirty=true"
   },
   "dependencies": {
     "@fontsource/source-sans-3": "^5.2.5",
