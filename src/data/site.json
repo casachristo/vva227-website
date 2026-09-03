@@ -18,6 +18,11 @@
     "state": "VA",
     "zip": "22205"
   },
+  "taxStatus": {
+    "designation": "501(c)(19) subordinate organization",
+    "ein": "54-1357705",
+    "source": "Confirmed directly by the chapter director, 2026-09-01."
+  },
   "facebook": "https://www.facebook.com/VVA227",
   "national": {
     "name": "Vietnam Veterans of America",

@@ -139,10 +139,14 @@ live:
    says it is *not connected* to the chapter's other programs; the newsletter
    describes something broader. Does it fund, or intend to fund, scholarships,
    VASH or the school speakers program?
-5. **Is the chapter itself tax-exempt, and are gifts to Chapter 227
-   deductible?** The site has never said. Now that the Foundation's
-   deductibility appears on a chapter page, the chapter's silence beside it is
-   ambiguous to a donor writing a cheque.
+5. **Is the chapter itself tax-exempt — partially resolved, 2026-09-01.** The
+   chapter director confirmed directly that Chapter 227 is a 501(c)(19)
+   subordinate organization, EIN 54-1357705, and this now appears on `/give`
+   beside the Foundation's own disclosure. **Still open: are gifts to Chapter
+   227 specifically deductible?** A 501(c)(19) veterans' organization can
+   receive deductible contributions if enough of its members are war
+   veterans, but nobody has confirmed that for Chapter 227, so the site makes
+   no deductibility claim for either organization.
 6. **Is nvvvf.org live, and what is the canonical address?** The newsletter
    writes it two ways in one document — `https://nvvvf.org` in the body,
    `www.nvvvf.org` in the appeal and the footer — and says the site would go live
@@ -329,15 +333,21 @@ ones?
 
 ## 5. Documents
 
-- **5.1 The by-laws text needs re-issuing.** The published version has
-  **ARTICLE IV twice**, **no ARTICLE V**, one clause marked "[OBSOLETE]" in the
-  body, and numerous typos. The rebuilt site summarizes the provisions rather
-  than reproducing a defective governing document. A clean signed PDF would
-  replace the summary. → `/about/documents`
-- **5.2 Board minutes.** Only two sets are online (September and November 2024).
-  Older minutes are "available upon request" behind a link whose address is
-  malformed, so the request cannot be made. Decide whether minutes are public,
-  members-only, or off the website.
+- **5.1 The by-laws text needs re-issuing — page removed, 2026-09-01.** The
+  published version has **ARTICLE IV twice**, **no ARTICLE V**, one clause
+  marked "[OBSOLETE]" in the body, and numerous typos. The rebuilt site
+  summarized the provisions rather than reproducing a defective governing
+  document, on a "Chapter Documents" page the chapter has since decided it no
+  longer needs published. The underlying question — a clean, current, signed
+  copy of the by-laws — is unchanged; it simply isn't summarized on the site
+  anymore.
+- **5.2 Board minutes — page removed, 2026-09-01.** Only two sets were ever
+  online (September and November 2024), with older minutes described as
+  "available upon request" behind a malformed link. This lived on the same
+  "Chapter Documents" page, now removed at the chapter's direction. Whether
+  minutes should be public, members-only, or off the website entirely is
+  still an open decision — there just isn't a page publishing them either way
+  right now.
 - **5.3 Is the membership application still current?** The only one on the site
   is titled "revised 2018" and its filename carries a Windows duplicate suffix.
 - **5.4 Has *The Journey* stopped?** The archive has **no 2021 issues at all**,

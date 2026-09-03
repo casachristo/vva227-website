@@ -32,12 +32,13 @@
 /2021-year-in-review                           /give/impact                   301
 /2020-year-in-review                           /give/impact                   301
 
-# ---- Governance and internal records ----
-/Chapter-227-By-Laws                           /about/documents               301
-/Board-Meeting-Minutes                         /about/documents               301
-/Members-Information                           /about/documents               301
-/Chapter-Information-to-Members                /about/documents               301
-/Chapter-Publications                          /about/documents               301
+# ---- Governance and internal records (the Chapter Documents page that once
+#      absorbed these was removed 2026-09-01; nearest remaining page is About) ----
+/Chapter-227-By-Laws                           /about                         301
+/Board-Meeting-Minutes                         /about                         301
+/Members-Information                           /about                         301
+/Chapter-Information-to-Members                /about                         301
+/Chapter-Publications                          /about                         301
 
 # ---- Get help ----
 /Veteran-and-Family-Support                    /get-help                      301

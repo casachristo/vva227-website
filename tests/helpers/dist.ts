@@ -17,14 +17,15 @@ export const SITE_ORIGIN = new URL(astroConfig.site!).origin;
 export { SELF_ORIGINS } from '../../src/lib/links';
 
 /**
- * The one documented exception, as a ratchet. Shrink it; never widen it.
+ * Documented exceptions, as a ratchet. Shrink it; never widen it.
+ *
+ * The one entry this ever held — "https://vva227.org/upload/", for board
+ * minutes hosted on the legacy server — was removed 2026-09-01 along with the
+ * Chapter Documents page that linked to them, its only user. Re-add an entry
+ * here if a future page links back to the legacy host for a documented
+ * reason (e.g. Journey back-issue PDFs not yet moved into public/docs).
  */
-export const SELF_ORIGIN_ALLOWLIST: ReadonlyArray<{ prefix: string; why: string }> = [
-  {
-    prefix: 'https://vva227.org/upload/',
-    why: 'The Journey back-issue PDFs are still hosted on the legacy server. Delete this entry when they move into public/docs.',
-  },
-];
+export const SELF_ORIGIN_ALLOWLIST: ReadonlyArray<{ prefix: string; why: string }> = [];
 
 /** Every file shipped in public/images, by filename. */
 export function publicImages(): string[] {

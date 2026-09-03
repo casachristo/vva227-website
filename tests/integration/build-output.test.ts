@@ -43,7 +43,7 @@ describe('routes', () => {
   });
 
   it('built a meaningful number of pages', () => {
-    expect(pages.length).toBeGreaterThanOrEqual(18);
+    expect(pages.length).toBeGreaterThanOrEqual(17);
   });
 
   it('emits a 404 page for Cloudflare to serve', () => {

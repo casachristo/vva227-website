@@ -28,7 +28,6 @@ const ROUTES = [
   '/about/leadership',
   '/about/reports',
   '/about/reports/2024',
-  '/about/documents',
   '/contact',
   '/privacy',
 ];

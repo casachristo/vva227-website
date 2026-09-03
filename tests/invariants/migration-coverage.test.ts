@@ -28,8 +28,13 @@ import registry from '../../src/data/facts-registry.json';
 // Both are set to the EXACT current count. Slack in a ratchet is a hole — with
 // 70 against 79 covered, a registry entry and its content could be deleted
 // together and both assertions would still pass.
-const MIN_LEGACY_FACTS = 51;
-const MIN_COVERED_FACTS = 59;
+//
+// Dropped by 8, 2026-09-01: the chapter asked for the "Chapter Documents"
+// page removed outright (by-laws summary, board minutes archive, publication
+// policy, treasurer duties) rather than reworded, taking its 8 legacy facts
+// with it — not a loss disguised as anything, the content itself is gone.
+const MIN_LEGACY_FACTS = 43;
+const MIN_COVERED_FACTS = 51;
 
 /** A needle matching most of the site proves nothing — "227" hits every header.
  *  Raised from 6 to 8, 2026-08-31: NVVVF itself is now a genuinely cross-cutting

@@ -74,6 +74,11 @@ const postal = addressLine([a.line1, a.city, `${a.state} ${a.zip}`]);
         </div>
       </div>
 
+      <p class="legal-note">
+        NVVVF (the Northern Virginia Vietnam Veterans Foundation) is a 501(c)(3) organization, EIN 33-2520012, PO Box
+        2111, Reston, VA 20195.
+      </p>
+
       <div class="distinction">
         <p>
           Support Chapter 227 and its broader mission? <a href="#chapter-giving">Give to Chapter 227.</a>
@@ -121,8 +126,8 @@ const postal = addressLine([a.line1, a.city, `${a.state} ${a.zip}`]);
       </div>
 
       <p class="legal-note">
-        NVVVF (the Northern Virginia Vietnam Veterans Foundation) is a 501(c)(3) organization, EIN 33-2520012, PO Box
-        2111, Reston, VA 20195.
+        VVA Chapter 227 is a {site.taxStatus.designation}, EIN {site.taxStatus.ein}, {a.line1}, {a.city}, {a.state}{' '}
+        {a.zip}.
       </p>
     </div>
   </section>

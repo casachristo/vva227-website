@@ -181,13 +181,6 @@
       "assert": ["50/50 drawing"],
       "source": "Cash-and-Check-Donations-to-the-chapter"
     },
-    {
-      "id": "give-treasurer-duties",
-      "origin": "legacy-site",
-      "fact": "Treasurer duties: budget, receipts, disbursement, IRS forms",
-      "assert": ["annual budget", "IRS forms"],
-      "source": "Donation"
-    },
 
     {
       "id": "namesake-dates",
@@ -247,56 +240,6 @@
       "source": "AVVA-Chapter-membership"
     },
 
-    {
-      "id": "bylaws-annual-meeting",
-      "origin": "legacy-site",
-      "fact": "The annual meeting is held in April to elect officers and directors",
-      "assert": ["Annual meeting", "April"],
-      "source": "Chapter-227-By-Laws"
-    },
-    {
-      "id": "bylaws-board-size",
-      "origin": "legacy-site",
-      "fact": "Board of not fewer than 3 and not more than 20, two-year terms",
-      "assert": ["no more than 20", "two years"],
-      "source": "Chapter-227-By-Laws"
-    },
-    {
-      "id": "bylaws-quorum",
-      "origin": "legacy-site",
-      "fact": "Membership quorum is 5 percent; board quorum is two-thirds",
-      "assert": ["5% of members", "two-thirds"],
-      "source": "Chapter-227-By-Laws"
-    },
-    {
-      "id": "bylaws-roberts",
-      "origin": "legacy-site",
-      "fact": "Proceedings governed by Roberts Rules of Order",
-      "assert": ["Rules of Order"],
-      "source": "Chapter-227-By-Laws"
-    },
-    {
-      "id": "bylaws-ratified",
-      "origin": "legacy-site",
-      "fact": "By-laws last ratified 15 October 2020",
-      "assert": ["15 October 2020"],
-      "source": "Chapter-227-By-Laws"
-    },
-
-    {
-      "id": "publications-policy",
-      "origin": "legacy-site",
-      "fact": "Newsletter published monthly except July and August, ten issues a year",
-      "assert": ["ten issues a year"],
-      "source": "Chapter-Publications"
-    },
-    {
-      "id": "publications-minuteman",
-      "origin": "legacy-site",
-      "fact": "The Minuteman Alert is the chapter email channel",
-      "assert": ["Minuteman Alert"],
-      "source": "Chapter-Publications"
-    },
     {
       "id": "publications-disclaimer",
       "origin": "legacy-site",

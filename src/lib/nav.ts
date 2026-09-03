@@ -38,11 +38,6 @@ export const NAV: NavItem[] = [
         href: '/about/dean-k-phillips',
         blurb: 'The chapter’s namesake.',
       },
-      {
-        label: 'Chapter Documents',
-        href: '/about/documents',
-        blurb: 'By-laws, board minutes and the publication policy.',
-      },
     ],
   },
   {
