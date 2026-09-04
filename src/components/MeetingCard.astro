@@ -22,6 +22,7 @@ const { showReview = true, compact = false } = Astro.props;
 const { meeting } = events;
 const venue = meeting.venue;
 const address = addressLine([venue.street, venue.city, venue.state]);
+const hasContact = Astro.slots.has('contact');
 ---
 
 <div class:list={['meet', compact && 'meet--compact']}>
@@ -57,6 +58,11 @@ const address = addressLine([venue.street, venue.city, venue.state]);
   </div>
 
   <p class="meet__welcome">{meeting.welcome}</p>
+  {hasContact && (
+    <p class="meet__contact">
+      <slot name="contact" />
+    </p>
+  )}
 </div>
 
 {showReview && <ReviewNote topic="Meeting day and times">{meeting.review}</ReviewNote>}
@@ -147,5 +153,11 @@ const address = addressLine([venue.street, venue.city, venue.state]);
 
   .meet--compact {
     padding: var(--s-5);
+  }
+
+  .meet__contact {
+    margin-block-start: var(--s-2);
+    color: var(--c-ink-soft);
+    font-size: 1rem;
   }
 </style>

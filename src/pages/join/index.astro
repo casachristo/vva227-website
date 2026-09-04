@@ -100,16 +100,17 @@ const pillars = [
     eyebrow="Chapter 227"
     title="Join Us."
     tagline="Together, we can do more."
-    lede="Veterans helping veterans. Be part of the mission."
+    lede="Veterans, families and friends—connected by service and community."
     body="There are many ways to get involved—volunteer, attend an event, spread the word, or support our work. Your time and support make a difference."
     primary={{ label: 'Get Involved Today', href: '/events' }}
     secondary={{ label: 'Explore Opportunities', href: '/join/avva' }}
     minHeight="clamp(34rem, 55vw, 55rem)"
     image={{
-      src: '/images/join-us-gathering.jpg',
-      alt: 'Chapter 227 members and guests, men and women together, talking and smiling at a chapter social gathering, with the American flag and the Chapter 227 and Northern Virginia Vietnam Veterans Foundation seals on the wall behind them.',
-      width: 1050,
-      height: 1017,
+      src: '/images/join-us-hero.png',
+      alt: 'A smiling Vietnam veteran in a Vietnam Veteran cap talks with fellow veterans and guests at a chapter gathering, including a woman in red gesturing as she speaks, with an American flag on the wall behind them.',
+      width: 1518,
+      height: 1036,
+      focus: '40% center',
     }}
   />
 
@@ -181,9 +182,13 @@ const pillars = [
 
       <h3>Who Can Join</h3>
       <p>
-        Membership is open to any service member who served during the Vietnam era. It does not matter whether you
-        served in-country or elsewhere &mdash; every branch, every duty station and every rank has a place in
+        Membership is open to eligible men and women who served during the Vietnam era. It does not matter whether
+        you served in Vietnam or elsewhere&mdash;every branch, every duty station and every rank has a place in
         Chapter 227.
+      </p>
+      <p>
+        Whether your service was on the ground in Vietnam, aboard ship, at an air base, in a military hospital or at
+        another duty station, your service mattered&mdash;and it still does.
       </p>
       <p>
         The chapter itself serves more broadly than it recruits: it helps homeless and needy veterans across
@@ -259,7 +264,13 @@ const pillars = [
         Come to a meeting, meet some members, enjoy the fellowship, hear the speaker and see whether Chapter 227
         feels right for you.
       </p>
-      <MeetingCard showReview={false} />
+      <MeetingCard showReview={false}>
+        <Fragment slot="contact">
+          Questions or planning to attend? Contact Melissa Kalner, AVVA Member, at
+          <a href="mailto:Mkalner77@gmail.com">Mkalner77@gmail.com</a> for additional information or dinner
+          reservations.
+        </Fragment>
+      </MeetingCard>
     </div>
   </section>
 

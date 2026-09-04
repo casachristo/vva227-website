@@ -125,10 +125,38 @@ import site from '../../data/site.json';
       era in the U.S. Army, Navy, Air Force, Marine Corps and Coast Guard, united by shared experience and a
       continuing commitment to veterans.
     </p>
-    <p>
-      Members come together regularly for Chapter meetings, fellowship, veteran-service activities and opportunities
-      to remain connected with fellow veterans and the broader Northern Virginia veteran community.
-    </p>
+
+    <div class="community-note">
+      <div class="community-note__text">
+        <p>
+          Women were a smaller part of the Vietnam-era force, but their service was no less important. Some served
+          in Vietnam itself, including nurses and other medical personnel caring for the wounded under
+          extraordinarily difficult conditions. Others served in military assignments throughout the United States
+          and around the world at a time when opportunities for women in uniform were much more restricted than they
+          are today.
+        </p>
+        <p>
+          Their service also holds an important place in the history of Vietnam Veterans of America. Mary L. Stout,
+          an Army nurse who served in Vietnam, was elected National President of VVA in 1987, becoming the first
+          woman to lead a national veterans service organization. Chapter 227 is proud to count women Vietnam-era
+          veterans among its members and honors their service alongside that of all who served.
+        </p>
+        <p class="community-note__continue">
+          Members come together regularly for Chapter meetings, fellowship, veteran-service activities and
+          opportunities to remain connected with fellow veterans and the broader Northern Virginia veteran
+          community.
+        </p>
+      </div>
+
+      <Figure
+        src="/images/mary-stout.png"
+        alt="A formal portrait photograph of Mary L. Stout."
+        caption="Mary L. Stout"
+        credit="Vietnam veteran and former National President of Vietnam Veterans of America"
+        maxWidth="10rem"
+      />
+    </div>
+
     <p>
       That community also includes the Associates of Vietnam Veterans of America (AVVA). AVVA is a national,
       independent nonprofit veterans-support organization whose members include veterans of all eras, family
@@ -189,6 +217,30 @@ import site from '../../data/site.json';
     font-style: italic;
     color: var(--c-primary-dark);
     margin-block-start: var(--s-5);
+  }
+
+  /* ---------- A community of veterans ---------- */
+
+  .community-note {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: var(--s-6);
+    align-items: start;
+    margin-block-start: var(--s-4);
+  }
+
+  .community-note__text p {
+    max-width: none;
+  }
+
+  @media (max-width: 40rem) {
+    .community-note {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .community-note__text .community-note__continue {
+    margin-block-start: var(--s-6);
   }
 
   /* ---------- The man behind our name ---------- */
