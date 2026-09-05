@@ -189,9 +189,7 @@ import leadership from '../../data/leadership.json';
               <li class="leader">
                 <p class="leader__name">{person.name}</p>
                 <p class="leader__position">{person.position}</p>
-                <p class="leader__email">
-                  <a href={`mailto:${person.email}`}>{person.email}</a>
-                </p>
+                <p class="leader__email">{person.email}</p>
               </li>
             ))
           }
@@ -206,9 +204,7 @@ import leadership from '../../data/leadership.json';
               <li class="leader">
                 <p class="leader__name">{person.name}</p>
                 <p class="leader__position">{person.position}</p>
-                <p class="leader__email">
-                  <a href={`mailto:${person.email}`}>{person.email}</a>
-                </p>
+                <p class="leader__email">{person.email}</p>
               </li>
             ))
           }
@@ -223,9 +219,7 @@ import leadership from '../../data/leadership.json';
               <li class="leader">
                 <p class="leader__name">{person.name}</p>
                 <p class="leader__position">{person.position}</p>
-                <p class="leader__email">
-                  <a href={`mailto:${person.email}`}>{person.email}</a>
-                </p>
+                <p class="leader__email">{person.email}</p>
               </li>
             ))
           }
@@ -410,16 +404,9 @@ import leadership from '../../data/leadership.json';
   .leader__email {
     margin-block-start: var(--s-2);
     font-size: var(--t-sm);
+    color: var(--c-ink-soft);
     word-break: break-word;
     max-width: none;
-  }
-
-  .leader__email a {
-    color: var(--c-primary-dark);
-  }
-
-  .leader__email a:hover {
-    color: var(--c-accent-dark);
   }
 
   /* ---------- What we stand for ---------- */
