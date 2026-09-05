@@ -13,6 +13,7 @@ import PageLayout from '../../layouts/PageLayout.astro';
 import HeroBand from '../../components/HeroBand.astro';
 import Figure from '../../components/Figure.astro';
 import site from '../../data/site.json';
+import leadership from '../../data/leadership.json';
 ---
 
 <PageLayout
@@ -170,6 +171,69 @@ import site from '../../data/site.json';
     <p class="legacy-emphasis">&ldquo;Never again will one generation of veterans abandon another.&rdquo;</p>
   </section>
 
+  <!-- ---------- Chapter leadership ---------- -->
+  <section class="stack">
+    <h2>Chapter 227 and AVVA Leadership</h2>
+    <p>
+      Chapter 227 is led by an all-volunteer Board of Directors, working alongside the Chapter&rsquo;s AVVA
+      representative. Together, they support Chapter activities, veterans and their families, fellowship,
+      remembrance and continued service to the veteran community.
+    </p>
+
+    <div class="leadership">
+      <div class="leadership__group">
+        <h3 class="leadership__group-title">Chapter Officers</h3>
+        <ul class="leadership-grid leadership-grid--officers">
+          {
+            leadership.officers.map((person) => (
+              <li class="leader">
+                <p class="leader__name">{person.name}</p>
+                <p class="leader__position">{person.position}</p>
+                <p class="leader__email">
+                  <a href={`mailto:${person.email}`}>{person.email}</a>
+                </p>
+              </li>
+            ))
+          }
+        </ul>
+      </div>
+
+      <div class="leadership__group">
+        <h3 class="leadership__group-title">Directors</h3>
+        <ul class="leadership-grid">
+          {
+            leadership.directors.map((person) => (
+              <li class="leader">
+                <p class="leader__name">{person.name}</p>
+                <p class="leader__position">{person.position}</p>
+                <p class="leader__email">
+                  <a href={`mailto:${person.email}`}>{person.email}</a>
+                </p>
+              </li>
+            ))
+          }
+        </ul>
+      </div>
+
+      <div class="leadership__group">
+        <h3 class="leadership__group-title">AVVA Representative</h3>
+        <ul class="leadership-grid">
+          {
+            leadership.avva.map((person) => (
+              <li class="leader">
+                <p class="leader__name">{person.name}</p>
+                <p class="leader__position">{person.position}</p>
+                <p class="leader__email">
+                  <a href={`mailto:${person.email}`}>{person.email}</a>
+                </p>
+              </li>
+            ))
+          }
+        </ul>
+      </div>
+    </div>
+  </section>
+
   <!-- ---------- What we stand for ---------- -->
   <section class="container">
     <div class="stand-for">
@@ -272,6 +336,90 @@ import site from '../../data/site.json';
     max-width: none;
     font-size: var(--t-sm);
     color: var(--c-ink-soft);
+  }
+
+  /* ---------- Chapter leadership ---------- */
+
+  .leadership {
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-6);
+    margin-block-start: var(--s-5);
+  }
+
+  .leadership__group-title {
+    font-size: var(--t-xs);
+    font-weight: 700;
+    letter-spacing: var(--tracking-caps);
+    text-transform: uppercase;
+    color: var(--c-accent-dark);
+    margin-block-end: var(--s-3);
+  }
+
+  .leadership-grid {
+    display: grid;
+    /* auto-fill (not auto-fit) keeps unused column tracks reserved instead of
+       collapsing them — otherwise a group with only one entry (AVVA) would
+       have its lone card stretch to fill the whole row. */
+    grid-template-columns: repeat(auto-fill, minmax(min(15rem, 100%), 1fr));
+    gap: var(--s-3);
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  /* Officers: three equal columns (not the auto-fill card width used by
+     Directors/AVVA), so the six officers form two balanced rows of three
+     rather than a four-plus-two split. */
+  .leadership-grid--officers {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  @media (max-width: 56rem) {
+    .leadership-grid--officers {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (max-width: 40rem) {
+    .leadership-grid--officers {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .leader {
+    padding: var(--s-3) var(--s-4);
+    background: var(--c-surface);
+    border: 1px solid var(--c-border);
+    border-radius: var(--r-md);
+  }
+
+  .leader__name {
+    font-family: var(--font-serif);
+    font-weight: 600;
+    max-width: none;
+  }
+
+  .leader__position {
+    margin-block-start: var(--s-1);
+    font-size: var(--t-sm);
+    color: var(--c-ink-soft);
+    max-width: none;
+  }
+
+  .leader__email {
+    margin-block-start: var(--s-2);
+    font-size: var(--t-sm);
+    word-break: break-word;
+    max-width: none;
+  }
+
+  .leader__email a {
+    color: var(--c-primary-dark);
+  }
+
+  .leader__email a:hover {
+    color: var(--c-accent-dark);
   }
 
   /* ---------- What we stand for ---------- */

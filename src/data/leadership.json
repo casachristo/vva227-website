@@ -1,0 +1,29 @@
+{
+  "_doc": "Chapter Leadership directory for the About Us page. One entry per person. Edit names, positions or emails here only — the page just renders these three groups in order (officers, then directors, then avva).",
+  "officers": [
+    { "name": "Jay Kalner", "position": "President / Director", "email": "jaymelissa@aol.com" },
+    { "name": "Joseph Leonard “Len” Ignatowski", "position": "Vice President / Director", "email": "grunt69@gmail.com" },
+    { "name": "Charles “Chuck” Harris", "position": "Treasurer / Director", "email": "caharris4@aol.com" },
+    { "name": "Robert “Bob” Tecklenburg", "position": "Secretary / Director", "email": "rlteck@verizon.net" },
+    { "name": "George Jones", "position": "Sergeant at Arms / Director", "email": "geowjonesiii@gmail.com" },
+    { "name": "Bruce I. Waxman", "position": "Immediate Past President / Director", "email": "biwaxman@gmail.com" }
+  ],
+  "directors": [
+    { "name": "Ralph “Andy” Bender", "position": "Director", "email": "abender42@icloud.com" },
+    { "name": "Tom Brown", "position": "Director", "email": "tom.brown.8422@gmail.com" },
+    { "name": "Thomas “Tom” Davis Jr.", "position": "Director", "email": "tomdavisjr@cox.net" },
+    { "name": "Donald “Don” F. Drunsic", "position": "Director", "email": "don.drunsic@mac.com" },
+    { "name": "William D. “Bill” Dumsick", "position": "Director / Past President", "email": "bill.dumsick@verizon.net" },
+    { "name": "Scott Hurley", "position": "Director", "email": "scotthurley@yahoo.com" },
+    { "name": "Michael “Mike” A. Kelly", "position": "Director", "email": "mamlkelly@verizon.net" },
+    { "name": "Gerald “Jerry” Krueger", "position": "Director", "email": "jerrykrueg@aol.com" },
+    { "name": "William “Bill” Lynch", "position": "Director / Membership", "email": "vva227bill@outlook.com" },
+    { "name": "Marcia “Marcy” Neuendorf", "position": "Director", "email": "marcyrn@gmail.com" },
+    { "name": "Robert “Bob” Pezold", "position": "Director", "email": "rpezold52@gmail.com" },
+    { "name": "Donald “Don” Sutherland", "position": "Director", "email": "drdons1230@gmail.com" },
+    { "name": "Norm Williamson", "position": "Director", "email": "norm.williamson@gmail.com" }
+  ],
+  "avva": [
+    { "name": "Diane Ignatowski", "position": "AVVA Representative", "email": "diane.ignatowski@gmail.com" }
+  ]
+}
