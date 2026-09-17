@@ -95,13 +95,8 @@ const referralPartners = [
   },
   {
     org: 'Loudoun County Veterans Service Office',
-    person: 'Thomas Grant Jr.',
-    role: 'Loudoun Veterans Services Coordinator',
-    email: 'Thomas.Grant@loudoun.gov',
-    phones: [
-      { label: 'Office', number: '571-627-8893' },
-      { label: 'Cell', number: '703-989-9864' },
-    ],
+    person: 'Veterans Coordination Line',
+    phones: [{ label: null, number: '703-777-0420' }],
   },
   {
     org: 'Fairfax County Veterans Service Office',
@@ -251,7 +246,7 @@ const referralPartners = [
               <p class="fa-partner__org">{partner.org}</p>
               {partner.subtitle && <p class="fa-partner__subtitle">{partner.subtitle}</p>}
               <p class="fa-partner__person">{partner.person}</p>
-              <p class="fa-partner__role">{partner.role}</p>
+              {partner.role && <p class="fa-partner__role">{partner.role}</p>}
               {partner.address && (
                 <address class="fa-partner__address">
                   {partner.address[0]}
@@ -259,7 +254,7 @@ const referralPartners = [
                   {partner.address[1]}
                 </address>
               )}
-              <p class="fa-partner__contact">{partner.email}</p>
+              {partner.email && <p class="fa-partner__contact">{partner.email}</p>}
               {partner.phones.map((phone) => (
                 <p class="fa-partner__contact">
                   {phone.label && <>{phone.label}: </>}
