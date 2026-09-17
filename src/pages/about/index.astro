@@ -14,6 +14,71 @@ import HeroBand from '../../components/HeroBand.astro';
 import Figure from '../../components/Figure.astro';
 import site from '../../data/site.json';
 import leadership from '../../data/leadership.json';
+
+/**
+ * Governance & Documents — restored 2026-09-17 at the chapter's request,
+ * folded into this page (not its own route, and not in the site nav or
+ * footer) rather than the separate /about/documents page it lived at before
+ * being removed 2026-09-01. See REVIEW.md for the open questions on the
+ * by-laws text and the minutes archive.
+ */
+const bylaws = [
+  { term: 'Annual meeting', detail: 'Held in April, to elect officers and directors.' },
+  {
+    term: 'Board of directors',
+    detail: 'No fewer than 3 and no more than 20, including the President, Vice President, Secretary and Treasurer. Terms run two years, with no limit on the number of terms.',
+  },
+  {
+    term: 'Board meetings',
+    detail: 'At least four a year, and between one day and one month before the annual chapter meeting.',
+  },
+  {
+    term: 'Quorum',
+    detail: 'Membership quorum is 5% of members, decisions by simple majority of those present. Board quorum is two-thirds of the whole board, rounded up.',
+  },
+  {
+    term: 'Notice periods',
+    detail: '30 to 50 days for the annual meeting, at least 10 days for special meetings, at least 5 days for board meetings.',
+  },
+  {
+    term: 'Attendance',
+    detail: 'A director absent from three consecutive board meetings without the board’s consent is considered resigned, as is a member not in good standing on dues.',
+  },
+  { term: 'Presidential vacancy', detail: 'Filled by the Vice President for the unexpired term.' },
+  {
+    term: 'Executive committee',
+    detail: 'The four officers plus one additional director selected by the board.',
+  },
+  {
+    term: 'Nominating committee',
+    detail: 'Three members elected at the annual meeting, quorum of two, slate delivered one month before the annual meeting.',
+  },
+  { term: 'Fidelity bond', detail: 'Check-signing officers must obtain one unless excused by the National Board.' },
+  {
+    term: 'AVVA representation',
+    detail: 'The elected AVVA representative sits on the board as a non-voting special advisor, entitled to be heard on all matters.',
+  },
+  { term: 'Procedure', detail: 'Governed by Robert’s Rules of Order, latest revision.' },
+  {
+    term: 'Amendments',
+    detail: 'Require two-thirds of the chapter board present, then ratification at the next general membership meeting by two-thirds of those present.',
+  },
+];
+
+const policy = [
+  {
+    title: 'The Journey',
+    body: 'The chapter newsletter, published monthly except July and August — ten issues a year. The editor decides content, consulting the President as necessary. The newsletter is not a channel for members to express opinions on an issue.',
+  },
+  {
+    title: 'The Minuteman Alert',
+    body: 'Email announcements to members.',
+  },
+  {
+    title: 'Membership Meetings',
+    body: 'Chapter meetings provide members and AVVA members an opportunity to receive Chapter information, hear announcements, discuss Chapter business and raise matters for consideration.',
+  },
+];
 ---
 
 <PageLayout
@@ -228,6 +293,56 @@ import leadership from '../../data/leadership.json';
     </div>
   </section>
 
+  <!-- ---------- Governance & documents ---------- -->
+  <section class="stack">
+    <h2>Governance &amp; Documents</h2>
+    <p>
+      The chapter&rsquo;s by-laws and communications policies — for members, board candidates, or anyone interested
+      in understanding how the chapter is governed and operates.
+    </p>
+
+    <h3 class="docs__subhead">By-laws</h3>
+    <p class="intro">
+      The chapter&rsquo;s by-laws were last ratified on <strong>15 October 2020</strong>, signed by Jay Kalner as
+      President. Earlier ratifications were signed by John P. Clark in May 1986 and Louis M. James in December 1993.
+    </p>
+
+    <dl class="terms">
+      {
+        bylaws.map((row) => (
+          <div class="term">
+            <dt>{row.term}</dt>
+            <dd>{row.detail}</dd>
+          </div>
+        ))
+      }
+    </dl>
+
+    <p class="note">
+      <a class="doc" href="/docs/vva227-bylaws.pdf">
+        Download the full By-laws <span>PDF</span>
+      </a>
+    </p>
+
+    <h3 class="docs__subhead">Chapter Communications Policy</h3>
+    <p class="intro">
+      The chapter communicates with members, AVVA members and selected guests through three channels, each with its
+      own rules.
+    </p>
+
+    <ul class="policy">
+      {
+        policy.map((item) => (
+          <li>
+            <h4>{item.title}</h4>
+            <p>{item.body}</p>
+          </li>
+        ))
+      }
+    </ul>
+
+  </section>
+
   <!-- ---------- What we stand for ---------- -->
   <section class="container">
     <div class="stand-for">
@@ -407,6 +522,108 @@ import leadership from '../../data/leadership.json';
     color: var(--c-ink-soft);
     word-break: break-word;
     max-width: none;
+  }
+
+  /* ---------- Governance & documents ---------- */
+
+  .docs__subhead {
+    margin-block-start: var(--s-6);
+    margin-block-end: var(--s-3);
+  }
+
+  .intro {
+    max-width: var(--w-prose);
+  }
+
+  .note {
+    margin-block-start: var(--s-4);
+    max-width: var(--w-prose);
+    font-size: var(--t-sm);
+  }
+
+  .doc {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--s-3);
+    padding: var(--s-3) var(--s-5);
+    background: var(--c-surface);
+    border: 1px solid var(--c-border-strong);
+    border-radius: var(--r-md);
+    font-weight: 700;
+    text-decoration: none;
+    color: var(--c-ink);
+  }
+
+  .doc:hover {
+    border-color: var(--c-primary);
+    background: var(--c-primary-tint);
+    color: var(--c-primary-dark);
+  }
+
+  .doc span {
+    font-size: 0.6875rem;
+    letter-spacing: 0.06em;
+    color: var(--c-ink-faint);
+  }
+
+  .terms {
+    margin: var(--s-4) 0 0;
+  }
+
+  .term {
+    display: grid;
+    grid-template-columns: 14rem 1fr;
+    gap: var(--s-5);
+    padding-block: var(--s-4);
+    border-block-start: 1px solid var(--c-border);
+  }
+
+  .term dt {
+    font-weight: 700;
+    color: var(--c-primary-dark);
+  }
+
+  .term dd {
+    margin: 0;
+    font-size: 1rem;
+    line-height: 1.6;
+    color: var(--c-ink-soft);
+    max-width: none;
+  }
+
+  .policy {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(18rem, 100%), 1fr));
+    gap: var(--s-5);
+    list-style: none;
+    margin: var(--s-4) 0 0;
+    padding: 0;
+  }
+
+  .policy li {
+    padding: var(--s-5);
+    background: var(--c-surface);
+    border: 1px solid var(--c-border);
+    border-radius: var(--r-lg);
+  }
+
+  .policy h4 {
+    font-size: var(--t-lg);
+  }
+
+  .policy p {
+    margin-block-start: var(--s-3);
+    font-size: 1rem;
+    line-height: 1.6;
+    color: var(--c-ink-soft);
+    max-width: none;
+  }
+
+  @media (max-width: 48rem) {
+    .term {
+      grid-template-columns: 1fr;
+      gap: var(--s-2);
+    }
   }
 
   /* ---------- What we stand for ---------- */
