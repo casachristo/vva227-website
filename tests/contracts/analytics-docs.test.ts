@@ -37,6 +37,13 @@ function setupStep(text: string, n: number): string {
   return text.slice(start, end === -1 ? text.indexOf('\n---', start) : end);
 }
 
+/** The *Reading the logs* section, up to its troubleshooting table. Empty if it is missing. */
+function logsSection(text: string): string {
+  const start = text.indexOf('\n## Reading the logs');
+  if (start === -1) return '';
+  return text.slice(start, text.indexOf('\n### Troubleshooting', start));
+}
+
 /** One bullet of a list, from its bold label to the next bullet or blank line. Empty if it is missing. */
 function bulletAt(text: string, label: string): string {
   const start = text.indexOf(`- **${label}**`);
@@ -139,16 +146,46 @@ describe('docs/analytics.md', () => {
     const step5 = setupStep(doc, 5);
     expect(step5).toContain(command);
     expect(nextSteps()).toContain(command);
-    // For a shell that cannot set a variable in front of a command.
-    for (const words of ['npx wrangler whoami', 'node_modules/.cache/wrangler/pages.json']) {
-      expect(step5).toContain(words);
-      expect(nextSteps()).toContain(words);
-    }
+    // The login must hold that account; this lists the accounts it holds.
+    expect(step5).toContain('npx wrangler whoami');
+    expect(nextSteps()).toContain('npx wrangler whoami');
     // A local wrangler config, committed or not, replaces the settings the setup wrote.
     for (const name of ['wrangler.toml', 'wrangler.json', 'wrangler.jsonc']) {
       expect(step5).toContain(name);
       expect(nextSteps()).toContain(name);
     }
+  });
+
+  it('gives that command for Windows too, in PowerShell and in the Command Prompt', () => {
+    // A shell that cannot set a variable in front of a command still sets
+    // one first; nothing else overrides the account wrangler remembers.
+    // The Command Prompt's `set` keeps trailing spaces in the value, so the
+    // id must end its line, and the deploy is a command of its own.
+    const powershell = `$env:CLOUDFLARE_ACCOUNT_ID='${ACCOUNT}'; npm run deploy`;
+    const cmd = new RegExp(`^ *set CLOUDFLARE_ACCOUNT_ID=${ACCOUNT}\\n *npm run deploy$`, 'm');
+    for (const text of [setupStep(doc, 5), nextSteps()]) {
+      expect(text).toContain(powershell);
+      expect(text).toMatch(cmd);
+    }
+  });
+
+  it('never has the owner delete only pages.json, which leaves the remembered account in wrangler-account.json', () => {
+    // wrangler 4 takes the account from CLOUDFLARE_ACCOUNT_ID, else from
+    // pages.json, else from wrangler-account.json beside it, and asks only
+    // when all three are empty. Deleting pages.json alone deploys to the same
+    // wrong account, without asking.
+    for (const text of [setupStep(doc, 5), nextSteps(), logsSection(doc)]) {
+      expect(text).not.toMatch(/node_modules\/\.cache\/wrangler\/pages\.json/);
+    }
+    expect(logsSection(doc)).not.toBe('');
+  });
+
+  it('gives every log command the "Ch 227" account id, as step 5 does', () => {
+    const commands = logsSection(doc)
+      .split('\n')
+      .filter((l) => l.includes('npx wrangler pages deployment'));
+    expect(commands.length).toBeGreaterThanOrEqual(2);
+    expect(commands.filter((l) => !l.startsWith(`CLOUDFLARE_ACCOUNT_ID=${ACCOUNT} npx wrangler pages deployment`))).toEqual([]);
   });
 
   it('says that removing a person ends the sign-ins already open, and that a rerun needs a token again', () => {

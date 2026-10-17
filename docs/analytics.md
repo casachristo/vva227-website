@@ -166,14 +166,25 @@ CLOUDFLARE_ACCOUNT_ID=d4afcdf7502fa80e6443dbb67ecd1d5f npm run deploy   # builds
 ```
 
 That id is the "Ch 227" account's. Wrangler remembers the account of the
-first `pages` command run in a copy of the code, in
-`node_modules/.cache/wrangler/pages.json`, and uses it ahead of your login,
-even when you are logged into several accounts. This once created a project
-in the wrong account. `CLOUDFLARE_ACCOUNT_ID` overrides what it remembers.
-If your shell cannot set a variable in front of a command (Windows), run
-`npx wrangler whoami` to check your login holds "Ch 227", delete
-`node_modules/.cache/wrangler/pages.json`, then run `npm run deploy` and
-pick "Ch 227" if it asks.
+first `pages` command run in a copy of the code, in the folder
+`node_modules/.cache/wrangler`, and uses it ahead of your login, even when
+you are logged into several accounts. This once created a project in the
+wrong account. `CLOUDFLARE_ACCOUNT_ID` overrides what it remembers. Your
+login must include "Ch 227"; `npx wrangler whoami` lists the accounts it
+holds.
+
+On Windows, set the variable first. In PowerShell:
+
+```powershell
+$env:CLOUDFLARE_ACCOUNT_ID='d4afcdf7502fa80e6443dbb67ecd1d5f'; npm run deploy
+```
+
+In the Command Prompt, as two commands:
+
+```bat
+set CLOUDFLARE_ACCOUNT_ID=d4afcdf7502fa80e6443dbb67ecd1d5f
+npm run deploy
+```
 
 The folder you deploy from must contain no `wrangler.toml`, `wrangler.json`
 or `wrangler.jsonc`, committed or not: one would replace the database and
@@ -231,8 +242,8 @@ The Function logs why it refused a request; the response never says. Wrangler
 must be logged into the account that holds the Pages project.
 
 ```sh
-npx wrangler pages deployment list --project-name=vva227-refresh
-npx wrangler pages deployment tail <deployment-id> --project-name=vva227-refresh
+CLOUDFLARE_ACCOUNT_ID=d4afcdf7502fa80e6443dbb67ecd1d5f npx wrangler pages deployment list --project-name=vva227-refresh
+CLOUDFLARE_ACCOUNT_ID=d4afcdf7502fa80e6443dbb67ecd1d5f npx wrangler pages deployment tail <deployment-id> --project-name=vva227-refresh
 ```
 
 Then load `/stats` in another window and read the `stats denied:` line, or
@@ -240,9 +251,9 @@ open any page of https://vva227.org/ to see what the collector says. The tail
 shows a refused request as `Ok` all the same (it reports whether the code
 ran, not the answer it gave), so read the lines beneath it.
 
-> These commands also use the account wrangler remembers (step 5). If they
-> say the project does not exist, delete
-> `node_modules/.cache/wrangler/pages.json` and run them again.
+> These commands need the same `CLOUDFLARE_ACCOUNT_ID` as step 5 (on
+> Windows, set it first, as step 5 shows). Without it they read the account
+> wrangler remembers, which may hold a stray copy of the project.
 
 ### Troubleshooting
 
