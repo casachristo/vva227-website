@@ -18,6 +18,7 @@
     "test:security": "vitest run tests/security",
     "test:system": "playwright test",
     "test:runtime": "playwright test --project=runtime",
+    "setup:analytics": "node tools/setup-analytics.mjs",
     "deploy": "astro build && wrangler pages deploy dist --project-name=vva227-refresh --branch=main --commit-dirty=true"
   },
   "dependencies": {

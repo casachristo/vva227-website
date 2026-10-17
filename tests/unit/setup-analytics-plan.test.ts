@@ -1,0 +1,534 @@
+import { describe, it, expect, vi } from 'vitest';
+import * as plan from '../../tools/lib/setup-analytics-plan.mjs';
+
+/**
+ * UNIT — every decision the setup script makes, on hand-built inputs. No
+ * network, no files: tools/lib/setup-analytics-plan.mjs is pure.
+ *
+ * TIER JUSTIFICATION: the feature tier runs the script against one scripted
+ * Cloudflare at a time. The boundaries live here: a 254-character address,
+ * migration 2 against migration 10, an Access policy that admits one right
+ * address AND everyone, an application the owner has already edited, an
+ * error body with eleven errors or none at all.
+ */
+
+const { ACCOUNT } = plan;
+const OTHER = 'b'.repeat(32);
+const SUBDOMAIN = 'vva227-refresh-12g.pages.dev';
+
+describe('normalizeEmail', () => {
+  it('trims and lower-cases a real address', () => {
+    expect(plan.normalizeEmail('  Owner@Example.ORG ')).toBe('owner@example.org');
+    expect(plan.normalizeEmail('first.last+stats@mail.example.co.uk')).toBe('first.last+stats@mail.example.co.uk');
+  });
+
+  it.each([
+    ['empty', ''],
+    ['no @', 'owner.example.org'],
+    ['two @', 'a@b@example.org'],
+    ['no dot in the domain', 'owner@localhost'],
+    ['a trailing dot', 'owner@example.'],
+    ['an inner space', 'own er@example.org'],
+    ['a quote', 'o"wner@example.org'],
+    ['not a string', 42],
+    ['null', null],
+  ])('refuses %s', (_label, value) => {
+    expect(plan.normalizeEmail(value)).toBeNull();
+  });
+
+  it('accepts 254 characters and refuses 255', () => {
+    const at = (n: number) => `${'a'.repeat(n - '@example.org'.length)}@example.org`;
+    expect(plan.normalizeEmail(at(254))).toBe(at(254));
+    expect(plan.normalizeEmail(at(255))).toBeNull();
+  });
+});
+
+describe('parseArgs', () => {
+  it('collects repeated addresses in order, deduplicated, in both spellings', () => {
+    expect(plan.parseArgs(['--email', 'a@example.org', '--email=B@example.org', '--email', 'A@example.org'])).toEqual({
+      emails: ['a@example.org', 'b@example.org'],
+      dryRun: false,
+      help: false,
+    });
+  });
+
+  it('reads --dry-run anywhere', () => {
+    expect(plan.parseArgs(['--dry-run', '--email', 'a@example.org'])).toEqual({ emails: ['a@example.org'], dryRun: true, help: false });
+  });
+
+  it('answers --help without requiring an address', () => {
+    expect(plan.parseArgs(['--help'])).toEqual({ emails: [], dryRun: false, help: true });
+    expect(plan.parseArgs(['-h'])).toMatchObject({ help: true });
+  });
+
+  it.each([
+    [[], /--email/],
+    [['--dry-run'], /--email/],
+    [['--email'], /needs an address/],
+    [['--email', '--dry-run'], /needs an address/],
+    [['--email='], /is not an email address/],
+    [['--email', 'nope'], /"nope" is not an email address/],
+    [['--email', 'a@example.org', 'extra'], /Unknown option "extra"/],
+    [['--emails', 'a@example.org'], /Unknown option "--emails"/],
+  ])('refuses %j', (argv, message) => {
+    const result = plan.parseArgs(argv);
+    expect(result).toEqual({ error: expect.stringMatching(message) });
+  });
+});
+
+describe('resolveToken', () => {
+  it('prefers the environment, trimmed', () => {
+    expect(plan.resolveToken('  env-token\n', 'file-token')).toBe('env-token');
+  });
+
+  it.each([
+    ['a trailing newline', 'file-token\n'],
+    ['a CRLF', 'file-token\r\n'],
+    ['surrounding spaces', '  file-token  '],
+  ])('reads the file with %s', (_label, text) => {
+    expect(plan.resolveToken(undefined, text)).toBe('file-token');
+  });
+
+  it('falls back to the file when the environment value is blank', () => {
+    expect(plan.resolveToken('   ', 'file-token')).toBe('file-token');
+  });
+
+  it('is empty when there is neither', () => {
+    expect(plan.resolveToken(undefined, undefined)).toBe('');
+    expect(plan.resolveToken('', '\n')).toBe('');
+  });
+});
+
+describe('redact', () => {
+  it('removes every occurrence', () => {
+    expect(plan.redact('tok and tok again', 'tok')).toBe('[token] and [token] again');
+  });
+
+  it('leaves text alone when there is no token, and stringifies what it is given', () => {
+    expect(plan.redact('nothing here', '')).toBe('nothing here');
+    expect(plan.redact(404 as unknown as string, 'tok')).toBe('404');
+  });
+});
+
+describe('checkProject', () => {
+  const project = (over: Record<string, unknown> = {}) => ({
+    name: 'vva227-refresh',
+    subdomain: SUBDOMAIN,
+    domains: [SUBDOMAIN, 'vva227.org'],
+    production_branch: 'main',
+    deployment_configs: { production: { compatibility_date: '2025-09-01', env_vars: { X: { type: 'plain_text', value: '1' } } } },
+    ...over,
+  });
+
+  it('returns what later steps need, with no warning, for the live project', () => {
+    expect(plan.checkProject(project())).toEqual({
+      productionBranch: 'main',
+      compatibilityDate: '2025-09-01',
+      subdomain: SUBDOMAIN,
+      production: { compatibility_date: '2025-09-01', env_vars: { X: { type: 'plain_text', value: '1' } } },
+      warnings: [],
+    });
+  });
+
+  it.each([
+    ['no domains', { domains: undefined }],
+    ['only its pages.dev name', { domains: [SUBDOMAIN] }],
+    ['a look-alike domain', { domains: ['vva227.org.example.com', 'www.vva227.org'] }],
+  ])('refuses a project with %s', (_label, over) => {
+    expect(() => plan.checkProject(project(over))).toThrow(plan.StopError);
+    expect(() => plan.checkProject(project(over))).toThrow(/does not serve vva227\.org/);
+  });
+
+  it('refuses no project at all', () => {
+    expect(() => plan.checkProject(null)).toThrow(/returned no project/);
+  });
+
+  it.each([['production'], [''], [undefined]])('warns when the production branch is %j', (branch) => {
+    const { warnings } = plan.checkProject(project({ production_branch: branch }));
+    expect(warnings).toHaveLength(1);
+    expect(warnings[0]).toMatch(/^WARNING: the project's production branch is "(production|\(not set\))", not "main"\./);
+  });
+
+  it('ignores a subdomain that is not a pages.dev name, and a missing production config', () => {
+    const checked = plan.checkProject(project({ subdomain: 'evil.example.com', deployment_configs: undefined }));
+    expect(checked.subdomain).toBeNull();
+    expect(checked.compatibilityDate).toBeNull();
+    expect(checked.production).toEqual({});
+  });
+});
+
+describe('planBindings', () => {
+  const DB = 'db-uuid';
+
+  it('on an empty production config, binds the database and creates a salt, in production only', () => {
+    const newSalt = vi.fn(() => 'salt');
+    expect(plan.planBindings({}, { databaseId: DB, newSalt })).toEqual({
+      body: { deployment_configs: { production: { d1_databases: { BEACON: { id: DB } }, env_vars: { BEACON_SALT: { type: 'secret_text', value: 'salt' } } } } },
+      changes: ['BEACON bound to the vva227-beacon database', 'BEACON_SALT created: a new random secret, encrypted'],
+      notes: [],
+    });
+    expect(newSalt).toHaveBeenCalledTimes(1);
+  });
+
+  it('sends nothing at all when both are already in place, and makes no salt', () => {
+    const newSalt = vi.fn(() => 'salt');
+    const result = plan.planBindings(
+      { d1_databases: { BEACON: { id: DB } }, env_vars: { BEACON_SALT: { type: 'secret_text', value: '' } } },
+      { databaseId: DB, newSalt },
+    );
+    expect(result.body).toBeNull();
+    expect(result.changes).toEqual([]);
+    expect(newSalt).not.toHaveBeenCalled();
+  });
+
+  it('sends only the missing half, with no empty map for the other', () => {
+    expect(plan.planBindings({ d1_databases: { BEACON: { id: DB } } }, { databaseId: DB, newSalt: () => 's' }).body).toEqual({
+      deployment_configs: { production: { env_vars: { BEACON_SALT: { type: 'secret_text', value: 's' } } } },
+    });
+    expect(plan.planBindings({ env_vars: { BEACON_SALT: { type: 'secret_text', value: '' } } }, { databaseId: DB, newSalt: () => 's' }).body).toEqual({
+      deployment_configs: { production: { d1_databases: { BEACON: { id: DB } } } },
+    });
+  });
+
+  it('keeps a plain-text salt and explains, rather than re-keying every visitor', () => {
+    const result = plan.planBindings({ d1_databases: { BEACON: { id: DB } }, env_vars: { BEACON_SALT: { type: 'plain_text', value: 'x' } } }, { databaseId: DB, newSalt: () => 's' });
+    expect(result.body).toBeNull();
+    expect(result.notes.join('\n')).toMatch(/plain-text variable\. It is left alone/);
+  });
+
+  it('refuses to move a binding that points at another database', () => {
+    expect(() => plan.planBindings({ d1_databases: { BEACON: { id: 'theirs' } } }, { databaseId: DB, newSalt: () => 's' })).toThrow(
+      /BEACON is already bound to a different D1 database \(theirs\)/,
+    );
+  });
+
+  it('tolerates a missing config', () => {
+    expect(plan.planBindings(undefined, { databaseId: DB, newSalt: () => 's' }).changes).toHaveLength(2);
+  });
+});
+
+describe('accessSettingsBody and verifyProduction', () => {
+  it('writes both Access settings as secrets, in production only', () => {
+    expect(plan.accessSettingsBody('team.cloudflareaccess.com', 'aud')).toEqual({
+      deployment_configs: {
+        production: {
+          env_vars: {
+            ACCESS_TEAM_DOMAIN: { type: 'secret_text', value: 'team.cloudflareaccess.com' },
+            ACCESS_AUD: { type: 'secret_text', value: 'aud' },
+          },
+        },
+      },
+    });
+  });
+
+  const complete = {
+    d1_databases: { BEACON: { id: 'db' } },
+    env_vars: { BEACON_SALT: { type: 'secret_text', value: '' }, ACCESS_TEAM_DOMAIN: { type: 'secret_text', value: '' }, ACCESS_AUD: { type: 'secret_text', value: '' } },
+  };
+
+  it('finds nothing wrong with a complete config', () => {
+    expect(plan.verifyProduction(complete, { databaseId: 'db', access: true })).toEqual([]);
+  });
+
+  it('names every missing piece', () => {
+    expect(plan.verifyProduction({}, { databaseId: 'db', access: true })).toEqual([
+      'BEACON is not bound to vva227-beacon (db)',
+      'BEACON_SALT is missing',
+      'ACCESS_TEAM_DOMAIN is missing',
+      'ACCESS_AUD is missing',
+    ]);
+    expect(plan.verifyProduction({ ...complete, d1_databases: { BEACON: { id: 'other' } } }, { databaseId: 'db', access: false })).toEqual([
+      'BEACON is not bound to vva227-beacon (db)',
+    ]);
+  });
+
+  it('does not ask for the Access settings before step (e)', () => {
+    expect(plan.verifyProduction({ d1_databases: complete.d1_databases, env_vars: { BEACON_SALT: { type: 'plain_text', value: 'x' } } }, { databaseId: 'db', access: false })).toEqual([]);
+  });
+});
+
+describe('findByName', () => {
+  it('matches the name exactly, ignoring a loose filter\'s near misses', () => {
+    const items = [{ name: 'vva227-beacon-old' }, { name: 'vva227-beacon' }, { name: 'VVA227-BEACON' }];
+    expect(plan.findByName(items, 'vva227-beacon', 'D1 database')).toEqual({ name: 'vva227-beacon' });
+  });
+
+  it('is null for none, and for a result that is not a list', () => {
+    expect(plan.findByName([{ name: 'other' }, null], 'x', 'thing')).toBeNull();
+    expect(plan.findByName(undefined, 'x', 'thing')).toBeNull();
+    expect(plan.findByName({ name: 'x' }, 'x', 'thing')).toBeNull();
+  });
+
+  it('refuses to guess between two exact matches', () => {
+    expect(() => plan.findByName([{ name: 'x', id: 1 }, { name: 'x', id: 2 }], 'x', 'Access application')).toThrow(/There are 2 Access applications named "x"/);
+  });
+});
+
+describe('migrations', () => {
+  it('orders by number, not by text, then by name, and skips what is not SQL', () => {
+    expect(plan.migrationOrder(['0010_later.sql', '0002_second.sql', 'README.md', '0002_another.sql', '0001_views.sql'])).toEqual([
+      '0001_views.sql',
+      '0002_another.sql',
+      '0002_second.sql',
+      '0010_later.sql',
+    ]);
+  });
+
+  it.each([["0003_it's.sql"], ['views.sql'], ['0004 space.sql'], ['0005_a;drop.sql']])('refuses the file name %j', (name) => {
+    expect(() => plan.migrationOrder([name])).toThrow(plan.StopError);
+    expect(() => plan.migrationRequestSql(name, 'SELECT 1;')).toThrow(plan.StopError);
+  });
+
+  it('is empty for an empty directory', () => {
+    expect(plan.migrationOrder([])).toEqual([]);
+  });
+
+  it('applies what is not yet recorded, in order', () => {
+    expect(plan.pendingMigrations(['0001_a.sql', '0002_b.sql', '0003_c.sql'], ['0002_b.sql'])).toEqual(['0001_a.sql', '0003_c.sql']);
+    expect(plan.pendingMigrations(['0001_a.sql'], ['0001_a.sql', '0099_unknown.sql'])).toEqual([]);
+  });
+
+  it('sends the file and its bookkeeping row together, as wrangler does', () => {
+    expect(plan.migrationRequestSql('0001_views.sql', 'CREATE TABLE t (x);\n\n')).toBe("CREATE TABLE t (x);\nINSERT INTO d1_migrations (name) values ('0001_views.sql');");
+  });
+
+  it('reads rows from the first statement of a query response', () => {
+    expect(plan.queryRows([{ results: [{ name: 'a' }] }, { results: [{ name: 'b' }] }])).toEqual([{ name: 'a' }]);
+    expect(plan.queryRows([{ success: true }])).toEqual([]);
+    expect(plan.queryRows(null)).toEqual([]);
+  });
+
+  it('creates the bookkeeping table exactly as wrangler does', () => {
+    expect(plan.CREATE_MIGRATIONS_TABLE_SQL).toBe(
+      'CREATE TABLE IF NOT EXISTS d1_migrations(id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT UNIQUE, applied_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL)',
+    );
+  });
+});
+
+describe('zone and Zero Trust', () => {
+  it('reads the owning account of the exact zone', () => {
+    expect(plan.zoneAccountId([{ name: 'vva227.org.example', account: { id: 'x' } }, { name: 'vva227.org', account: { id: OTHER } }])).toBe(OTHER);
+  });
+
+  it.each([[[]], [undefined], [[{ name: 'vva227.org' }]], [[{ name: 'vva227.org', account: { id: '' } }]]])('is null when the zone or its account is not visible: %j', (zones) => {
+    expect(plan.zoneAccountId(zones)).toBeNull();
+  });
+
+  it('reads the team domain from an object or a one-item list', () => {
+    expect(plan.teamDomainFrom({ auth_domain: ' team.cloudflareaccess.com\n' })).toBe('team.cloudflareaccess.com');
+    expect(plan.teamDomainFrom([{ auth_domain: 'team.cloudflareaccess.com' }])).toBe('team.cloudflareaccess.com');
+  });
+
+  it.each([[null], [{}], [{ auth_domain: '' }], [{ auth_domain: '  ' }], [{ auth_domain: 7 }], [[]]])('treats %j as Zero Trust not set up', (org) => {
+    expect(plan.teamDomainFrom(org)).toBeNull();
+  });
+
+  it('gives the dashboard steps, naming the account', () => {
+    const own = plan.zeroTrustInstructions(ACCOUNT);
+    expect(own).toContain(`account ${ACCOUNT} ("Ch 227")`);
+    for (const step of ['one.dash.cloudflare.com', 'team name', 'Free plan', 'card details', 'does not charge', 'Nothing after this point was changed.']) {
+      expect(own).toContain(step);
+    }
+    expect(plan.zeroTrustInstructions(OTHER)).toContain(`account ${OTHER} (the account that owns vva227.org)`);
+  });
+});
+
+describe('the policy', () => {
+  it('admits exactly the given addresses for a day', () => {
+    expect(plan.policyBody(['a@example.org', 'b@example.org'])).toEqual({
+      name: 'vva227 stats owners',
+      decision: 'allow',
+      include: [{ email: { email: 'a@example.org' } }, { email: { email: 'b@example.org' } }],
+      session_duration: '24h',
+    });
+  });
+
+  it('carries over exclude and require rules an existing policy has, and no empty ones', () => {
+    const existing = { exclude: [{ geo: { country_code: 'XX' } }], require: [], include: [] };
+    expect(plan.policyBody(['a@example.org'], existing)).toEqual({ ...plan.policyBody(['a@example.org']), exclude: existing.exclude });
+  });
+
+  it('matches regardless of order and case, and not with a missing or extra address', () => {
+    const policy = { decision: 'allow', include: [{ email: { email: 'B@example.org' } }, { email: { email: 'a@example.org' } }] };
+    expect(plan.policyMatches(policy, ['a@example.org', 'b@example.org'])).toBe(true);
+    expect(plan.policyMatches(policy, ['a@example.org'])).toBe(false);
+    expect(plan.policyMatches(policy, ['a@example.org', 'b@example.org', 'c@example.org'])).toBe(false);
+  });
+
+  it.each([
+    ['everyone', [{ everyone: {} }]],
+    ['a whole domain', [{ email_domain: { domain: 'example.org' } }]],
+    ['the right address and everyone', [{ email: { email: 'a@example.org' } }, { everyone: {} }]],
+    ['an email rule with something else beside it', [{ email: { email: 'a@example.org' }, everyone: {} }]],
+    ['no rules', []],
+  ])('does not match a policy admitting %s', (_label, include) => {
+    expect(plan.policyMatches({ decision: 'allow', include }, ['a@example.org'])).toBe(false);
+  });
+
+  it('does not match a policy that is not an allow, or is not a policy', () => {
+    expect(plan.policyMatches({ decision: 'deny', include: [{ email: { email: 'a@example.org' } }] }, ['a@example.org'])).toBe(false);
+    expect(plan.policyMatches(null, ['a@example.org'])).toBe(false);
+  });
+});
+
+describe('destinationsFor', () => {
+  it('covers the apex, www, and the project\'s pages.dev names when the zone is in the project\'s account', () => {
+    expect(plan.destinationsFor({ accessAccount: ACCOUNT, subdomain: SUBDOMAIN })).toEqual({
+      destinations: ['vva227.org/stats', 'www.vva227.org/stats', `${SUBDOMAIN}/stats`, `*.${SUBDOMAIN}/stats`].map((uri) => ({ type: 'public', uri })),
+      skipped: null,
+    });
+  });
+
+  it('leaves the pages.dev names out, and says why, when the zone is in another account', () => {
+    const { destinations, skipped } = plan.destinationsFor({ accessAccount: OTHER, subdomain: SUBDOMAIN });
+    expect(destinations.map((d: { uri: string }) => d.uri)).toEqual(['vva227.org/stats', 'www.vva227.org/stats']);
+    expect(skipped).toContain(`different Cloudflare account (${OTHER})`);
+    expect(skipped).toContain('stays a plain "Not found" for everyone');
+  });
+
+  it('leaves them out when the project reported no pages.dev name', () => {
+    const { destinations, skipped } = plan.destinationsFor({ accessAccount: ACCOUNT, subdomain: null });
+    expect(destinations).toHaveLength(2);
+    expect(skipped).toMatch(/reported no pages\.dev address/);
+  });
+});
+
+describe('the application', () => {
+  const destinations = plan.destinationsFor({ accessAccount: ACCOUNT, subdomain: SUBDOMAIN }).destinations;
+
+  it('is created hidden from the launcher, for a day, with only this policy', () => {
+    expect(plan.appBody({ policyId: 'p1', destinations })).toEqual({
+      type: 'self_hosted',
+      name: 'vva227 stats',
+      domain: 'vva227.org/stats',
+      destinations,
+      session_duration: '24h',
+      app_launcher_visible: false,
+      policies: [{ id: 'p1', precedence: 1 }],
+    });
+  });
+
+  it('on update, adds what is missing and keeps everything the owner set', () => {
+    const existing = {
+      id: 'app',
+      aud: 'x',
+      domain: 'vva227.org/stats',
+      destinations: [{ type: 'public', uri: 'vva227.org/stats' }, { type: 'public', uri: 'vva227.org/stats/more' }, { type: 'public' }],
+      session_duration: '1h',
+      app_launcher_visible: true,
+      allowed_idps: ['idp-1'],
+      auto_redirect_to_identity: true,
+      policies: [{ id: 'theirs', precedence: 3, name: 'theirs', decision: 'allow' }, { id: 'no-precedence' }],
+    };
+    expect(plan.appBody({ policyId: 'p1', destinations, existing })).toEqual({
+      type: 'self_hosted',
+      name: 'vva227 stats',
+      domain: 'vva227.org/stats',
+      destinations: [
+        { type: 'public', uri: 'vva227.org/stats' },
+        { type: 'public', uri: 'vva227.org/stats/more' },
+        { type: 'public', uri: 'www.vva227.org/stats' },
+        { type: 'public', uri: `${SUBDOMAIN}/stats` },
+        { type: 'public', uri: `*.${SUBDOMAIN}/stats` },
+      ],
+      session_duration: '1h',
+      app_launcher_visible: true,
+      allowed_idps: ['idp-1'],
+      auto_redirect_to_identity: true,
+      policies: [
+        { id: 'theirs', precedence: 3 },
+        { id: 'no-precedence', precedence: 2 },
+        { id: 'p1', precedence: 4 },
+      ],
+    });
+  });
+
+  it('on update, does not add the policy twice', () => {
+    const existing = { destinations: [], policies: [{ id: 'p1', precedence: 1 }] };
+    expect(plan.appBody({ policyId: 'p1', destinations, existing }).policies).toEqual([{ id: 'p1', precedence: 1 }]);
+  });
+
+  it('matches only when every destination and the policy are present', () => {
+    const full = { destinations, policies: [{ id: 'p1', precedence: 1 }] };
+    expect(plan.appMatches(full, { policyId: 'p1', destinations })).toBe(true);
+    expect(plan.appMatches({ ...full, destinations: destinations.slice(1) }, { policyId: 'p1', destinations })).toBe(false);
+    expect(plan.appMatches({ ...full, policies: [] }, { policyId: 'p1', destinations })).toBe(false);
+    expect(plan.appMatches(full, { policyId: null, destinations })).toBe(false);
+    expect(plan.appMatches({}, { policyId: 'p1', destinations })).toBe(false);
+  });
+});
+
+describe('describing a failed call', () => {
+  const ZT = `/accounts/${OTHER}/access/organizations`;
+
+  it('quotes Cloudflare\'s codes and messages, at most five', () => {
+    const errors = Array.from({ length: 11 }, (_, i) => ({ code: 1000 + i, message: `m${i}` }));
+    const text = plan.describeApiError({ method: 'POST', path: '/accounts/x/d1/database', status: 400, body: { success: false, errors } });
+    expect(text.split('\n')[0]).toBe('Cloudflare refused POST /accounts/x/d1/database (HTTP 400): 1000: m0; 1001: m1; 1002: m2; 1003: m3; 1004: m4');
+    expect(text).toContain('run the command again');
+    expect(text).not.toContain('not allowed');
+  });
+
+  it('says so when a JSON body has no errors, and quotes a non-JSON body without its markup', () => {
+    expect(plan.describeApiError({ method: 'GET', path: '/zones', status: 500, body: { success: false } })).toContain('no error detail in the response');
+    const html = plan.describeApiError({ method: 'GET', path: '/zones', status: 502, body: null, text: `<html><b>Bad</b>\n gateway ${'x'.repeat(400)}</html>` });
+    expect(html).toMatch(/\(HTTP 502\): the response was not JSON: Bad gateway x+\n/);
+    expect(html.split('\n')[0].length).toBeLessThan(300);
+    expect(plan.describeApiError({ method: 'GET', path: '/zones', status: 502, body: null, text: '' })).toContain('not JSON: (empty)');
+  });
+
+  it.each([
+    [401, [], '/accounts/x/pages/projects/p', 'Account › Cloudflare Pages › Edit'],
+    [403, [], '/accounts/x/d1/database', 'Account › D1 › Edit'],
+    [400, [{ code: 10000, message: 'Authentication error' }], '/accounts/x/access/apps', 'Account › Access: Apps and Policies › Edit'],
+    [400, [{ code: 9109, message: 'Unauthorized' }], '/accounts/x/access/policies', 'Account › Access: Apps and Policies › Edit'],
+    [403, [], '/accounts/x/access/organizations', 'Account › Access: Organizations, Identity Providers, and Groups › Read'],
+    [403, [], '/zones', 'Zone › Zone › Read'],
+  ])('a token refusal (%i %j) on %s names the permission', (status, errors, path, permission) => {
+    expect(plan.describeApiError({ method: 'GET', path, status, body: { success: false, errors } })).toContain(`It needs "${permission}".`);
+  });
+
+  it('a refusal in the zone\'s other account says the token needs both accounts', () => {
+    const text = plan.describeApiError({ method: 'GET', path: ZT, status: 403, body: { success: false, errors: [{ code: 10000, message: 'Authentication error' }] } });
+    expect(text).toContain(`This call is in account ${OTHER}, which owns vva227.org but is not the "Ch 227" account (${ACCOUNT}).`);
+    expect(text).toContain('must include BOTH accounts');
+  });
+
+  it('a refusal in the Ch 227 account names it', () => {
+    const text = plan.describeApiError({ method: 'GET', path: `/accounts/${ACCOUNT}/d1/database`, status: 403, body: { errors: [] } });
+    expect(text).toContain(`The token must include the "Ch 227" account (${ACCOUNT}).`);
+  });
+
+  it('classifies a missing project and a refused token apart', () => {
+    expect(plan.isProjectMissing({ status: 404, body: null })).toBe(true);
+    expect(plan.isProjectMissing({ status: 400, body: { errors: [{ code: 8000007 }] } })).toBe(true);
+    expect(plan.isProjectMissing({ status: 403, body: { errors: [{ code: 10000 }] } })).toBe(false);
+    expect(plan.isAuthRefusal({ status: 403, body: null })).toBe(true);
+    expect(plan.isAuthRefusal({ status: 404, body: { errors: [{ code: 8000007 }] } })).toBe(false);
+  });
+
+  it('maps a path with no known permission to none', () => {
+    expect(plan.permissionFor('/user/tokens/verify')).toBeNull();
+  });
+});
+
+describe('what the script tells the person', () => {
+  it('lists every token permission when there is no token', () => {
+    const text = plan.noTokenMessage();
+    for (const p of plan.TOKEN_PERMISSIONS) expect(text).toContain(p);
+    expect(text).toContain('.cf-api-token');
+  });
+
+  it('ends a successful run with the deploy that is not its to make', () => {
+    const text = plan.nextSteps();
+    for (const phrase of ['Nothing has been deployed', 'NEXT production deploy', "chapter volunteer's latest changes AND this analytics", 'npm run deploy', 'main branch', 'https://vva227.org/stats']) {
+      expect(text).toContain(phrase);
+    }
+  });
+
+  it('names the project and account when the project is missing', () => {
+    expect(plan.projectNotFoundMessage()).toBe(
+      `There is no Pages project named "vva227-refresh" in account ${ACCOUNT} ("Ch 227").\nEither the token is for a different Cloudflare account, or the project has been renamed. Nothing was changed.`,
+    );
+  });
+});
