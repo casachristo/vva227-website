@@ -1,8 +1,11 @@
 import { describe, it, expect, afterEach } from 'vitest';
-import { chmodSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { spawnSync } from 'node:child_process';
+import { chmodSync, cpSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { runSetup } from '../../tools/lib/setup-analytics.mjs';
+import { USAGE } from '../../tools/lib/setup-analytics-plan.mjs';
 import { VIEW_COLUMNS } from '../helpers/analytics';
 import { runSetupAgainst, type SetupRunOptions } from '../helpers/setup-run';
 import {
@@ -522,6 +525,71 @@ describe('arguments and the token', () => {
     ]) {
       expect(output).toContain(permission);
     }
+  });
+});
+
+describe('the command the owner runs', () => {
+  // Every other test here imports runSetup. This runs tools/setup-analytics.mjs
+  // itself, in its own Node process, the way `npm run setup:analytics` does: a
+  // wrong import path, or arguments or environment not handed through, fails
+  // here and nowhere else. fetch is replaced before the script loads by one
+  // that notes the attempt on stderr and fails, so nothing reaches the network.
+  const ENTRY = join('tools', 'setup-analytics.mjs');
+  const ATTEMPT = 'NETWORK ATTEMPT';
+
+  function scratch(): string {
+    const dir = mkdtempSync(join(tmpdir(), 'vva227-entry-'));
+    dirs.push(dir);
+    return dir;
+  }
+
+  function entry(cwd: string, args: string[], env: Record<string, string> = {}) {
+    const stub = join(scratch(), 'no-network.mjs');
+    writeFileSync(stub, `globalThis.fetch = async (url) => { process.stderr.write('${ATTEMPT} ' + url + '\\n'); throw new TypeError('fetch failed'); };\n`);
+    return spawnSync(process.execPath, ['--import', pathToFileURL(stub).href, ENTRY, ...args], {
+      cwd,
+      env: { PATH: process.env.PATH ?? '', ...env },
+      encoding: 'utf8',
+      timeout: 30_000,
+    });
+  }
+
+  /** tools/ copied into an empty directory, so no real .cf-api-token at the top of this repo can be read. */
+  function isolatedCopy(): string {
+    const dir = scratch();
+    cpSync(join(process.cwd(), 'tools'), join(dir, 'tools'), { recursive: true });
+    return dir;
+  }
+
+  it('prints the usage for --help and exits 0', () => {
+    const res = entry(process.cwd(), ['--help']);
+    expect(res.status, res.stderr).toBe(0);
+    expect(res.stdout.startsWith(USAGE)).toBe(true);
+    expect(res.stderr).not.toContain(ATTEMPT);
+  });
+
+  it('refuses an address that is not one with exit 2 and the usage', () => {
+    const res = entry(process.cwd(), ['--email', 'bad']);
+    expect(res.status, res.stderr).toBe(2);
+    expect(res.stdout).toContain('"bad" is not an email address.');
+    expect(res.stdout).toContain(USAGE);
+    expect(res.stderr).not.toContain(ATTEMPT);
+  });
+
+  it('with no token anywhere, says how to make one, exits 1 and makes no network call', () => {
+    const res = entry(isolatedCopy(), ['--email', 'a@b.example', '--dry-run']);
+    expect(res.status, res.stderr).toBe(1);
+    expect(res.stdout).toContain('No Cloudflare API token found.');
+    expect(res.stderr).not.toContain(ATTEMPT);
+  });
+
+  it('hands CF_API_TOKEN through: with one set, it goes on to ask Cloudflare for the project', () => {
+    const token = 'entry-test-token-0123456789';
+    const res = entry(isolatedCopy(), ['--email', 'a@b.example', '--dry-run'], { CF_API_TOKEN: token });
+    expect(res.status, res.stderr).toBe(1);
+    expect(res.stderr).toContain(`${ATTEMPT} https://api.cloudflare.com/client/v4${PROJECT_PATH}`);
+    expect(res.stdout).toContain('Cloudflare could not be reached');
+    expect(res.stdout + res.stderr).not.toContain(token);
   });
 });
 
