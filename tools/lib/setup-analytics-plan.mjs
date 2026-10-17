@@ -427,18 +427,41 @@ export function zeroTrustInstructions(account) {
   ].join('\n');
 }
 
-/** The include list of the reusable policy: exactly these addresses, nothing broader. */
+/**
+ * A copy of what a GET returned, without the keys Cloudflare keeps itself.
+ * An update of an Access application or policy is a PUT, which replaces it
+ * whole, so the body starts from everything it already has.
+ */
+function editable(existing, serverKeys) {
+  const copy = { ...existing };
+  for (const key of serverKeys) delete copy[key];
+  return copy;
+}
+
+/** What Cloudflare sets on a reusable policy itself. */
+const POLICY_SERVER_KEYS = ['id', 'created_at', 'updated_at', 'app_count', 'reusable'];
+
+/**
+ * The reusable policy: an allow, whose include list is exactly these
+ * addresses, nothing broader.
+ *
+ * An update starts from everything the existing policy has, so it keeps
+ * what somebody set in the dashboard (its session length, exclude and require
+ * rules, approval, purpose justification, MFA, isolation) and replaces only
+ * the decision and the include list. A new policy signs people in for
+ * SESSION_DURATION.
+ */
 export function policyBody(emails, existing = null) {
   const body = {
     name: POLICY,
+    session_duration: SESSION_DURATION,
+    ...(existing ? editable(existing, POLICY_SERVER_KEYS) : {}),
     decision: 'allow',
     include: emails.map((email) => ({ email: { email } })),
-    session_duration: SESSION_DURATION,
   };
-  // An existing policy's exclude and require rules are carried over, so an
-  // update narrows nothing somebody added in the dashboard.
+  // An empty rule list means the same as none, and is left out.
   for (const key of ['exclude', 'require']) {
-    if (Array.isArray(existing?.[key]) && existing[key].length) body[key] = existing[key];
+    if (!(Array.isArray(body[key]) && body[key].length)) delete body[key];
   }
   return body;
 }
@@ -489,18 +512,25 @@ const policiesOn = (app) =>
   (Array.isArray(app?.policies) ? app.policies : []).map((p) => (typeof p === 'string' ? { id: p } : p)).filter((p) => p && typeof p.id === 'string');
 
 /**
+ * What Cloudflare sets on an application itself. self_hosted_domains is the
+ * deprecated twin of destinations, derived from it: sending both can conflict.
+ */
+const APP_SERVER_KEYS = ['id', 'uid', 'aud', 'created_at', 'updated_at', 'self_hosted_domains'];
+
+/**
  * The application body: the full desired state for a new application, or, for
  * an existing one, what it has plus what is missing.
  *
  * The application named "vva227 stats" is this script's, and this script's
  * policy alone decides who opens /stats (rule A13): an update sends that one
- * policy and no other, so a policy someone attached in the dashboard is taken
- * off (the script names it as it does). An update keeps every destination
- * already on the application and the owner's own choices (session length,
- * launcher visibility, identity providers), and only adds this script's
- * destinations.
+ * policy, by id, and no other, so a policy someone attached in the dashboard
+ * is taken off (the script names it as it does). Everything else starts from
+ * what the application already has: every destination, and every setting the
+ * owner chose (session length, launcher visibility, identity providers, cookie
+ * and other hardening), and only this script's missing destinations are added.
  */
 export function appBody({ policyId, destinations, existing = null }) {
+  const policies = [{ id: policyId, precedence: 1 }];
   if (!existing) {
     return {
       type: 'self_hosted',
@@ -509,7 +539,7 @@ export function appBody({ policyId, destinations, existing = null }) {
       destinations,
       session_duration: SESSION_DURATION,
       app_launcher_visible: false,
-      policies: [{ id: policyId, precedence: 1 }],
+      policies,
     };
   }
   const have = uris(existing);
@@ -517,19 +547,16 @@ export function appBody({ policyId, destinations, existing = null }) {
     ...(Array.isArray(existing.destinations) ? existing.destinations.filter((d) => typeof d?.uri === 'string') : []),
     ...destinations.filter((d) => !have.includes(d.uri)),
   ];
-  const body = {
+  return {
     type: 'self_hosted',
     name: APP,
+    session_duration: SESSION_DURATION,
+    app_launcher_visible: false,
+    ...editable(existing, APP_SERVER_KEYS),
     domain: typeof existing.domain === 'string' && existing.domain ? existing.domain : destinations[0].uri,
     destinations: merged,
-    session_duration: typeof existing.session_duration === 'string' ? existing.session_duration : SESSION_DURATION,
-    app_launcher_visible: typeof existing.app_launcher_visible === 'boolean' ? existing.app_launcher_visible : false,
-    policies: [{ id: policyId, precedence: 1 }],
+    policies,
   };
-  for (const key of ['allowed_idps', 'auto_redirect_to_identity']) {
-    if (existing[key] !== undefined) body[key] = existing[key];
-  }
-  return body;
 }
 
 /** Does the existing application already cover every destination, with this script's policy as its only one? */

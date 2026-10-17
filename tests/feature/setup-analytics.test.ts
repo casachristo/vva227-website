@@ -232,6 +232,44 @@ describe('running it again', () => {
     expect(fake.apps.get(CH227)).toEqual(appBefore);
   });
 
+  it('keeps every setting the owner made on the application and the policy, when a rerun has to update both', async () => {
+    const fake = cloudflare();
+    await run(fake);
+    const app = fake.apps.get(CH227)![0];
+    const policy = fake.policies.get(CH227)![0];
+    // Hardening an owner can turn on in the dashboard. Access replaces an
+    // application or policy whole on update, so anything an update leaves out is lost.
+    const appSettings = {
+      enable_binding_cookie: true,
+      same_site_cookie_attribute: 'strict',
+      http_only_cookie_attribute: true,
+      custom_deny_url: 'https://vva227.org/denied',
+      cors_headers: { allowed_methods: ['GET'] },
+      skip_interstitial: true,
+    };
+    const policySettings = {
+      session_duration: '1h',
+      approval_required: true,
+      approval_groups: [{ approvals_needed: 1, email_addresses: ['boss@example.org'] }],
+      purpose_justification_required: true,
+      mfa_config: { allowed_authenticators: ['totp'] },
+    };
+    // ...and what Cloudflare keeps itself and returns on every GET.
+    Object.assign(app, appSettings, { created_at: '2026-10-01T00:00:00Z', updated_at: '2026-10-02T00:00:00Z', self_hosted_domains: ['vva227.org/stats'] });
+    app.destinations = app.destinations.slice(0, 1);
+    Object.assign(policy, policySettings, { created_at: '2026-10-01T00:00:00Z', updated_at: '2026-10-02T00:00:00Z', reusable: true, app_count: 1 });
+
+    const again = await run(fake, ['--email', EMAIL, '--email', 'second@example.org']);
+    expect(again.code, again.output).toBe(0);
+    const puts = again.writes.filter((w) => w.method === 'PUT');
+    expect(puts.map(line)).toEqual([`PUT /accounts/${CH227}/access/policies/${policy.id}`, `PUT /accounts/${CH227}/access/apps/${app.id}`]);
+    expect(fake.policies.get(CH227)![0]).toMatchObject({ ...policySettings, include: [{ email: { email: EMAIL } }, { email: { email: 'second@example.org' } }] });
+    expect(fake.apps.get(CH227)![0]).toMatchObject({ ...appSettings, destinations: expect.arrayContaining([{ type: 'public', uri: 'www.vva227.org/stats' }]) });
+    for (const put of puts) {
+      for (const key of ['id', 'aud', 'created_at', 'updated_at', 'self_hosted_domains', 'reusable', 'app_count']) expect(put.body, `${line(put)} sent ${key}`).not.toHaveProperty(key);
+    }
+  });
+
   it('adds what is missing to an existing application, keeps the owner\'s own settings, and takes off any other policy', async () => {
     const fake = cloudflare();
     await run(fake);

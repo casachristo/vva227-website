@@ -390,6 +390,42 @@ describe('the policy', () => {
     expect(plan.policyBody(['a@example.org'], existing)).toEqual({ ...plan.policyBody(['a@example.org']), exclude: existing.exclude });
   });
 
+  it('on update, keeps every setting the policy already has, and sends back none that Cloudflare keeps itself', () => {
+    const hardening = {
+      session_duration: '1h',
+      approval_required: true,
+      approval_groups: [{ approvals_needed: 1, email_addresses: ['boss@example.org'] }],
+      purpose_justification_required: true,
+      purpose_justification_prompt: 'Why do you need the visit log?',
+      isolation_required: true,
+      mfa_config: { allowed_authenticators: ['totp'], session_duration: '1h' },
+      exclude: [{ geo: { country_code: 'XX' } }],
+      a_setting_added_after_this_was_written: { on: true },
+    };
+    const existing = {
+      ...hardening,
+      id: 'p',
+      name: 'vva227 stats owners',
+      decision: 'bypass',
+      include: [{ everyone: {} }],
+      created_at: '2026-10-01T00:00:00Z',
+      updated_at: '2026-10-02T00:00:00Z',
+      app_count: 1,
+      reusable: true,
+    };
+    expect(plan.policyBody(['a@example.org'], existing)).toEqual({
+      ...hardening,
+      name: 'vva227 stats owners',
+      decision: 'allow',
+      include: [{ email: { email: 'a@example.org' } }],
+    });
+  });
+
+  it('on update, keeps a session length the policy has, and gives one only to a policy without', () => {
+    expect(plan.policyBody(['a@example.org'], { session_duration: '30m', include: [] }).session_duration).toBe('30m');
+    expect(plan.policyBody(['a@example.org'], { include: [] }).session_duration).toBe('24h');
+  });
+
   it('matches regardless of order and case, and not with a missing or extra address', () => {
     const policy = { decision: 'allow', include: [{ email: { email: 'B@example.org' } }, { email: { email: 'a@example.org' } }] };
     expect(plan.policyMatches(policy, ['a@example.org', 'b@example.org'])).toBe(true);
@@ -483,6 +519,49 @@ describe('the application', () => {
       // are taken off; the script names them as it does.
       policies: [{ id: 'p1', precedence: 1 }],
     });
+  });
+
+  it('on update, keeps every setting the application already has, and sends back none that Cloudflare keeps itself', () => {
+    const hardening = {
+      enable_binding_cookie: true,
+      same_site_cookie_attribute: 'strict',
+      http_only_cookie_attribute: true,
+      path_cookie_attribute: true,
+      custom_deny_url: 'https://vva227.org/denied',
+      cors_headers: { allowed_methods: ['GET'], allow_credentials: false },
+      options_preflight_bypass: false,
+      skip_interstitial: true,
+      service_auth_401_redirect: true,
+      session_duration: '1h',
+      a_setting_added_after_this_was_written: { on: true },
+    };
+    const existing = {
+      ...hardening,
+      id: 'app',
+      uid: 'app',
+      aud: 'aud-tag',
+      created_at: '2026-10-01T00:00:00Z',
+      updated_at: '2026-10-02T00:00:00Z',
+      type: 'self_hosted',
+      name: 'vva227 stats',
+      domain: 'vva227.org/stats',
+      // Deprecated, and derived from destinations: sending both can conflict.
+      self_hosted_domains: ['vva227.org/stats'],
+      destinations: [{ type: 'public', uri: 'vva227.org/stats' }],
+      // A GET returns each policy whole; an update names them by id.
+      policies: [{ id: 'p1', precedence: 1, name: 'vva227 stats owners', decision: 'allow', include: [{ email: { email: 'a@example.org' } }], created_at: 't' }],
+    };
+    const body = plan.appBody({ policyId: 'p1', destinations, existing });
+    expect(body).toEqual({
+      ...hardening,
+      type: 'self_hosted',
+      name: 'vva227 stats',
+      domain: 'vva227.org/stats',
+      destinations,
+      app_launcher_visible: false,
+      policies: [{ id: 'p1', precedence: 1 }],
+    });
+    for (const key of ['id', 'uid', 'aud', 'created_at', 'updated_at', 'self_hosted_domains']) expect(body).not.toHaveProperty(key);
   });
 
   it('on update, does not add the policy twice, and moves it to the front', () => {

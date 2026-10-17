@@ -324,3 +324,9 @@ Checked against Cloudflare's documentation and wrangler's source, October 2026.
 - Reusable policies (`/access/policies`, paged, matched by name) attached to a
   self-hosted application (`/access/apps`) by `destinations`; the application's
   `aud` is the Audience tag.
+- An application or policy is updated with a `PUT`, and the reference does not
+  say whether a `PUT` merges. So an update sends back everything the `GET`
+  returned, minus what Cloudflare keeps itself (`id`, `aud`, the timestamps,
+  and `self_hosted_domains`, the old twin of `destinations`), with only the
+  script's own changes on top. A setting the owner made in the dashboard is
+  never dropped.

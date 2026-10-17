@@ -7,6 +7,9 @@
  *   - a PATCH to a Pages project MERGES: keys it names are replaced, keys it
  *     omits are untouched, and a key set to null is deleted;
  *   - a secret reads back as { type: 'secret_text', value: '' };
+ *   - a PUT to an Access application or policy replaces it whole, so a
+ *     setting the body leaves out is gone (pessimistic: the reference is
+ *     silent on whether it merges);
  *   - name filters on lists are loose, so callers must match names exactly;
  *   - an Access application may only name hostnames in a zone of its own
  *     account, or that account's own pages.dev project;

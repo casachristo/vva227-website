@@ -88,6 +88,7 @@ analytics*.
 | A16 | The binding, salt, Access settings and path the setup script writes are the names the Functions read, proven by running the real handlers on the env it produces. | `tests/contracts/setup-analytics.test.ts` — *the names the script writes are the names the Functions read* |
 | A17 | The privacy page follows the feature. It names, in plain words, every column every table in the visit log stores (a column added without a disclosure fails), states the retention period the collector enforces (derived from `RETENTION_DAYS`, never typed), says the visitor code changes daily only while the salt period is one day, describes the opt-out the shipped `/b.js` honours, and no longer claims the site collects nothing. No column could hold an IP address, a browser string or a precise place. | `tests/invariants/privacy-disclosure.test.ts` — *discloses every column the visit log stores*, *keeps no column that could hold an IP address*, *states the retention period the collector enforces*, *describes the opt-out the shipped beacon honours*, *no longer claims the site collects nothing* |
 | A18 | The collector writes only for vva227.org and www.vva227.org (and the loopback names local runs use). Every other hostname this Function answers on, the project's pages.dev address and every preview among them, is refused before the body is read, so a rate-limiting rule on the vva227.org zone cannot be got round. The optional rule is documented with the free plan's settings, on the collector's real path. | `tests/security/collector.test.ts` — *refuses a valid view sent to …, and writes nothing*, *refuses the host BEFORE reading the body*; `tests/contracts/analytics-docs.test.ts` — *gives the optional rate-limiting rule for the collector* |
+| A19 | When the setup script updates the Access application or its policy, it keeps every setting on them it does not own: the session length, cookie and other hardening on the application; the session length, require and exclude rules, approval, purpose justification, MFA and isolation on the policy; and any setting Cloudflare adds later. It changes only the destinations it adds, the policy list (A13), the include list and the decision, and sends back none of the fields Cloudflare keeps itself. | `tests/feature/setup-analytics.test.ts` — *keeps every setting the owner made on the application and the policy*; `tests/unit/setup-analytics-plan.test.ts` — *on update, keeps every setting the policy already has*, *on update, keeps every setting the application already has*, *keeps a session length the policy has* |
 
 ---
 
@@ -113,9 +114,10 @@ analytics*.
   is casachristo.com's, ported unchanged in its WebCrypto calls, and that one
   runs in Pages production; the first allowed request on vva227.org is still
   this code's first in workerd.
-- **A11-A14 are proven against a fake Cloudflare, not the real API.** The fake
-  follows the documented shapes, and is pessimistic where they are silent (it
-  wipes on an empty map; it answers "Zero Trust off" with a 404). The script
+- **A11-A14 and A19 are proven against a fake Cloudflare, not the real API.**
+  The fake follows the documented shapes, and is pessimistic where they are
+  silent (it wipes on an empty map; it answers "Zero Trust off" with a 404; a
+  `PUT` to an Access application or policy replaces it whole). The script
   has never been run against the chapter's account, by design: only the owner
   runs it.
 - **A18 slows a flood; nothing stops one.** The collector has to accept posts
