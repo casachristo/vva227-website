@@ -3,6 +3,9 @@
   "type": "module",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+    "node": ">=22.18"
+  },
   "description": "Website refresh mock for VVA Dean K. Phillips Memorial Chapter 227",
   "scripts": {
     "dev": "astro dev",
@@ -17,7 +20,7 @@
     "test:contracts": "vitest run tests/contracts",
     "test:security": "vitest run tests/security",
     "test:system": "playwright test",
-    "test:runtime": "playwright test --project=runtime",
+    "test:runtime": "playwright test -c playwright.runtime.config.ts",
     "setup:analytics": "node tools/setup-analytics.mjs",
     "deploy": "astro build && wrangler pages deploy dist --project-name=vva227-refresh --branch=main --commit-dirty=true"
   },

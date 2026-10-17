@@ -1,8 +1,9 @@
 /**
  * Serves dist/ through `wrangler pages dev` — workerd, the runtime Cloudflare
  * Pages itself runs — with a local D1 database bound as BEACON, the real
- * migration applied to it, and a BEACON_SALT. Started by playwright.config.ts
- * for tests/system/runtime.spec.ts; run as `node` on this file directly.
+ * migration applied to it, and a BEACON_SALT. Started by
+ * playwright.runtime.config.ts for tests/system/runtime.spec.ts; run as `node`
+ * on this file directly.
  *
  * WHY THE REAL RUNTIME. astro preview serves files; it applies no _headers, no
  * _redirects and no _routes.json, and runs no Functions. Every failure this

@@ -41,10 +41,14 @@ npm run preview    # serve the built site
 
 ## Testing
 
+The tests need Node 22.18 or newer (`.nvmrc` says so for nvm): the database
+tests use Node's built-in SQLite, and the Pages-runtime server is a `.ts` file
+Node runs directly.
+
 ```bash
 npm test             # builds, then runs vitest (about 1,000 tests)
-npm run test:system  # Playwright: desktop, mobile, and the real Pages runtime (about 110 tests)
-npm run test:runtime # only the Pages-runtime project: the beacon, collector and /stats in workerd
+npm run test:system  # Playwright: desktop and mobile (about 80 tests)
+npm run test:runtime # the real Pages runtime: the beacon, collector and /stats in workerd, with a local database
 ```
 
 | Tier | Location | What it protects |

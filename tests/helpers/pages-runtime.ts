@@ -3,8 +3,8 @@ import { join } from 'node:path';
 
 /**
  * Where the local Cloudflare Pages runtime for tests/system/runtime.spec.ts
- * listens and keeps its state. Shared by playwright.config.ts, the server
- * script beside this file and the spec, so the three cannot disagree.
+ * listens and keeps its state. Shared by playwright.runtime.config.ts, the
+ * server script beside this file and the spec, so the three cannot disagree.
  *
  * Imported by Node directly (the server script runs under Node's built-in
  * type stripping), so this file uses only syntax that can be erased and
