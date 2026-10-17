@@ -521,7 +521,19 @@ describe('what the script tells the person', () => {
 
   it('ends a successful run with the deploy that is not its to make', () => {
     const text = plan.nextSteps();
-    for (const phrase of ['Nothing has been deployed', 'NEXT production deploy', "chapter volunteer's latest changes AND this analytics", 'npm run deploy', 'main branch', 'https://vva227.org/stats']) {
+    for (const phrase of [
+      'Nothing has been deployed',
+      'NEXT production deploy',
+      "chapter volunteer's latest changes AND this analytics",
+      'npm run deploy',
+      'main branch',
+      'https://vva227.org/stats',
+      // Signing in proves only the lock. The check that visits are recorded
+      // is a visit, from a browser that does not opt out.
+      'without Global Privacy Control',
+      'https://vva227.org/ and one other page',
+      'reload https://vva227.org/stats',
+    ]) {
       expect(text).toContain(phrase);
     }
   });

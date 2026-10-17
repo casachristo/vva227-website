@@ -570,5 +570,8 @@ export function nextSteps() {
     'branch merged together: deploying either one on its own undoes the other.',
     'From that merged copy, run:  npm run deploy   (it publishes to the main branch, which is production)',
     `Then open https://${ZONE}${STATS_PATH} and sign in with one of the allowed email addresses.`,
+    'Signing in shows only that the lock works. To check that visits are being recorded: in a normal',
+    `browser window without Global Privacy Control, open https://${ZONE}/ and one other page, then`,
+    `reload https://${ZONE}${STATS_PATH}. Your visit and your city should be at the top of Recent visitors.`,
   ].join('\n');
 }

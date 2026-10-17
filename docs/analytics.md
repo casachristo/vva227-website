@@ -147,8 +147,15 @@ If the setup script warned that the project's production branch is not
 `main`, resolve that first: a deploy to any other branch is a preview, with
 none of these settings.
 
-**6. Check.** Open https://vva227.org/stats and sign in. Then delete
-`.cf-api-token` and delete (or roll) the token in the dashboard.
+**6. Check.** Open https://vva227.org/stats and sign in. That shows the lock
+works; it does not show that visits are recorded, because `/stats` itself is
+never counted. So, in a normal browser window without Global Privacy Control
+(Brave, DuckDuckGo and Firefox's private windows send it), open
+https://vva227.org/ and one other page, then reload https://vva227.org/stats.
+Your visit and your city should be at the top of *Recent visitors*. If they
+are not, see *Recent visitors stays empty* under Troubleshooting below.
+
+Then delete `.cf-api-token` and delete (or roll) the token in the dashboard.
 
 **7. Optional: a rate-limiting rule for the collector.**
 Anyone can post to the visit collector, `/api/e`; it has to be open, because
@@ -192,7 +199,10 @@ npx wrangler pages deployment list --project-name=vva227-refresh
 npx wrangler pages deployment tail <deployment-id> --project-name=vva227-refresh
 ```
 
-Then load `/stats` in another window and read the `stats denied:` line.
+Then load `/stats` in another window and read the `stats denied:` line, or
+open any page of https://vva227.org/ to see what the collector says. The tail
+shows a refused request as `Ok` all the same (it reports whether the code
+ran, not the answer it gave), so read the lines beneath it.
 
 > Wrangler caches the account id of the first `pages` command it ran, in
 > `node_modules/.cache/wrangler/pages.json`, and later commands use it even if
@@ -215,6 +225,10 @@ Then load `/stats` in another window and read the `stats denied:` line.
 | `gate error: …` | The request itself could not be read. | Note the message and report it. |
 | `stats: BEACON binding missing` (an error, after the gate allowed you) | No D1 binding: a preview deployment, or a deploy made before the setup. | Step 5. |
 | `stats query failed` (an error) | The database refused a query, usually because the migration was never applied. | Rerun the setup script; it applies missing migrations. |
+| `collector not configured` (an error, when a page is visited) | The collector cannot see its database (`BEACON binding missing`) or its salt (`BEACON_SALT missing`), and records nothing. A deploy made before the setup, or a setting removed in the dashboard. | Rerun the setup script, which adds whichever is missing, then step 5. |
+| `beacon write failed` (an error, when a page is visited) | The database refused the visit: the migration was never applied, or the day's free writes are used up (see step 7). | Rerun the setup script; it applies missing migrations. If the message mentions a limit, counting resumes at midnight UTC. |
+| `beacon prune failed` (an error) | Deleting rows past the retention period failed. The visit itself was recorded. | Nothing at once; the next visit tries again. If it keeps happening, note the message and report it. |
+| *Recent visitors* stays empty, nothing logged | No visit reaches the collector. Your browser sends Global Privacy Control or Do Not Track, which this site honours; or you browsed `vva227-refresh-12g.pages.dev` or a preview, where nothing is recorded; or the pages do not load `/b.js`, usually because a merge kept the old `script-src 'none'` in `public/_headers` or lost the script tag from `src/layouts/BaseLayout.astro`. | Step 6, in a browser without either setting, on https://vva227.org. Then, in the browser's developer tools, *Network* should show `b.js` and a `POST` to `/api/e` answered `204`. If `b.js` is missing or blocked, fix the merge and deploy. |
 | nothing logged at all | The request is not reaching the Function: Access is showing its sign-in page, or the deployment does not include `functions/`. | Sign in; check you deployed with `npm run deploy` from the repo root. |
 
 ---

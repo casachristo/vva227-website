@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { ACCESS_REFUSAL_REASONS } from '../../src/lib/access';
 import { BEACON_ENDPOINT, RETENTION_DAYS, RETENTION_MONTHS } from '../../src/data/analytics';
@@ -51,6 +51,25 @@ function settingsAfter(text: string, marker: string): Record<string, string> {
   return rows;
 }
 
+/**
+ * The label of every console.error and console.warn call in functions/: its
+ * first string, without a trailing colon. `stats denied:` is left out; what
+ * follows it is a gate reason, and every reason has its own row (checked
+ * above).
+ */
+function loggedLabels(): string[] {
+  const labels: string[] = [];
+  const walk = (dir: string) => {
+    for (const entry of readdirSync(dir)) {
+      const full = join(dir, entry);
+      if (statSync(full).isDirectory()) walk(full);
+      else for (const m of readFileSync(full, 'utf8').matchAll(/console\.(?:error|warn)\(\s*'([^']+)'/g)) labels.push(m[1].replace(/:$/, ''));
+    }
+  };
+  walk(join(ROOT, 'functions'));
+  return labels.filter((label) => label !== 'stats denied');
+}
+
 /** Reasons a troubleshooting table explains: every backticked name in its first column. */
 function explainedReasons(text: string): string[] {
   return tableKeys(text).flatMap((cell) => [...cell.matchAll(/`([^`]+)`/g)].map((m) => m[1]));
@@ -67,12 +86,22 @@ describe('docs/analytics.md', () => {
     expect(explainedReasons(without)).not.toContain('wrong audience');
   });
 
-  it('explains the handler\'s own log lines, exactly as the handler writes them', () => {
-    const handler = read('functions/stats.ts');
-    for (const line of ['stats: BEACON binding missing', 'stats query failed']) {
-      expect(handler).toContain(`'${line}'`);
-      expect(explainedReasons(doc)).toContain(line);
-    }
+  it('explains every error and warning a Function logs, under the label it logs it with', () => {
+    // A Function's answer never says why (the tracker ignores it anyway, and
+    // /stats refuses everyone alike), so a logged line with no row here is a
+    // failure the owner can see and cannot read.
+    const labels = loggedLabels();
+    expect(labels).toEqual(
+      expect.arrayContaining(['collector not configured', 'beacon write failed', 'stats: BEACON binding missing', 'stats query failed']),
+    );
+    const explained = explainedReasons(doc);
+    expect(labels.filter((label) => !explained.includes(label))).toEqual([]);
+  });
+
+  it('can actually fail: a logged label with no row is caught', () => {
+    const without = doc.replace(/^\| `beacon prune failed`.*$/m, '');
+    expect(without).not.toBe(doc);
+    expect(explainedReasons(without)).not.toContain('beacon prune failed');
   });
 
   it('lists exactly the token permissions the setup script asks for', () => {

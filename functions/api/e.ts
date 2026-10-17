@@ -129,8 +129,13 @@ export async function onRequest(context: PagesContext<AnalyticsEnv>): Promise<Re
     // Loud on purpose. A missing binding or salt is a deploy mistake, and the
     // alternatives — a constant fallback salt, or quietly not writing — would
     // leave the site looking healthy while collecting nothing, or while
-    // producing identifiers anyone could recompute. (Previews, which get no
-    // binding and no salt, never reach this: their hostnames are refused above.)
+    // producing identifiers anyone could recompute. The tracker ignores this
+    // answer, so the log line is what makes it loud: it is the only place
+    // the owner can read that the site has stopped counting, and which
+    // setting is to blame. (Previews, which get no binding and no salt, never
+    // reach this: their hostnames are refused above.)
+    const missing = [!db && 'BEACON binding', !secret && 'BEACON_SALT'].filter(Boolean).join(' and ');
+    console.error('collector not configured:', `${missing} missing`);
     return refuse(500, 'collector not configured');
   }
 

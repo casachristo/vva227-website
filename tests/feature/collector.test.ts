@@ -123,12 +123,18 @@ describe('sad path — every refusal, with its exact answer, and nothing written
   });
 
   it.each([
-    ['the D1 binding is missing', { BEACON: undefined }],
-    ['the salt is missing', { BEACON_SALT: undefined }],
-    ['the salt is empty', { BEACON_SALT: '' }],
-  ])('answers 500 "collector not configured" when %s — loud, never a fallback salt', async (_label, over) => {
+    ['the D1 binding is missing', { BEACON: undefined }, 'BEACON binding missing'],
+    ['the salt is missing', { BEACON_SALT: undefined }, 'BEACON_SALT missing'],
+    ['the salt is empty', { BEACON_SALT: '' }, 'BEACON_SALT missing'],
+    ['both are missing', { BEACON: undefined, BEACON_SALT: undefined }, 'BEACON binding and BEACON_SALT missing'],
+  ])('answers 500 "collector not configured" when %s, and logs which, never a fallback salt', async (_label, over, logged) => {
+    // The tracker ignores every answer, so the log line is the only place a
+    // site that has stopped counting says so.
+    const errors = vi.spyOn(console, 'error').mockImplementation(() => {});
     await expectRefused(await post(view(), {}, createEnv(d1.binding, over)), 500, 'collector not configured');
     expect(d1.rows()).toHaveLength(0);
+    expect(errors.mock.calls).toEqual([['collector not configured:', logged]]);
+    errors.mockRestore();
   });
 
   it('answers 500 "write failed" without echoing the database error', async () => {
