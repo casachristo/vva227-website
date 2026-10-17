@@ -1,27 +1,35 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeAll, beforeEach, afterEach, vi } from 'vitest';
 import { createHash } from 'node:crypto';
 import * as cheerio from 'cheerio';
-import { createStatsHandler } from '../../functions/stats';
+import { onRequest } from '../../functions/stats';
 import { createD1, createEnv, ORIGIN, type TestD1 } from '../helpers/d1';
 import { expectStatsNotFound, expectStatsPageHeaders } from '../helpers/analytics';
+import { accessEnv, AUD, certsServer, claimsFor, createSigner, TEAM, type Signer } from '../helpers/access-jwt';
 import { STATS_PATH } from '../../src/data/analytics';
+import { ACCESS_REFUSAL_REASONS } from '../../src/lib/access';
+import { ACCESS_JWT_HEADER } from '../../src/lib/stats-gate';
+import type { D1Like } from '../../src/lib/runtime';
 import { shortVisitor, WINDOWS } from '../../src/lib/stats';
 
 /**
- * FEATURE — the /stats page, run whole: rows in the database, a request in,
- * a complete page out. The database is real SQLite with the real migration;
- * the only stand-in is the gate, which is replaced by one that says yes,
- * because the real gate refuses everyone until it is chosen (the security
- * tier proves that).
+ * FEATURE — the /stats page, run whole: rows in the database, a signed-in
+ * owner's request in, a complete page out. The handler is the one production
+ * exports, with the real Cloudflare Access gate in front of it. The database
+ * is real SQLite with the real migration; the token is really signed with an
+ * RSA key; the only stand-in is Cloudflare's certs endpoint, which serves that
+ * key's public half (global fetch, the one external boundary).
  *
  * Every section and every column is asserted from the parsed page, along
- * with every response header.
+ * with every response header. Every way the gate can refuse is driven through
+ * the same handler and must give the same plain 404, with the reason in the
+ * log and nowhere else.
  *
- * TIER JUSTIFICATION: the unit tier renders hand-built view models. Here the
- * values have to survive six real queries, the batch's result order, the
- * grouping and the rendering together — a query returning columns in the
- * wrong order, or the batch results mapped to the wrong table, only shows up
- * when all of them run at once.
+ * TIER JUSTIFICATION: the unit tier renders hand-built view models and asks
+ * the gate questions on its own. Here the values have to survive the gate,
+ * six real queries, the batch's result order, the grouping and the rendering
+ * together — a query returning columns in the wrong order, the batch results
+ * mapped to the wrong table, or a gate verdict the handler reads wrongly, only
+ * shows up when all of them run at once.
  */
 
 const NOW = Date.UTC(2026, 9, 17, 16, 0); // 12:00 Eastern
@@ -32,25 +40,45 @@ const A = 'a1'.repeat(16);
 const B = 'b2'.repeat(16);
 const C = 'c3'.repeat(16);
 
-const allow = async () => ({ ok: true as const });
-const handler = createStatsHandler(allow);
+const NOW_S = NOW / 1000;
 
+let signer: Signer;
 let d1: TestD1;
 let clock: ReturnType<typeof vi.spyOn>;
+
+beforeAll(async () => {
+  signer = await createSigner();
+});
 
 beforeEach(() => {
   d1 = createD1();
   clock = vi.spyOn(Date, 'now').mockReturnValue(NOW);
+  // Cloudflare's certs endpoint for TEAM, serving the signer's public key.
+  // Any other URL is a 404, so a gate that fetched the wrong one would fail.
+  vi.stubGlobal('fetch', certsServer(signer.jwks).fetch);
 });
 
 afterEach(() => {
   clock.mockRestore();
   d1.close();
+  vi.unstubAllGlobals();
   vi.restoreAllMocks();
 });
 
-const get = (query = '', { method = 'GET', env = createEnv(d1.binding) }: { method?: string; env?: ReturnType<typeof createEnv> } = {}) =>
-  handler({ request: new Request(`${ORIGIN}${STATS_PATH}${query}`, { method }), env });
+/** The production env, as the setup script leaves it: the binding, the salt and both Access settings. */
+const ownerEnv = (binding: D1Like | undefined) => createEnv(binding, accessEnv());
+
+/** What Access attaches to a request it let through for the owner. */
+const ownerToken = () => signer.sign(claimsFor(NOW_S));
+
+const get = async (
+  query = '',
+  { method = 'GET', env = ownerEnv(d1.binding), token }: { method?: string; env?: ReturnType<typeof createEnv>; token?: string | null } = {},
+) => {
+  const assertion = token === undefined ? await ownerToken() : token;
+  const headers: Record<string, string> = assertion === null ? {} : { [ACCESS_JWT_HEADER]: assertion };
+  return onRequest({ request: new Request(`${ORIGIN}${STATS_PATH}${query}`, { method, headers }), env });
+};
 
 /** A morning's traffic: two visitors today, one ten days ago, and a row from another site. */
 function seedTraffic() {
@@ -199,13 +227,13 @@ describe('sad path', () => {
 
   it('answers the same 404 as a refusal when the D1 binding is missing, as on a preview', async () => {
     vi.spyOn(console, 'error').mockImplementation(() => {});
-    await expectStatsNotFound(await get('', { env: createEnv(undefined) }));
+    await expectStatsNotFound(await get('', { env: ownerEnv(undefined) }));
   });
 
   it('answers 500 without describing the schema when a query fails', async () => {
     const errors = vi.spyOn(console, 'error').mockImplementation(() => {});
     const broken = { ...d1.binding, batch: async () => { throw new Error('D1_ERROR: no such column: visitor'); } };
-    const res = await get('', { env: createEnv(broken) });
+    const res = await get('', { env: ownerEnv(broken) });
     expect(res.status).toBe(500);
     expect(res.headers.get('Cache-Control')).toBe('no-store');
     expect(res.headers.get('X-Content-Type-Options')).toBe('nosniff');
@@ -236,5 +264,85 @@ describe('edge cases', () => {
     const html = await (await get()).text();
     expect(html).toContain('/edge');
     expect(html).not.toContain('/outside');
+  });
+});
+
+describe('the Access gate, as the owner and a stranger meet it', () => {
+  /** One way in being refused: the request it makes, and the reason the log must give. */
+  type Attempt = () => Promise<{ token: string | null; env?: ReturnType<typeof createEnv> }>;
+
+  const ATTEMPTS: Array<[string, string, Attempt]> = [
+    ['Access settings missing from the deployment', 'access not configured', async () => ({ token: await ownerToken(), env: createEnv(d1.binding) })],
+    ['no token, as on a host with no Access application', 'no token', async () => ({ token: null })],
+    ['a token that is not a JWT', 'malformed token', async () => ({ token: 'not-a-jwt' })],
+    ['alg:none', 'unsupported algorithm', async () => ({ token: signer.signNone(claimsFor(NOW_S)) })],
+    ['HS256 keyed with the public key', 'unsupported algorithm', async () => ({ token: await signer.signHs256(claimsFor(NOW_S)) })],
+    ['a header with no key id', 'no key id', async () => ({ token: await signer.sign(claimsFor(NOW_S), { header: { kid: undefined } }) })],
+    [
+      'a team whose keys cannot be fetched',
+      'cannot fetch signing keys',
+      async () => ({
+        token: await signer.sign(claimsFor(NOW_S, { iss: 'https://unreachable.cloudflareaccess.com' })),
+        env: createEnv(d1.binding, accessEnv({ ACCESS_TEAM_DOMAIN: 'unreachable.cloudflareaccess.com' })),
+      }),
+    ],
+    ['a key Cloudflare never published', 'unknown key id', async () => ({ token: await (await createSigner('stolen-elsewhere')).sign(claimsFor(NOW_S)) })],
+    ['a tampered signature', 'bad signature', async () => ({ token: await signer.sign(claimsFor(NOW_S), { corrupt: true }) })],
+    ['another Access team', 'wrong issuer', async () => ({ token: await signer.sign(claimsFor(NOW_S, { iss: 'https://someone-else.cloudflareaccess.com' })) })],
+    ['another Access application', 'wrong audience', async () => ({ token: await signer.sign(claimsFor(NOW_S, { aud: ['b'.repeat(64)] })) })],
+    ['an expired session', 'expired', async () => ({ token: await signer.sign(claimsFor(NOW_S, { exp: NOW_S - 3600 })) })],
+    ['a token not valid yet', 'not yet valid', async () => ({ token: await signer.sign(claimsFor(NOW_S, { nbf: NOW_S + 3600 })) })],
+    ['a token issued in the future', 'issued in the future', async () => ({ token: await signer.sign(claimsFor(NOW_S, { iat: NOW_S + 3600, nbf: NOW_S })) })],
+  ];
+
+  it('covers every reason the gate can give', () => {
+    expect([...new Set(ATTEMPTS.map(([, reason]) => reason))].sort()).toEqual([...ACCESS_REFUSAL_REASONS].sort());
+  });
+
+  it.each(ATTEMPTS)('refuses %s with the plain 404, the reason only in the log, and D1 untouched', async (_label, reason, attempt) => {
+    seedTraffic();
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const { token, env } = await attempt();
+    const statementsBefore = d1.statements.length;
+
+    const res = await get('', { token, env });
+
+    const body = await res.clone().text();
+    await expectStatsNotFound(res);
+    expect(body).not.toContain(reason);
+    expect(warn.mock.calls).toEqual([['stats denied:', reason]]);
+    expect(d1.statements.length).toBe(statementsBefore);
+  });
+
+  it('answers every one of them byte for byte the same, by GET or by POST', async () => {
+    // Every refusal above is checked against the same expected response; this
+    // proves they are also equal to each other, across reasons and methods,
+    // so a stranger learns nothing about how close they came.
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const seen = [];
+    for (const [, , attempt] of ATTEMPTS) {
+      const { token, env } = await attempt();
+      for (const method of ['GET', 'POST']) {
+        const res = await get('?days=7', { token, env, method });
+        seen.push({ status: res.status, headers: Object.fromEntries(res.headers), body: await res.text() });
+      }
+    }
+    for (const s of seen) expect(s).toEqual(seen[0]);
+  });
+
+  it('lets the owner in with the same token on every window, and on HEAD', async () => {
+    seedTraffic();
+    const token = await ownerToken();
+    for (const query of ['', ...WINDOWS.map((d) => `?days=${d}`)]) {
+      const res = await get(query, { token });
+      expect(res.status, query).toBe(200);
+      expectStatsPageHeaders(res);
+    }
+    expect((await get('', { token, method: 'HEAD' })).status).toBe(200);
+  });
+
+  it('accepts settings stored with a trailing newline, as a pasted value carries', async () => {
+    const env = createEnv(d1.binding, accessEnv({ ACCESS_TEAM_DOMAIN: `${TEAM}\n`, ACCESS_AUD: `${AUD}\n` }));
+    expect((await get('', { env })).status).toBe(200);
   });
 });

@@ -28,7 +28,7 @@ import { errorMessage, type AnalyticsEnv, type PagesContext } from '../src/lib/r
  *
  * EVERY REFUSAL IS THE SAME 404: same status, same headers, same body, whatever
  * the reason. Not 401 — that confirms there is something here worth attacking
- * — and not a different answer for "not configured" versus "wrong password",
+ * — and not a different answer for "not configured" versus "expired token",
  * which would tell a stranger how close they are. The reason goes to the log
  * (console.warn, readable with `wrangler pages deployment tail`), never to the
  * response.
@@ -55,9 +55,10 @@ const notFound = () => plain(404, 'Not found');
 /**
  * The handler, with its gate as a parameter.
  *
- * Production uses the real gate (the default, exported as onRequest below).
- * Tests pass a stand-in to reach the allowed path while the real gate still
- * refuses everyone — and separately prove the real one refuses.
+ * Production uses the real gate (the default, exported as onRequest below):
+ * Cloudflare Access, verified in src/lib/stats-gate.ts. Tests pass a stand-in
+ * where the question is the handler's own behaviour, and drive the real gate
+ * with really signed tokens where the question is who gets in.
  */
 export function createStatsHandler(authorize: Authorize = authorizeStats) {
   return async function onRequest(context: PagesContext<AnalyticsEnv>): Promise<Response> {

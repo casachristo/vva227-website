@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeAll, vi } from 'vitest';
 import { createHash } from 'node:crypto';
 import {
   classifyReferrer,
@@ -25,7 +25,8 @@ import {
   type StatsPageData,
   type VisitRow,
 } from '../../src/lib/stats';
-import { authorizeStats } from '../../src/lib/stats-gate';
+import { ACCESS_JWT_HEADER, authorizeStats, createAccessGate } from '../../src/lib/stats-gate';
+import { accessEnv, AUD, certsServer, claimsFor, createSigner, TEAM, type Signer } from '../helpers/access-jwt';
 import { SITE_HOSTS } from '../../src/data/analytics';
 
 /**
@@ -510,12 +511,121 @@ describe('the CSP hash', () => {
   });
 });
 
-describe('authorizeStats, while no gate has been chosen', () => {
+describe('authorizeStats — the Cloudflare Access gate', () => {
+  const URL_ = 'https://vva227.org/stats';
+  const NOW_MS = Date.UTC(2026, 9, 17, 16, 0);
+  const NOW_S = NOW_MS / 1000;
+  let signer: Signer;
+
+  beforeAll(async () => {
+    signer = await createSigner();
+  });
+
+  /** A gate with its own cache, its own clock and a recording stand-in for the certs endpoint. */
+  function gate() {
+    const certs = certsServer(signer.jwks);
+    return { authorize: createAccessGate({ fetchImpl: certs.fetch, now: () => NOW_MS }), certs };
+  }
+
+  const withToken = (token: string, header = ACCESS_JWT_HEADER) => new Request(URL_, { headers: { [header]: token } });
+
   it.each([
-    ['a bare request', new Request('https://vva227.org/stats'), {}],
-    ['one carrying an Access token', new Request('https://vva227.org/stats', { headers: { 'Cf-Access-Jwt-Assertion': 'x.y.z' } }), {}],
-    ['one with every plausible secret set', new Request('https://vva227.org/stats', { headers: { Authorization: 'Basic b3duZXI6cGFzcw==' } }), { ACCESS_AUD: 'a', ACCESS_TEAM_DOMAIN: 'b', STATS_PASSWORD: 'pass' }],
-  ])('refuses %s, naming why', async (_label, request, env) => {
-    await expect(authorizeStats(request, env)).resolves.toEqual({ ok: false, reason: 'gate not configured' });
+    ['a bare request', new Request(URL_), {}],
+    ['one carrying an Access token', withToken('x.y.z'), {}],
+    ['one with only the team domain set', withToken('x.y.z'), { ACCESS_TEAM_DOMAIN: TEAM }],
+    ['one with only the AUD set', withToken('x.y.z'), { ACCESS_AUD: AUD }],
+    ['one with both set to whitespace', withToken('x.y.z'), { ACCESS_TEAM_DOMAIN: ' ', ACCESS_AUD: '\n' }],
+    ['one with both set to non-strings', withToken('x.y.z'), { ACCESS_TEAM_DOMAIN: 1, ACCESS_AUD: true }],
+    ['one with a password set instead', new Request(URL_, { headers: { Authorization: 'Basic b3duZXI6cGFzcw==' } }), { STATS_PASSWORD: 'pass' }],
+  ])('refuses %s while Access is not configured, and fetches nothing', async (_label, request, env) => {
+    const { authorize, certs } = gate();
+    await expect(authorize(request, env)).resolves.toEqual({ ok: false, reason: 'access not configured' });
+    expect(certs.calls).toEqual([]);
+  });
+
+  it('ships refusing everyone until Access is configured', async () => {
+    // The exported gate, as functions/stats.ts uses it, with no settings.
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockRejectedValue(new Error('no network in the unit tier'));
+    await expect(authorizeStats(withToken(await signer.sign(claimsFor(NOW_S))), {})).resolves.toEqual({
+      ok: false,
+      reason: 'access not configured',
+    });
+    expect(fetchSpy).not.toHaveBeenCalled();
+    fetchSpy.mockRestore();
+  });
+
+  it('with Access configured, refuses Basic credentials and a bare request as carrying no token', async () => {
+    const { authorize, certs } = gate();
+    const basic = new Request(URL_, { headers: { Authorization: 'Basic b3duZXI6cGFzcw==' } });
+    await expect(authorize(basic, accessEnv({ STATS_PASSWORD: 'pass' }))).resolves.toEqual({ ok: false, reason: 'no token' });
+    await expect(authorize(new Request(URL_), accessEnv())).resolves.toEqual({ ok: false, reason: 'no token' });
+    expect(certs.calls).toEqual([]);
+  });
+
+  it('lets a valid token in, and answers with nothing but ok', async () => {
+    const { authorize, certs } = gate();
+    const verdict = await authorize(withToken(await signer.sign(claimsFor(NOW_S))), accessEnv());
+    // Exactly { ok: true }: no claims, no email, nothing the handler could
+    // be tempted to echo into a page.
+    expect(verdict).toEqual({ ok: true });
+    expect(certs.calls).toEqual([`https://${TEAM}/cdn-cgi/access/certs`]);
+  });
+
+  it('reads the token from the Access header and nowhere else', async () => {
+    const { authorize } = gate();
+    const token = await signer.sign(claimsFor(NOW_S));
+    for (const request of [
+      new Request(URL_, { headers: { Authorization: `Bearer ${token}` } }),
+      new Request(URL_, { headers: { Cookie: `CF_Authorization=${token}` } }),
+      new Request(`${URL_}?token=${token}`),
+    ]) {
+      await expect(authorize(request, accessEnv())).resolves.toEqual({ ok: false, reason: 'no token' });
+    }
+    // Header names are case-insensitive, as they are on the wire.
+    await expect(authorize(withToken(token, ACCESS_JWT_HEADER.toLowerCase()), accessEnv())).resolves.toEqual({ ok: true });
+  });
+
+  it('accepts settings stored with a trailing newline', async () => {
+    const { authorize } = gate();
+    const token = await signer.sign(claimsFor(NOW_S));
+    await expect(authorize(withToken(token), accessEnv({ ACCESS_TEAM_DOMAIN: `${TEAM}\n`, ACCESS_AUD: `${AUD}\r\n` }))).resolves.toEqual({ ok: true });
+  });
+
+  it('checks expiry against its own clock', async () => {
+    const certs = certsServer(signer.jwks);
+    const later = createAccessGate({ fetchImpl: certs.fetch, now: () => NOW_MS + 2 * 3_600_000 });
+    await expect(later(withToken(await signer.sign(claimsFor(NOW_S))), accessEnv())).resolves.toEqual({ ok: false, reason: 'expired' });
+  });
+
+  it('fetches the keys once per team domain, and starts again when the team domain changes', async () => {
+    const calls: string[] = [];
+    const authorize = createAccessGate({
+      fetchImpl: async (url) => {
+        calls.push(url);
+        return { ok: true, status: 200, json: async () => signer.jwks };
+      },
+      now: () => NOW_MS,
+    });
+    const token = await signer.sign(claimsFor(NOW_S));
+    await authorize(withToken(token), accessEnv());
+    await authorize(withToken(token), accessEnv());
+    // A corrected setting reaching a warm isolate must not keep verifying
+    // against the old team's keys.
+    await expect(authorize(withToken(token), accessEnv({ ACCESS_TEAM_DOMAIN: 'other.cloudflareaccess.com' }))).resolves.toEqual({
+      ok: false,
+      reason: 'wrong issuer',
+    });
+    await authorize(withToken(token), accessEnv());
+    expect(calls).toEqual([
+      `https://${TEAM}/cdn-cgi/access/certs`,
+      'https://other.cloudflareaccess.com/cdn-cgi/access/certs',
+      `https://${TEAM}/cdn-cgi/access/certs`,
+    ]);
+  });
+
+  it('turns a request that throws into a refusal, not an exception', async () => {
+    const { authorize } = gate();
+    const hostile = { headers: { get: () => { throw new Error('boom'); } } } as unknown as Request;
+    await expect(authorize(hostile, accessEnv())).resolves.toEqual({ ok: false, reason: 'gate error: boom' });
   });
 });

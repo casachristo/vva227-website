@@ -392,7 +392,8 @@ test.describe('routing with Functions present', () => {
   });
 
   test("/stats answers the handler's plain 404, not the site's 404 page", async ({ request }) => {
-    // The gate is not chosen yet and fails closed. Its 404 must be the
+    // This runtime has no Access settings, so the gate fails closed, as a
+    // deployment does until the setup script has run. Its 404 must be the
     // handler's own, so it is distinguishable from a route that does not
     // exist at all: that is what shows the Function is there and refusing.
     for (const res of [await request.get(STATS_PATH), await request.get(`${STATS_PATH}?days=365`), await request.post(STATS_PATH, { data: 'password=x' })]) {

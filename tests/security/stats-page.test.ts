@@ -19,9 +19,12 @@ import type { GateVerdict } from '../../src/lib/stats-gate';
  *   - everything rendered is escaped, because path, referrer and the network
  *     name all reach the page from a public endpoint.
  *
- * The gate is not chosen yet (src/lib/stats-gate.ts). These tests use the
- * REAL gate wherever the question is "is a stranger refused", so they hold
- * whatever replaces it, and inject one only to reach the allowed path.
+ * The gate is Cloudflare Access (src/lib/stats-gate.ts), and these tests run
+ * without its settings, as a deployment does until the setup script has run.
+ * They use the REAL gate wherever the question is "is a stranger refused",
+ * and inject one only to reach the allowed path. tests/security/access-jwt
+ * attacks the token itself; tests/feature/stats-page drives the real gate
+ * with really signed tokens.
  *
  * TIER JUSTIFICATION: the unit tier proves the gate function returns a
  * refusal. Only here is it proven that the handler asks it before anything
@@ -65,7 +68,7 @@ async function observable(res: Response) {
   return { status: res.status, headers: Object.fromEntries(res.headers), body: await res.text() };
 }
 
-describe('the real gate, as it ships today', () => {
+describe('the real gate, before Access is configured', () => {
   it.each([
     ['a bare request', {}],
     ['a forged Access token', { headers: { 'Cf-Access-Jwt-Assertion': 'eyJhbGciOiJub25lIn0.eyJzdWIiOiJ4In0.' } }],
@@ -87,7 +90,7 @@ describe('the real gate, as it ships today', () => {
 
   it('logs why it refused, and only logs it', async () => {
     const res = await onRequest({ request: request(), env: createEnv(d1.binding) });
-    expect(warn).toHaveBeenCalledWith('stats denied:', 'gate not configured');
+    expect(warn).toHaveBeenCalledWith('stats denied:', 'access not configured');
     expect(await res.text()).not.toContain('configured');
   });
 });
