@@ -2,10 +2,9 @@ import { describe, it, expect, afterEach } from 'vitest';
 import { spawnSync } from 'node:child_process';
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { tmpdir } from 'node:os';
-import { runSetup } from '../../tools/lib/setup-analytics.mjs';
 import { normalizeEmail, parseArgs, policyBody, policyMatches } from '../../tools/lib/setup-analytics-plan.mjs';
 import { CH227, FakeCloudflare, OTHER_ACCOUNT } from '../helpers/fake-cloudflare';
+import { runSetupAgainst } from '../helpers/setup-run';
 
 /**
  * SECURITY — the setup script holds a Cloudflare token that can edit the
@@ -31,18 +30,7 @@ const EMAIL = 'owner@example.org';
 const fakes: FakeCloudflare[] = [];
 afterEach(() => fakes.splice(0).forEach((f) => f.close()));
 
-async function run(fake: FakeCloudflare, argv: string[] = ['--email', EMAIL]) {
-  const lines: string[] = [];
-  const code = await runSetup({
-    argv,
-    env: { CF_API_TOKEN: TOKEN },
-    fetchImpl: fake.fetch as unknown as typeof fetch,
-    print: (l: string) => lines.push(l),
-    tokenFile: join(tmpdir(), 'vva227-no-such-token-file'),
-    randomHex: () => SALT,
-  });
-  return { code, output: lines.join('\n') };
-}
+const run = (fake: FakeCloudflare, argv: string[] = ['--email', EMAIL]) => runSetupAgainst(fake, argv, { randomHex: () => SALT });
 
 function cloudflare(options: ConstructorParameters<typeof FakeCloudflare>[0] = {}) {
   const fake = new FakeCloudflare({ token: TOKEN, ...options });

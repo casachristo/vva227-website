@@ -1,4 +1,4 @@
-import { createJwksCache, verifyAccessJwt, type FetchLike, type JwksGetter } from './access';
+import { accessSetting, createJwksCache, verifyAccessJwt, type FetchLike, type JwksGetter } from './access';
 import { errorMessage } from './runtime';
 
 /**
@@ -70,8 +70,8 @@ export function createAccessGate(options: AccessGateOptions = {}) {
 
   return async function authorize(request: Request, env: StatsGateEnv): Promise<GateVerdict> {
     try {
-      const teamDomain = typeof env?.ACCESS_TEAM_DOMAIN === 'string' ? env.ACCESS_TEAM_DOMAIN.trim() : '';
-      const aud = typeof env?.ACCESS_AUD === 'string' ? env.ACCESS_AUD.trim() : '';
+      const teamDomain = accessSetting(env?.ACCESS_TEAM_DOMAIN);
+      const aud = accessSetting(env?.ACCESS_AUD);
       // Checked here as well as in verifyAccessJwt so an unconfigured gate
       // never builds a cache or reads a header.
       if (!teamDomain || !aud) return { ok: false, reason: 'access not configured' };

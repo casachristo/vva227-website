@@ -135,8 +135,11 @@ export function certsUrlFor(teamDomain: unknown): string {
   return `${issuerFor(teamDomain)}/cdn-cgi/access/certs`;
 }
 
-/** A team domain or AUD from the environment, or '' when it is not usable. */
-const setting = (value: unknown): string => (typeof value === 'string' ? value.trim() : '');
+/**
+ * A team domain or AUD as configured, trimmed, or '' when it is not usable.
+ * The one reading of "is this setting present", shared with the gate.
+ */
+export const accessSetting = (value: unknown): string => (typeof value === 'string' ? value.trim() : '');
 
 /**
  * Verify an Access JWT: the Cf-Access-Jwt-Assertion header value.
@@ -146,8 +149,8 @@ const setting = (value: unknown): string => (typeof value === 'string' ? value.t
 export async function verifyAccessJwt(token: unknown, { teamDomain, aud, getJwks, nowSeconds }: VerifyOptions): Promise<AccessVerdict> {
   // Configuration first. Without either of these there is no correct answer,
   // and "allow" must not be reachable from here.
-  const team = setting(teamDomain);
-  const wanted = setting(aud);
+  const team = accessSetting(teamDomain);
+  const wanted = accessSetting(aud);
   if (!team || !wanted) return { ok: false, reason: 'access not configured' };
   if (typeof token !== 'string' || !token) return { ok: false, reason: 'no token' };
 

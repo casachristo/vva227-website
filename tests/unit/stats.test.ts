@@ -26,6 +26,7 @@ import {
   type VisitRow,
 } from '../../src/lib/stats';
 import { ACCESS_JWT_HEADER, authorizeStats, createAccessGate } from '../../src/lib/stats-gate';
+import { accessSetting } from '../../src/lib/access';
 import { accessEnv, AUD, certsServer, claimsFor, createSigner, TEAM, type Signer } from '../helpers/access-jwt';
 import { SITE_HOSTS } from '../../src/data/analytics';
 
@@ -621,6 +622,11 @@ describe('authorizeStats — the Cloudflare Access gate', () => {
       'https://other.cloudflareaccess.com/cdn-cgi/access/certs',
       `https://${TEAM}/cdn-cgi/access/certs`,
     ]);
+  });
+
+  it('reads a setting as trimmed text, and anything that is not text as absent', () => {
+    expect(accessSetting(' team.cloudflareaccess.com\r\n')).toBe('team.cloudflareaccess.com');
+    for (const absent of [undefined, null, '', ' \n', 1, true, ['x'], { value: 'x' }]) expect(accessSetting(absent)).toBe('');
   });
 
   it('turns a request that throws into a refusal, not an exception', async () => {

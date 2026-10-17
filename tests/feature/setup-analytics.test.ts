@@ -4,6 +4,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { runSetup } from '../../tools/lib/setup-analytics.mjs';
 import { VIEW_COLUMNS } from '../helpers/analytics';
+import { runSetupAgainst, type SetupRunOptions } from '../helpers/setup-run';
 import {
   CH227,
   emptyMaps,
@@ -54,26 +55,9 @@ function cloudflare(options: FakeOptions = {}) {
   return fake;
 }
 
-interface RunOptions {
-  env?: Record<string, string | undefined>;
-  tokenFile?: string;
-  randomHex?: () => string;
-}
-
-async function run(fake: FakeCloudflare, argv: string[] = ['--email', EMAIL], options: RunOptions = {}) {
-  const lines: string[] = [];
-  const from = fake.requests.length;
-  const code = await runSetup({
-    argv,
-    env: options.env ?? { CF_API_TOKEN: fake.token },
-    fetchImpl: fake.fetch as unknown as typeof fetch,
-    print: (line: string) => lines.push(line),
-    tokenFile: options.tokenFile ?? join(tmpdir(), 'vva227-no-such-token-file'),
-    randomHex: options.randomHex ?? (() => SALT),
-  });
-  const requests = fake.requests.slice(from);
-  return { code, output: lines.join('\n'), requests, writes: requests.filter((r) => fake.writes().includes(r)) };
-}
+/** One run with a fixed salt, so a test can tell whether it was written. */
+const run = (fake: FakeCloudflare, argv: string[] = ['--email', EMAIL], options: SetupRunOptions = {}) =>
+  runSetupAgainst(fake, argv, { randomHex: () => SALT, ...options });
 
 const line = (r: RecordedRequest) => `${r.method} ${r.path}`;
 const prod = (fake: FakeCloudflare) => fake.project!.deployment_configs.production;
@@ -188,8 +172,8 @@ describe('a fresh account', () => {
   it('makes a real random salt when none is given', async () => {
     const a = cloudflare();
     const b = cloudflare();
-    await runSetup({ argv: ['--email', EMAIL], env: { CF_API_TOKEN: a.token }, fetchImpl: a.fetch as unknown as typeof fetch, print: () => {} });
-    await runSetup({ argv: ['--email', EMAIL], env: { CF_API_TOKEN: b.token }, fetchImpl: b.fetch as unknown as typeof fetch, print: () => {} });
+    await runSetupAgainst(a, ['--email', EMAIL]);
+    await runSetupAgainst(b, ['--email', EMAIL]);
     const saltA = prod(a).env_vars!.BEACON_SALT.value;
     expect(saltA).toMatch(/^[0-9a-f]{64}$/);
     expect(prod(b).env_vars!.BEACON_SALT.value).toMatch(/^[0-9a-f]{64}$/);
