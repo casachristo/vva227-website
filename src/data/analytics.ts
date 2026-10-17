@@ -55,8 +55,8 @@ export const SITE_KEY = 'vva227';
  * 1 is the strongest privacy posture: the salt window changes every day, at
  * midnight Eastern time (where /stats starts a new day; see saltWindow in
  * src/lib/beacon.ts), so yesterday's identifiers cannot be linked to today's,
- * even by whoever holds the database. Nothing is stored on the visitor's device, and no long-lived
- * identifier exists anywhere.
+ * even by whoever holds the database. Nothing is stored on the visitor's
+ * device, and no long-lived identifier exists anywhere.
  *
  * The cost is that a reader who comes back next week counts as a new visitor.
  * At this site's traffic the useful artifact is the visit log, where each row
