@@ -130,7 +130,9 @@ Or set `CF_API_TOKEN` instead. The script never prints the token.
 
 **4. Run the setup.** Repeat `--email` for each person who may open `/stats`.
 The list is the whole list every time: running again with a shorter list
-removes the missing addresses.
+removes the missing addresses. The Access application gets the script's one
+policy and no other: a policy someone adds to it in the dashboard is taken
+off at the next run, and the script names it.
 
 ```sh
 npm run setup:analytics -- --email you@example.com --dry-run   # look first; changes nothing

@@ -228,7 +228,8 @@ export async function runSetup({
     say(`   Zero Trust team: ${teamDomain}`);
 
     const policiesPath = `/accounts/${accessAccount.id}/access/policies`;
-    const found = plan.findByName(await listAll(policiesPath), plan.POLICY, 'Access policy');
+    const listedPolicies = await listAll(policiesPath);
+    const found = plan.findByName(listedPolicies, plan.POLICY, 'Access policy');
     // The list may abbreviate a policy; its own GET has the rules.
     const existingPolicy = found ? (await api('GET', `${policiesPath}/${found.id}`)).result : null;
     let policyId = existingPolicy?.id ?? null;
@@ -265,12 +266,18 @@ export async function runSetup({
         act(`created the Access application "${plan.APP}"${there} covering ${covers}`);
       }
     } else if (!plan.appMatches(existingApp, { policyId, destinations })) {
-      if (dryRun) act(`add ${covers} and the policy to the Access application "${plan.APP}"${there}`);
-      else {
+      // Any other policy on it comes off: this script's alone decides who opens /stats.
+      const removed = plan.otherPolicies(existingApp, policyId, listedPolicies);
+      if (dryRun) {
+        for (const p of removed) say(`   would remove the policy ${plan.policyLabel(p)} from the application, so that "${plan.POLICY}" alone decides who can open ${plan.STATS_PATH}`);
+        act(`update the Access application "${plan.APP}"${there} to cover ${covers}, with "${plan.POLICY}" as its only policy`);
+        for (const p of removed) act(`remove the policy ${plan.policyLabel(p)} from the Access application "${plan.APP}"`);
+      } else {
         aud = (await api('PUT', `${appsPath}/${existingApp.id}`, plan.appBody({ policyId, destinations, existing: existingApp }))).result?.aud ?? aud;
         act(`updated the Access application "${plan.APP}"${there} to cover ${covers}`);
+        for (const p of removed) act(`removed the policy ${plan.policyLabel(p)} from the Access application "${plan.APP}"`);
       }
-    } else say(`   application "${plan.APP}" already covers ${covers}`);
+    } else say(`   application "${plan.APP}" already covers ${covers}, with "${plan.POLICY}" as its only policy`);
 
     // (e) The two settings the Function checks tokens against. Always
     // written, so a rerun repairs a pasted or stale value.
@@ -292,7 +299,8 @@ export async function runSetup({
     } else {
       say('Done. What changed in this run:');
       for (const line of done) say(`  - ${line}`);
-      say(`\nWho can open ${plan.STATS_PATH}: ${emails.join(', ')}`);
+      say('');
+      for (const line of plan.whoCanOpen(emails, existingPolicy)) say(line);
       say(`\n${plan.nextSteps()}`);
     }
     return 0;

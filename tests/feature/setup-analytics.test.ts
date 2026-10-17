@@ -205,6 +205,8 @@ describe('running it again', () => {
     expect(again.output).toContain('BEACON is already bound to vva227-beacon.');
     expect(again.output).toContain('BEACON_SALT already exists, encrypted; it is kept as it is.');
     expect(again.output).toContain(`policy "vva227 stats owners" already admits exactly ${EMAIL}`);
+    expect(again.output).toContain('application "vva227 stats" already covers vva227.org/stats');
+    expect(again.output).toContain('with "vva227 stats owners" as its only policy');
     expect(again.output).toMatch(/What changed in this run:\n {2}- set ACCESS_TEAM_DOMAIN .*\n\nWho can open/);
   });
 
@@ -230,11 +232,11 @@ describe('running it again', () => {
     expect(fake.apps.get(CH227)).toEqual(appBefore);
   });
 
-  it('adds what is missing to an existing application without removing what the owner added', async () => {
+  it('adds what is missing to an existing application, keeps the owner\'s own settings, and takes off any other policy', async () => {
     const fake = cloudflare();
     await run(fake);
     const app = fake.apps.get(CH227)![0];
-    // The owner trimmed it to the apex, lengthened the session and added a policy of their own.
+    // The owner trimmed it to the apex, lengthened the session and put a policy of their own in place of ours.
     fake.policies.get(CH227)!.push({ id: 'theirs', name: 'their policy', decision: 'allow', include: [{ email: { email: 'x@example.org' } }] });
     Object.assign(app, { destinations: [{ type: 'public', uri: 'vva227.org/stats' }, { type: 'public', uri: 'vva227.org/stats/extra' }], session_duration: '720h', policies: [{ id: 'theirs', precedence: 1 }] });
 
@@ -250,12 +252,77 @@ describe('running it again', () => {
         { type: 'public', uri: `${PAGES_SUBDOMAIN}/stats` },
         { type: 'public', uri: `*.${PAGES_SUBDOMAIN}/stats` },
       ],
-      policies: [
-        { id: 'theirs', precedence: 1 },
-        { id: ours.id, precedence: 2 },
-      ],
+      // Rule A13: the script's policy alone decides who opens /stats.
+      policies: [{ id: ours.id, precedence: 1 }],
       aud: app.aud,
     });
+    expect(again.output).toContain('removed the policy "their policy" (decision: allow) from the Access application "vva227 stats"');
+    // Taken off this application only; the policy itself stays in the account.
+    expect(fake.policies.get(CH227)!.some((p) => p.id === 'theirs')).toBe(true);
+    expect(again.output).toContain(`Who can open /stats: ${EMAIL}`);
+    expect(fake.admits(CH227)).toEqual([EMAIL]);
+  });
+});
+
+describe('what it says about who can open /stats', () => {
+  // The last thing the owner reads, held against what Access then does:
+  // fake.admits reads every policy on the application the way Access would.
+  const said = (output: string) => /^Who can open \/stats: (.*)$/m.exec(output)?.[1].split(', ').sort() ?? null;
+  const SECOND = 'second@example.org';
+  const other = { zoneAccount: OTHER_ACCOUNT, tokenAccounts: [CH227, OTHER_ACCOUNT], teams: { [OTHER_ACCOUNT]: TEAM_DOMAIN } };
+
+  it.each<[string, FakeOptions, (fake: FakeCloudflare, account: string) => Promise<unknown>, string[]]>([
+    ['a fresh account', {}, async () => {}, [EMAIL]],
+    ['a rerun with the same list', {}, (fake) => run(fake), [EMAIL]],
+    ['a rerun with a longer list', {}, (fake) => run(fake), [EMAIL, SECOND]],
+    ['a rerun with a shorter list', {}, (fake) => run(fake, ['--email', EMAIL, '--email', SECOND]), [EMAIL]],
+    [
+      'a rerun after someone attached another policy to the application',
+      {},
+      async (fake, account) => {
+        await run(fake);
+        fake.policies.get(account)!.push({ id: 'wide', name: 'Allow everyone', decision: 'allow', include: [{ everyone: {} }] });
+        fake.apps.get(account)![0].policies.push({ id: 'wide', precedence: 2 });
+      },
+      [EMAIL],
+    ],
+    [
+      'a rerun after someone widened its policy to a whole domain',
+      {},
+      async (fake, account) => {
+        await run(fake);
+        fake.policies.get(account)![0].include = [{ email_domain: { domain: 'example.org' } }];
+      },
+      [EMAIL],
+    ],
+    ['vva227.org in another account', other, async () => {}, [EMAIL]],
+    ['a rerun with a shorter list, vva227.org in another account', other, (fake) => run(fake, ['--email', EMAIL, '--email', SECOND]), [EMAIL]],
+  ])('is true after %s', async (_label, options, before, emails) => {
+    const fake = cloudflare(options);
+    const account = fake.zoneAccount;
+    await before(fake, account);
+    const { code, output } = await run(fake, emails.flatMap((e) => ['--email', e]));
+    expect(code, output).toBe(0);
+    expect(fake.admits(account)).toEqual([...emails].sort());
+    expect(said(output)).toEqual(fake.admits(account));
+  });
+
+  it('can actually fail: a second policy on the application shows in what Access admits', async () => {
+    const fake = cloudflare();
+    await run(fake);
+    fake.policies.get(CH227)!.push({ id: 'wide', name: 'Allow everyone', decision: 'allow', include: [{ everyone: {} }] });
+    fake.apps.get(CH227)![0].policies.push({ id: 'wide', precedence: 2 });
+    expect(fake.admits(CH227)).toEqual([JSON.stringify({ everyone: {} }), EMAIL].sort());
+  });
+
+  it('says the list is narrowed further when the policy keeps require or exclude rules from the dashboard', async () => {
+    const fake = cloudflare();
+    await run(fake, ['--email', EMAIL, '--email', SECOND]);
+    fake.policies.get(CH227)![0].exclude = [{ email: { email: SECOND } }];
+    const { code, output } = await run(fake, ['--email', EMAIL, '--email', SECOND, '--email', 'third@example.org']);
+    expect(code, output).toBe(0);
+    expect(fake.policies.get(CH227)![0].exclude).toEqual([{ email: { email: SECOND } }]);
+    expect(output).toMatch(/^Who can open \/stats: .*\n\(.*the policy's exclude rules/m);
   });
 });
 
@@ -476,6 +543,20 @@ describe('--dry-run', () => {
       expect(output).toContain(said);
     }
     expect(output).not.toContain('npm run deploy');
+  });
+
+  it('on an application carrying another policy, says it would remove it, and changes nothing', async () => {
+    const fake = cloudflare();
+    await run(fake);
+    fake.policies.get(CH227)!.push({ id: 'wide', name: 'Allow everyone', decision: 'allow', include: [{ everyone: {} }] });
+    fake.apps.get(CH227)![0].policies.push({ id: 'wide', precedence: 2 });
+    const before = structuredClone(fake.apps.get(CH227));
+    const { code, output, requests } = await run(fake, ['--email', EMAIL, '--dry-run']);
+    expect(code, output).toBe(0);
+    expect(requests.filter((r) => r.method !== 'GET')).toEqual([]);
+    expect(fake.apps.get(CH227)).toEqual(before);
+    expect(output).toContain('   would remove the policy "Allow everyone" (decision: allow) from the application');
+    expect(output).toContain('  - remove the policy "Allow everyone" (decision: allow) from the Access application "vva227 stats"');
   });
 
   it('on a configured account, finds nothing to do but the settings refresh', async () => {

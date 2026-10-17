@@ -154,6 +154,28 @@ export class FakeCloudflare {
     return this.requests.filter((r) => r.method !== 'GET' && !(r.path.endsWith('/query') && /^\s*SELECT\b/i.test(String((r.body as { sql?: string })?.sql))));
   }
 
+  /**
+   * Who the application named `name` lets in, read off its policies the way
+   * Access reads them: every include rule of every policy on it that is not a
+   * deny. A single-address rule reads as the address; anything wider (everyone,
+   * a domain, a group) as the rule itself, so it can never pass for a list.
+   * Sorted. Require and exclude rules, which only narrow, are not applied.
+   */
+  admits(account: string, name = 'vva227 stats'): string[] {
+    const app = (this.apps.get(account) ?? []).find((a) => a.name === name);
+    const policies = this.policies.get(account) ?? [];
+    const out = new Set<string>();
+    for (const ref of app?.policies ?? []) {
+      const policy = policies.find((p) => p.id === ref.id);
+      if (!policy || policy.decision === 'deny') continue;
+      for (const rule of policy.include as Array<Record<string, { email?: string }>>) {
+        const email = rule?.email?.email;
+        out.add(typeof email === 'string' && Object.keys(rule).length === 1 ? email : JSON.stringify(rule));
+      }
+    }
+    return [...out].sort();
+  }
+
   database(name = 'vva227-beacon') {
     return this.databases.find((d) => d.name === name);
   }

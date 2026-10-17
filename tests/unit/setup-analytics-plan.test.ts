@@ -452,7 +452,7 @@ describe('the application', () => {
     });
   });
 
-  it('on update, adds what is missing and keeps everything the owner set', () => {
+  it('on update, adds what is missing, keeps the owner\'s own settings, and carries only this policy', () => {
     const existing = {
       id: 'app',
       aud: 'x',
@@ -479,26 +479,66 @@ describe('the application', () => {
       app_launcher_visible: true,
       allowed_idps: ['idp-1'],
       auto_redirect_to_identity: true,
-      policies: [
-        { id: 'theirs', precedence: 3 },
-        { id: 'no-precedence', precedence: 2 },
-        { id: 'p1', precedence: 4 },
-      ],
+      // Rule A13: this policy alone decides who opens /stats. The owner's two
+      // are taken off; the script names them as it does.
+      policies: [{ id: 'p1', precedence: 1 }],
     });
   });
 
-  it('on update, does not add the policy twice', () => {
-    const existing = { destinations: [], policies: [{ id: 'p1', precedence: 1 }] };
+  it('on update, does not add the policy twice, and moves it to the front', () => {
+    const existing = { destinations: [], policies: [{ id: 'p1', precedence: 3 }] };
     expect(plan.appBody({ policyId: 'p1', destinations, existing }).policies).toEqual([{ id: 'p1', precedence: 1 }]);
   });
 
-  it('matches only when every destination and the policy are present', () => {
+  it('matches only when every destination is present and this policy is the only one', () => {
     const full = { destinations, policies: [{ id: 'p1', precedence: 1 }] };
     expect(plan.appMatches(full, { policyId: 'p1', destinations })).toBe(true);
+    expect(plan.appMatches({ ...full, policies: [{ id: 'p1', precedence: 2 }] }, { policyId: 'p1', destinations })).toBe(true);
     expect(plan.appMatches({ ...full, destinations: destinations.slice(1) }, { policyId: 'p1', destinations })).toBe(false);
     expect(plan.appMatches({ ...full, policies: [] }, { policyId: 'p1', destinations })).toBe(false);
+    expect(plan.appMatches({ ...full, policies: [{ id: 'p1', precedence: 1 }, { id: 'wide', precedence: 2 }] }, { policyId: 'p1', destinations })).toBe(false);
+    expect(plan.appMatches({ ...full, policies: [{ id: 'wide', precedence: 1 }, { id: 'p1', precedence: 2 }] }, { policyId: 'p1', destinations })).toBe(false);
+    expect(plan.appMatches({ ...full, policies: ['p1', 'wide'] }, { policyId: 'p1', destinations })).toBe(false);
     expect(plan.appMatches(full, { policyId: null, destinations })).toBe(false);
     expect(plan.appMatches({}, { policyId: 'p1', destinations })).toBe(false);
+  });
+
+  it('lists the other policies on an application by name and decision, from the application or else the account\'s list', () => {
+    const app = {
+      policies: [
+        { id: 'p1', precedence: 1, name: 'vva227 stats owners', decision: 'allow' },
+        { id: 'wide', precedence: 2, name: 'Allow everyone', decision: 'allow' },
+        { id: 'bare', precedence: 3 },
+        'as-a-string',
+        null,
+      ],
+    };
+    const listed = [{ id: 'bare', name: 'Board members', decision: 'allow' }];
+    expect(plan.otherPolicies(app, 'p1', listed)).toEqual([
+      { id: 'wide', name: 'Allow everyone', decision: 'allow' },
+      { id: 'bare', name: 'Board members', decision: 'allow' },
+      { id: 'as-a-string', name: null, decision: null },
+    ]);
+    expect(plan.otherPolicies({ policies: [{ id: 'p1' }] }, 'p1')).toEqual([]);
+    expect(plan.otherPolicies(null, 'p1')).toEqual([]);
+  });
+
+  it('writes a policy as its name and decision, and as its id when it has no name', () => {
+    expect(plan.policyLabel({ id: 'wide', name: 'Allow everyone', decision: 'allow' })).toBe('"Allow everyone" (decision: allow)');
+    expect(plan.policyLabel({ id: 'wide', name: null, decision: null })).toBe('wide (decision: not given)');
+  });
+});
+
+describe('what the run says about who can open /stats', () => {
+  it('is the list, when the policy has no rules of its own beside it', () => {
+    expect(plan.whoCanOpen(['a@example.org', 'b@example.org'])).toEqual(['Who can open /stats: a@example.org, b@example.org']);
+    expect(plan.whoCanOpen(['a@example.org'], { exclude: [], require: [] })).toEqual(['Who can open /stats: a@example.org']);
+  });
+
+  it('says so when the policy keeps require or exclude rules someone set in the dashboard, which narrow it', () => {
+    const lines = plan.whoCanOpen(['a@example.org'], { require: [{ geo: { country_code: 'US' } }], exclude: [{ email: { email: 'a@example.org' } }] });
+    expect(lines[0]).toBe('Who can open /stats: a@example.org');
+    expect(lines[1]).toContain("the policy's require and exclude rules");
   });
 });
 

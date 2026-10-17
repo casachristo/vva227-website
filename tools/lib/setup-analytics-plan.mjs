@@ -375,17 +375,20 @@ export function queryRows(result) {
 // Access
 // ---------------------------------------------------------------------------
 
+/** A name from Cloudflare, about to be printed, without the control characters it could carry; '' when there is none. */
+function printable(text) {
+  return typeof text === 'string' ? text.replace(/[\u0000-\u001f\u007f]+/g, ' ').trim() : '';
+}
+
 /**
  * The account that owns the zone, from GET /zones?name=, as { id, name }.
- * Null when the token cannot see it. The name is printed, so it keeps no
- * control characters; it is null when Cloudflare gives none.
+ * Null when the token cannot see it. The name is null when Cloudflare gives none.
  */
 export function zoneAccount(zones) {
   const zone = findByName(zones, ZONE, 'zone');
   const id = zone?.account?.id;
   if (typeof id !== 'string' || !id) return null;
-  const name = typeof zone.account.name === 'string' ? zone.account.name.replace(/[\u0000-\u001f\u007f]+/g, ' ').trim() : '';
-  return { id, name: name || null };
+  return { id, name: printable(zone.account.name) || null };
 }
 
 /** An account the way the person running this can find it in the dashboard: its name, then its id. */
@@ -481,19 +484,21 @@ export function destinationsFor({ accessAccount, subdomain }) {
 }
 
 const uris = (app) => (Array.isArray(app?.destinations) ? app.destinations : []).map((d) => d?.uri).filter((u) => typeof u === 'string');
-const policyRefs = (app) =>
-  (Array.isArray(app?.policies) ? app.policies : [])
-    .filter((p) => p && typeof p.id === 'string')
-    .map((p, i) => ({ id: p.id, precedence: Number.isInteger(p.precedence) ? p.precedence : i + 1 }));
+/** The policies on an application, as objects: Cloudflare may give one as a bare id. */
+const policiesOn = (app) =>
+  (Array.isArray(app?.policies) ? app.policies : []).map((p) => (typeof p === 'string' ? { id: p } : p)).filter((p) => p && typeof p.id === 'string');
 
 /**
  * The application body: the full desired state for a new application, or, for
  * an existing one, what it has plus what is missing.
  *
- * An update keeps every destination and policy already on the application and
- * the owner's own choices (session length, launcher visibility, identity
- * providers), and only adds this script's destinations and policy. Nothing on
- * an existing application is removed.
+ * The application named "vva227 stats" is this script's, and this script's
+ * policy alone decides who opens /stats (rule A13): an update sends that one
+ * policy and no other, so a policy someone attached in the dashboard is taken
+ * off (the script names it as it does). An update keeps every destination
+ * already on the application and the owner's own choices (session length,
+ * launcher visibility, identity providers), and only adds this script's
+ * destinations.
  */
 export function appBody({ policyId, destinations, existing = null }) {
   if (!existing) {
@@ -512,10 +517,6 @@ export function appBody({ policyId, destinations, existing = null }) {
     ...(Array.isArray(existing.destinations) ? existing.destinations.filter((d) => typeof d?.uri === 'string') : []),
     ...destinations.filter((d) => !have.includes(d.uri)),
   ];
-  const refs = policyRefs(existing);
-  if (!refs.some((p) => p.id === policyId)) {
-    refs.push({ id: policyId, precedence: Math.max(0, ...refs.map((p) => p.precedence)) + 1 });
-  }
   const body = {
     type: 'self_hosted',
     name: APP,
@@ -523,7 +524,7 @@ export function appBody({ policyId, destinations, existing = null }) {
     destinations: merged,
     session_duration: typeof existing.session_duration === 'string' ? existing.session_duration : SESSION_DURATION,
     app_launcher_visible: typeof existing.app_launcher_visible === 'boolean' ? existing.app_launcher_visible : false,
-    policies: refs,
+    policies: [{ id: policyId, precedence: 1 }],
   };
   for (const key of ['allowed_idps', 'auto_redirect_to_identity']) {
     if (existing[key] !== undefined) body[key] = existing[key];
@@ -531,10 +532,44 @@ export function appBody({ policyId, destinations, existing = null }) {
   return body;
 }
 
-/** Does the existing application already cover every destination and carry the policy? */
+/** Does the existing application already cover every destination, with this script's policy as its only one? */
 export function appMatches(app, { policyId, destinations }) {
   const have = uris(app);
-  return destinations.every((d) => have.includes(d.uri)) && policyRefs(app).some((p) => p.id === policyId);
+  const ids = policiesOn(app).map((p) => p.id);
+  return destinations.every((d) => have.includes(d.uri)) && ids.length === 1 && ids[0] === policyId;
+}
+
+/**
+ * Every policy on the application but this script's, as { id, name, decision }:
+ * what an update takes off. The application's own answer usually carries each
+ * policy's name and decision; when it does not, the account's list does.
+ */
+export function otherPolicies(app, policyId, listed = []) {
+  const known = Array.isArray(listed) ? listed : [];
+  return policiesOn(app)
+    .filter((p) => p.id !== policyId)
+    .map((p) => {
+      const fromList = known.find((x) => x?.id === p.id);
+      return { id: p.id, name: printable(p.name ?? fromList?.name) || null, decision: printable(p.decision ?? fromList?.decision) || null };
+    });
+}
+
+/** A policy the way the dashboard shows it: its name and its decision. */
+export function policyLabel({ id, name, decision }) {
+  return `${name ? `"${name}"` : id} (decision: ${decision ?? 'not given'})`;
+}
+
+/**
+ * What a run says last about who can open /stats. It is the --email list,
+ * because the application carries this one policy and the policy admits
+ * exactly that list; require or exclude rules someone set on the policy in
+ * the dashboard are kept and narrow it further, so then it says so.
+ */
+export function whoCanOpen(emails, existing = null) {
+  const lines = [`Who can open ${STATS_PATH}: ${emails.join(', ')}`];
+  const kept = ['require', 'exclude'].filter((key) => Array.isArray(existing?.[key]) && existing[key].length);
+  if (kept.length) lines.push(`(only while they also meet the policy's ${kept.join(' and ')} rules, which were set in the dashboard and are kept)`);
+  return lines;
 }
 
 // ---------------------------------------------------------------------------

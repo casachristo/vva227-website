@@ -154,6 +154,22 @@ describe('who the policy admits', () => {
     }
   });
 
+  it('is decided by that policy alone: any other policy on the application is taken off, and named', async () => {
+    const fake = cloudflare();
+    await run(fake);
+    const ours = fake.policies.get(CH227)![0];
+    fake.policies.get(CH227)!.push({ id: 'wide', name: 'Allow everyone', decision: 'allow', include: [{ everyone: {} }] });
+    fake.apps.get(CH227)![0].policies.push({ id: 'wide', precedence: 2 });
+
+    const { code, output, writes } = await run(fake);
+    expect(code, output).toBe(0);
+    const put = writes.find((w) => w.method === 'PUT' && w.path.includes('/access/apps/'));
+    expect((put?.body as { policies?: unknown })?.policies).toEqual([{ id: ours.id, precedence: 1 }]);
+    expect(fake.admits(CH227)).toEqual([EMAIL]);
+    expect(output).toContain('removed the policy "Allow everyone" (decision: allow) from the Access application "vva227 stats"');
+    expect(output).toContain(`Who can open /stats: ${EMAIL}`);
+  });
+
   it('is never a deny-by-default policy turned into an allow by accident, nor the reverse', () => {
     expect(policyMatches({ decision: 'deny', include: [{ email: { email: EMAIL } }] }, [EMAIL])).toBe(false);
     expect(policyBody([EMAIL]).decision).toBe('allow');
