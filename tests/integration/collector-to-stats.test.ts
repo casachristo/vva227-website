@@ -5,7 +5,7 @@ import { createStatsHandler } from '../../functions/stats';
 import { beaconRequest, createD1, createEnv, ORIGIN, type BeaconRequestOptions, type TestD1 } from '../helpers/d1';
 import { expectAccepted, expectStatsPageHeaders, expectViewRow } from '../helpers/analytics';
 import { EVENT_END, EVENT_VIEW, RETENTION_DAYS, SITE_KEY, STATS_PATH } from '../../src/data/analytics';
-import { groupVisitorDays, RECENT_VISITORS_LIMIT, shortVisitor, STATS_SQL, type VisitRow } from '../../src/lib/stats';
+import { groupVisitorDays, RECENT_VISITORS_LIMIT, shortVisitor, STATS_SQL, TABLE_LIMIT, type VisitRow } from '../../src/lib/stats';
 import { PRUNE_SQL } from '../../src/lib/beacon';
 
 /**
@@ -253,6 +253,22 @@ describe('the queries themselves', () => {
 
   it('can actually fail — an unindexed query is reported as a full scan', () => {
     expect(fullScans('SELECT * FROM views WHERE path = ?1', ['/'])).toEqual(['SCAN views']);
+  });
+
+  it(`keep the ${TABLE_LIMIT} most viewed pages, dropping the least viewed though it sorts first by name`, async () => {
+    // A probe or a 404 adds paths nobody chose; past the limit the table
+    // must lose the least viewed, not whichever sorts last.
+    let n = 0;
+    const visit = (path: string) => at(NOW - H + n, HOME_IP, view(`c${String(n++).padStart(15, '0')}`, path));
+    await visit('/a-least');
+    for (let i = 0; i < TABLE_LIMIT; i++) {
+      await visit(`/p-${String(i).padStart(2, '0')}`);
+      await visit(`/p-${String(i).padStart(2, '0')}`);
+    }
+    const $ = await page();
+    const pages = $('section').filter((_, el) => $(el).find('h2').text() === 'Pages');
+    const paths = pages.find('tbody tr').toArray().map((tr) => $(tr).find('td').first().text());
+    expect(paths).toEqual(Array.from({ length: TABLE_LIMIT }, (_, i) => `/p-${String(i).padStart(2, '0')}`));
   });
 
   it('find nothing for another site sharing the database', async () => {

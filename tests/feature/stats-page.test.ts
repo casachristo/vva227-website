@@ -90,6 +90,27 @@ function seedTraffic() {
   d1.seed({ view: '1000000000000005', site: 'some-other-site', visitor: 'd4'.repeat(16), ts: NOW - H, path: '/not-ours', country: 'FR' });
 }
 
+/**
+ * Traffic where every ranking disagrees with alphabetical order, and where
+ * ranking by visitors disagrees with ranking by views. seedTraffic gives
+ * every page one view and every place one visitor, so its order is the
+ * tie-breaker's and a dropped or flipped ORDER BY passes there.
+ */
+function seedRanked() {
+  const vienna = { country: 'US', region: 'VA', city: 'Vienna', asn: 7922, as_org: 'Comcast Cable Communications, LLC' };
+  const alexandria = { country: 'US', region: 'VA', city: 'Alexandria', asn: 701, as_org: 'Verizon Business' };
+  const at = (n: number) => ({ ts: NOW - H + n * 60_000, engaged_ms: 60_000 });
+  // Two visitors in Vienna on Comcast, one view each.
+  d1.seed({ view: '5000000000000001', visitor: A, path: '/zeta', ...vienna, ...at(1) });
+  d1.seed({ view: '5000000000000002', visitor: B, path: '/mid', ...vienna, ...at(2) });
+  // One visitor in Alexandria on Verizon, three views.
+  d1.seed({ view: '5000000000000003', visitor: C, path: '/zeta', ...alexandria, ...at(3) });
+  d1.seed({ view: '5000000000000004', visitor: C, path: '/zeta', ...alexandria, ...at(4) });
+  d1.seed({ view: '5000000000000005', visitor: C, path: '/mid', ...alexandria, ...at(5) });
+  // One visitor Cloudflare could not place, on no known network.
+  d1.seed({ view: '5000000000000006', visitor: 'd4'.repeat(16), path: '/alpha', ...at(6) });
+}
+
 /** A section's table as rows of cell text, header row first. */
 function tableOf($: cheerio.CheerioAPI, caption: string): string[][] {
   const section = $('section').filter((_, el) => $(el).find('h2').text() === caption);
@@ -183,6 +204,30 @@ describe('happy path — a populated page', () => {
       ['Comcast Cable Communications, LLC', '1', '2'],
       ['Verizon Business', '1', '1'],
       ['AS15169', '1', '1'],
+    ]);
+  });
+
+  it('ranks pages by views, and places and networks by visitors before views', async () => {
+    seedRanked();
+    const $ = cheerio.load(await (await get()).text());
+    expect(tableOf($, 'Pages')).toEqual([
+      ['Page', 'Views', 'Average read'],
+      ['/zeta', '3', '1m'],
+      ['/mid', '2', '1m'],
+      ['/alpha', '1', '1m'],
+    ]);
+    // Vienna has more visitors, Alexandria more views: visitors win.
+    expect(tableOf($, 'Locations')).toEqual([
+      ['Where', 'Visitors', 'Views'],
+      ['Vienna, VA, US', '2', '2'],
+      ['Alexandria, VA, US', '1', '3'],
+      ['-', '1', '1'],
+    ]);
+    // Comcast has the larger number, so neither ASN order nor views puts it first.
+    expect(tableOf($, 'Networks')).toEqual([
+      ['Network', 'Visitors', 'Views'],
+      ['Comcast Cable Communications, LLC', '2', '2'],
+      ['Verizon Business', '1', '3'],
     ]);
   });
 
