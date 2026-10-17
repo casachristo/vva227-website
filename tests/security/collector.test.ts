@@ -12,7 +12,16 @@ import {
   type TestD1,
 } from '../helpers/d1';
 import { expectAccepted, expectRefused, expectViewRow } from '../helpers/analytics';
-import { EVENT_END, EVENT_VIEW, MAX_BODY_BYTES, MAX_PATH_CHARS, MAX_REFERRER_CHARS, SITE_KEY } from '../../src/data/analytics';
+import {
+  BEACON_ENDPOINT,
+  COLLECT_HOSTS,
+  EVENT_END,
+  EVENT_VIEW,
+  MAX_BODY_BYTES,
+  MAX_PATH_CHARS,
+  MAX_REFERRER_CHARS,
+  SITE_KEY,
+} from '../../src/data/analytics';
 import { MAX_ENGAGED_MS } from '../../src/lib/beacon';
 
 /**
@@ -62,6 +71,52 @@ describe('method', () => {
 
   it('accepts POST, so the matrix above cannot pass by refusing everything', async () => {
     await expectAccepted(await post(view()));
+  });
+});
+
+describe('host', () => {
+  // The same Function, with the same production database and salt, also
+  // answers on the project's pages.dev address, where no rate-limiting rule
+  // on the vva227.org zone applies. Only the domain itself may write.
+  // The Origin header as a browser writes it: the serialised origin of the page.
+  const at = (origin: string, body: unknown = view()) =>
+    post(body, { origin: new URL(origin).origin, url: `${origin}${BEACON_ENDPOINT}` });
+
+  it.each([
+    ['the live project on pages.dev', 'https://vva227-refresh-12g.pages.dev'],
+    ['a preview deployment', 'https://3f2a9c1d.vva227-refresh-12g.pages.dev'],
+    ['the old staging address', 'https://vva227-refresh.pages.dev'],
+    ['an unknown host', 'https://evil.example'],
+    ['a lookalike of the domain', 'https://vva227.org.evil.example'],
+    ['a subdomain the site does not use', 'https://staging.vva227.org'],
+    ['plain http on another port', 'http://vva227-refresh-12g.pages.dev:8080'],
+  ])('refuses a valid view sent to %s, and writes nothing', async (_label, origin) => {
+    // Its own origin, so the origin check alone would let it through.
+    await expectRefused(await at(origin), 403, 'wrong host');
+    expect(d1.rows()).toHaveLength(0);
+    expect(d1.statements).toEqual([]);
+  });
+
+  it('refuses the host BEFORE reading the body', async () => {
+    const pagesDev = 'https://vva227-refresh-12g.pages.dev';
+    await expectRefused(await at(pagesDev, '{ not json'), 403, 'wrong host');
+    await expectRefused(
+      await post('x', { origin: pagesDev, url: `${pagesDev}${BEACON_ENDPOINT}`, headers: { 'Content-Length': String(MAX_BODY_BYTES * 100) } }),
+      403,
+      'wrong host',
+    );
+  });
+
+  it.each(COLLECT_HOSTS)('accepts a view on %s, so the list above cannot pass by refusing everything', async (host) => {
+    await expectAccepted(await at(`https://${host}`));
+    expect(d1.rows()).toHaveLength(1);
+  });
+
+  it('reads the domain however it is spelled: capitals and the trailing dot of a full name', async () => {
+    for (const [i, origin] of ['https://VVA227.ORG', 'https://vva227.org.'].entries()) {
+      await expectAccepted(await at(origin, view({ v: `${'d'.repeat(15)}${i}` })));
+    }
+    expect(d1.rows()).toHaveLength(2);
   });
 });
 

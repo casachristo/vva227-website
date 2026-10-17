@@ -87,6 +87,7 @@ analytics*.
 | A15 | The Cloudflare API token is never printed (even when an error repeats it), goes only to `https://api.cloudflare.com` in the Authorization header, and its file is gitignored. | `tests/security/setup-analytics.test.ts` — *the token* |
 | A16 | The binding, salt, Access settings and path the setup script writes are the names the Functions read, proven by running the real handlers on the env it produces. | `tests/contracts/setup-analytics.test.ts` — *the names the script writes are the names the Functions read* |
 | A17 | The privacy page follows the feature. It names, in plain words, every column every table in the visit log stores (a column added without a disclosure fails), states the retention period the collector enforces (derived from `RETENTION_DAYS`, never typed), says the visitor code changes daily only while the salt period is one day, describes the opt-out the shipped `/b.js` honours, and no longer claims the site collects nothing. No column could hold an IP address, a browser string or a precise place. | `tests/invariants/privacy-disclosure.test.ts` — *discloses every column the visit log stores*, *keeps no column that could hold an IP address*, *states the retention period the collector enforces*, *describes the opt-out the shipped beacon honours*, *no longer claims the site collects nothing* |
+| A18 | The collector writes only for vva227.org and www.vva227.org (and the loopback names local runs use). Every other hostname this Function answers on, the project's pages.dev address and every preview among them, is refused before the body is read, so a rate-limiting rule on the vva227.org zone cannot be got round. The optional rule is documented with the free plan's settings, on the collector's real path. | `tests/security/collector.test.ts` — *refuses a valid view sent to …, and writes nothing*, *refuses the host BEFORE reading the body*; `tests/contracts/analytics-docs.test.ts` — *gives the optional rate-limiting rule for the collector* |
 
 ---
 
@@ -117,6 +118,17 @@ analytics*.
   wipes on an empty map; it answers "Zero Trust off" with a 404). The script
   has never been run against the chapter's account, by design: only the owner
   runs it.
+- **A18 slows a flood; nothing stops one.** The collector has to accept posts
+  from anyone. The optional rate-limiting rule (`docs/analytics.md`, step 7)
+  holds one address to about ten posts every ten seconds, the slowest the free
+  plan allows, and that is still enough, from one address over a day or from
+  many addresses at once, to use up D1's free 100,000 rows written a day
+  (a new visit writes about five, counting its indexes). Until 00:00 UTC no
+  visit is recorded and the retention prune fails; the flood also spends the
+  account's free daily Function requests, which `/stats` shares. Junk rows
+  stay until the retention period or a manual delete. The static site is
+  unaffected: only `/api/e` and `/stats` run as Functions. No test can show
+  the rule works; it lives in the dashboard, not in this repository.
 - **The privacy page's wording is not yet the chapter's.** `/privacy` now
   describes the visit log and is tied to it by A17, but the chapter has not
   approved either the counting or the words; its review note says so.

@@ -93,8 +93,11 @@ export const MAX_REFERRER_CHARS = 512;
  *
  * The largest thing the tracker sends is a `view` carrying a maximum-length
  * path and referrer: about 1,100 bytes of JSON. 2 KB is that with headroom.
- * The endpoint is reachable by anyone who reads the page source, so this is
- * what stands between the D1 free tier and a stranger with curl.
+ * This caps what ONE request can make the collector read and store. It does
+ * nothing about how many requests arrive: a stranger with curl can still post
+ * as fast as they like. What slows that down is the optional rate-limiting
+ * rule in docs/analytics.md; what it cannot stop is under Known gaps in
+ * tests/BUSINESS_RULES.md.
  */
 export const MAX_BODY_BYTES = 2_048;
 
@@ -120,6 +123,12 @@ export const EVENT_VIEW = 'view';
 export const EVENT_END = 'end';
 export const EVENT_KINDS: readonly string[] = [EVENT_VIEW, EVENT_END];
 
+/** The chapter's own domain: the names its links and search results use. */
+const PRODUCTION_HOSTS = ['vva227.org', 'www.vva227.org'];
+
+/** Local runs (astro preview, wrangler pages dev). Compared on hostname, so any port matches. */
+const LOCAL_HOSTS = ['localhost', '127.0.0.1'];
+
 /**
  * Hostnames that ARE this site, for telling a visitor's source from internal
  * navigation. A referrer on one of these is someone moving between pages, not
@@ -131,20 +140,30 @@ export const EVENT_KINDS: readonly string[] = [EVENT_VIEW, EVENT_END];
  * suffix. Both pages.dev names are here: vva227-refresh-12g.pages.dev is the
  * Pages project that serves the site today, and vva227-refresh.pages.dev is
  * the staging origin src/lib/links.ts still counts as this site.
- *
- * localhost and 127.0.0.1 are here for local runs (astro preview, wrangler
- * pages dev). Compared on hostname, so any port matches.
  */
 export const SITE_HOSTS: readonly string[] = [
-  'vva227.org',
-  'www.vva227.org',
+  ...PRODUCTION_HOSTS,
   'vva227-refresh-12g.pages.dev',
   '*.vva227-refresh-12g.pages.dev',
   'vva227-refresh.pages.dev',
   '*.vva227-refresh.pages.dev',
-  'localhost',
-  '127.0.0.1',
+  ...LOCAL_HOSTS,
 ];
+
+/**
+ * Hostnames the collector writes for. Every other name that reaches it is
+ * refused before the body is read.
+ *
+ * Narrower than SITE_HOSTS on purpose. Pages runs the same Function, with the
+ * same production database and salt, on vva227-refresh-12g.pages.dev, and a
+ * rate-limiting rule on the vva227.org zone does not cover that name. Left
+ * open, it would be a way round the rule. Visits to the pages.dev addresses
+ * and to previews are therefore not recorded; previews have no database
+ * anyway.
+ *
+ * The loopback names are what the runtime tests serve the site on.
+ */
+export const COLLECT_HOSTS: readonly string[] = [...PRODUCTION_HOSTS, ...LOCAL_HOSTS];
 
 /**
  * The time zone the stats page shows times and calendar days in.

@@ -104,6 +104,14 @@ describe('sad path — every refusal, with its exact answer, and nothing written
   it.each([
     ['a GET', null, { method: 'GET' }, 405, 'method not allowed', { allow: 'POST' }],
     ['another site', view(), { origin: 'https://evil.example' }, 403, 'cross-origin', {}],
+    [
+      'the pages.dev address, which the rate-limiting rule does not cover',
+      view(),
+      { origin: 'https://vva227-refresh-12g.pages.dev', url: 'https://vva227-refresh-12g.pages.dev/api/e' },
+      403,
+      'wrong host',
+      {},
+    ],
     ['not JSON', 'hello', {}, 400, 'invalid JSON', {}],
     ['an unknown kind', { k: 'click', v: VIEW, p: '/' }, {}, 400, 'unknown event kind', {}],
     ['a bad view id', { k: EVENT_VIEW, v: 'nope', p: '/' }, {}, 400, 'invalid view id', {}],
@@ -119,8 +127,6 @@ describe('sad path — every refusal, with its exact answer, and nothing written
     ['the salt is missing', { BEACON_SALT: undefined }],
     ['the salt is empty', { BEACON_SALT: '' }],
   ])('answers 500 "collector not configured" when %s — loud, never a fallback salt', async (_label, over) => {
-    // This is also exactly what a preview deployment answers: previews get no
-    // binding and no salt.
     await expectRefused(await post(view(), {}, createEnv(d1.binding, over)), 500, 'collector not configured');
     expect(d1.rows()).toHaveLength(0);
   });
@@ -187,8 +193,8 @@ describe('edge cases', () => {
     expect(d1.rows()).toHaveLength(1);
   });
 
-  it('accepts its own origin on the pages.dev host, where the origin moves with the request', async () => {
-    const host = 'https://vva227-refresh-12g.pages.dev';
+  it('accepts its own origin on www.vva227.org, where the origin moves with the request', async () => {
+    const host = 'https://www.vva227.org';
     await expectAccepted(await post(view(), { origin: host, url: `${host}/api/e` }));
     expect(d1.rows()).toHaveLength(1);
   });

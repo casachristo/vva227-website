@@ -9,14 +9,15 @@ import {
   validateEvent,
   visitorHash,
 } from '../../src/lib/beacon';
-import { EVENT_VIEW, MAX_BODY_BYTES, SITE_KEY } from '../../src/data/analytics';
+import { COLLECT_HOSTS, EVENT_VIEW, MAX_BODY_BYTES, SITE_KEY } from '../../src/data/analytics';
 import { errorMessage, type AnalyticsEnv, type PagesContext } from '../../src/lib/runtime';
+import { isSiteHost } from '../../src/lib/stats';
 
 /**
  * The collector, at BEACON_ENDPOINT. One append-only endpoint that anyone who
- * reads the page source can post to, so its input handling and its origin
- * check are the whole of its defence — a beacon cannot carry a credential,
- * because the credential would ship in the page.
+ * reads the page source can post to, so its input handling and its host and
+ * origin checks are the whole of its defence — a beacon cannot carry a
+ * credential, because the credential would ship in the page.
  *
  * A thin shell: what it accepts is decided by src/lib/beacon.ts.
  *
@@ -74,7 +75,16 @@ export async function onRequest(context: PagesContext<AnalyticsEnv>): Promise<Re
     return refuse(405, 'method not allowed', { Allow: 'POST' });
   }
 
-  // 2. Origin, checked BEFORE the body is read: another site's page cannot use
+  // 2. Host. Only the domain itself writes (COLLECT_HOSTS). Pages runs this
+  //    same Function, with the production database and salt, on the
+  //    project's pages.dev address, which a rate-limiting rule on the
+  //    vva227.org zone does not cover; left open, it would be the way round
+  //    that rule. Checked before the body is read, like the origin below.
+  if (!isSiteHost(new URL(request.url).hostname, COLLECT_HOSTS)) {
+    return refuse(403, 'wrong host');
+  }
+
+  // 3. Origin, checked BEFORE the body is read: another site's page cannot use
   //    this endpoint at all, and cannot map the request contract by probing it
   //    with malformed bodies.
   //
@@ -84,14 +94,14 @@ export async function onRequest(context: PagesContext<AnalyticsEnv>): Promise<Re
   //    own traffic from any transport that omits it.
   //
   //    Compared against THIS REQUEST's origin, so the rule moves with the
-  //    deployment: vva227.org and the pages.dev host each accept their own
-  //    pages and neither accepts the other's.
+  //    host: vva227.org and www.vva227.org each accept their own pages and
+  //    neither accepts the other's.
   const origin = request.headers.get('Origin');
   if (origin && origin !== new URL(request.url).origin) {
     return refuse(403, 'cross-origin');
   }
 
-  // 3. Size: the declared length first, so an obviously oversized body is
+  // 4. Size: the declared length first, so an obviously oversized body is
   //    refused before a byte of it is read; then the real length while reading.
   const declared = Number(request.headers.get('Content-Length'));
   if (Number.isFinite(declared) && declared > MAX_BODY_BYTES) {
@@ -107,7 +117,7 @@ export async function onRequest(context: PagesContext<AnalyticsEnv>): Promise<Re
     return refuse(400, 'invalid JSON');
   }
 
-  // 4. Fields. Everything past this point is bound into a prepared statement;
+  // 5. Fields. Everything past this point is bound into a prepared statement;
   //    nothing is interpolated into SQL.
   const result = validateEvent(raw);
   if (!result.ok) return refuse(400, result.reason);
@@ -119,8 +129,8 @@ export async function onRequest(context: PagesContext<AnalyticsEnv>): Promise<Re
     // Loud on purpose. A missing binding or salt is a deploy mistake, and the
     // alternatives — a constant fallback salt, or quietly not writing — would
     // leave the site looking healthy while collecting nothing, or while
-    // producing identifiers anyone could recompute. This is also the expected
-    // answer on preview deployments, which get no binding and no salt.
+    // producing identifiers anyone could recompute. (Previews, which get no
+    // binding and no salt, never reach this: their hostnames are refused above.)
     return refuse(500, 'collector not configured');
   }
 

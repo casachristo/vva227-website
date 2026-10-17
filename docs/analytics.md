@@ -45,6 +45,11 @@ to open (one you type often, or a bookmark you hover) before you open it. The
 script waits until such a page is actually shown, so one you never open is
 not counted.
 
+**Only on vva227.org:** visits are recorded on `vva227.org` and
+`www.vva227.org` only. The same site at `vva227-refresh-12g.pages.dev`, or
+at a preview address, records nothing: the collector refuses those names, so
+that nobody can get round the rate limit in step 7 by posting there.
+
 **The public description** is [`/privacy`](../src/pages/privacy.astro).
 `tests/invariants/privacy-disclosure.test.ts` fails if a column is added
 without a sentence there, so the page cannot quietly fall behind the code.
@@ -145,6 +150,36 @@ none of these settings.
 **6. Check.** Open https://vva227.org/stats and sign in. Then delete
 `.cf-api-token` and delete (or roll) the token in the dashboard.
 
+**7. Optional: a rate-limiting rule for the collector.**
+Anyone can post to the visit collector, `/api/e`; it has to be open, because
+every visitor's browser posts to it. A script posting thousands of times a
+minute could use up the free database's writes for the day. Cloudflare's free
+plan includes one rate-limiting rule per domain, and it can slow such a script
+down. This needs no token and changes nothing else. In the Cloudflare
+dashboard, open the **vva227.org** domain, go to **Security** → **Security
+rules**, and choose **Create rule** → **Rate limiting rules** (on older
+dashboards: **Security** → **WAF** → **Rate limiting rules**). Enter:
+
+| Setting | Value |
+| --- | --- |
+| Rule name | `Limit visit collector` |
+| When incoming requests match | Field **URI Path**, operator **equals**, value `/api/e` |
+| With the same characteristics | **IP** |
+| When rate exceeds | **10** requests per **10 seconds** |
+| Then take action | **Block** |
+| Duration | **10 seconds** |
+
+Then choose **Deploy**. On the free plan 10 seconds is the only choice for
+both times, and the domain gets only this one rule: if it already has one,
+leave this step out rather than replace it. A reader sends one or two posts
+for each page, far below the limit. If a fast clicker ever goes over it, a
+few of their page views go uncounted for ten seconds; the pages themselves
+always load.
+
+It slows a flood down; it does not stop one. A script that stays under the
+limit, or posts from many addresses, can still use up a day's writes, and
+then no visit is recorded until midnight UTC. The site itself keeps working.
+
 ---
 
 ## Reading the logs
@@ -200,6 +235,11 @@ Then load `/stats` in another window and read the `stats denied:` line.
 - **The Cloudflare dashboard.** Anyone with access to the account can read the
   D1 database directly, without passing through Access.
 - **A borrowed browser** within its 24-hour session.
+- **A flood of fake visits.** The collector must accept posts from anyone.
+  Step 7 slows one sender down, but a patient or spread-out sender can still
+  use up the free database's writes for the day (counting stops until
+  midnight UTC) and leave junk rows behind until they age out. The site
+  itself is not affected.
 
 ---
 
@@ -211,6 +251,7 @@ Then load `/stats` in another window and read the `stats denied:` line.
 | The script on every page (`/b.js`) | `src/lib/tracker.ts`, `src/pages/b.js.ts`, `src/layouts/BaseLayout.astro` |
 | The collector (`/api/e`) | `functions/api/e.ts`, `src/lib/beacon.ts` |
 | The visit log (`/stats`) | `functions/stats.ts`, `src/lib/stats.ts` |
+| Eastern dates, shared by both | `src/lib/eastern.ts` |
 | The lock | `src/lib/stats-gate.ts`, `src/lib/access.ts` |
 | The schema | `migrations/` |
 | The setup | `tools/setup-analytics.mjs`, `tools/lib/` |

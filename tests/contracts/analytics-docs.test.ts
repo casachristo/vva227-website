@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { ACCESS_REFUSAL_REASONS } from '../../src/lib/access';
-import { RETENTION_DAYS, RETENTION_MONTHS } from '../../src/data/analytics';
+import { BEACON_ENDPOINT, RETENTION_DAYS, RETENTION_MONTHS } from '../../src/data/analytics';
 import { TOKEN_PERMISSIONS } from '../../tools/lib/setup-analytics-plan.mjs';
 import { VIEW_COLUMNS } from '../helpers/analytics';
 
@@ -25,12 +25,30 @@ const ROOT = process.cwd();
 const read = (path: string) => readFileSync(join(ROOT, path), 'utf8');
 const doc = read('docs/analytics.md');
 
+/** The heading of the optional rate-limiting step in docs/analytics.md. */
+const RATE_RULE = '**7. Optional: a rate-limiting rule for the collector.**';
+
 /** First-column cells of every markdown table row in a text. */
 function tableKeys(text: string): string[] {
   return text
     .split('\n')
     .filter((l) => l.startsWith('| '))
     .map((l) => l.split('|')[1].trim());
+}
+
+/** The settings table that follows a marker, as setting -> value. Empty if the marker is missing. */
+function settingsAfter(text: string, marker: string): Record<string, string> {
+  const at = text.indexOf(marker);
+  if (at === -1) return {};
+  const lines = text.slice(at).split('\n');
+  const first = lines.findIndex((l) => l.startsWith('| '));
+  const rows: Record<string, string> = {};
+  for (const line of lines.slice(first)) {
+    if (!line.startsWith('| ')) break;
+    const [, key, value] = line.split('|').map((c) => c.trim());
+    rows[key] = value;
+  }
+  return rows;
 }
 
 /** Reasons a troubleshooting table explains: every backticked name in its first column. */
@@ -65,6 +83,27 @@ describe('docs/analytics.md', () => {
   it('describes every column of the visit log', () => {
     const described = tableKeys(doc).join(' ');
     expect(VIEW_COLUMNS.filter((c) => !described.includes(`\`${c}\``))).toEqual([]);
+  });
+
+  it('gives the optional rate-limiting rule for the collector, on its real path, in settings the free plan offers', () => {
+    // Free plan, checked against Cloudflare's documentation in October 2026:
+    // one rate-limiting rule per domain, matching on the path, counted per IP,
+    // over 10 seconds, acting for 10 seconds.
+    const rule = settingsAfter(doc, RATE_RULE);
+    expect(rule).toMatchObject({
+      'Rule name': '`Limit visit collector`',
+      'When incoming requests match': `Field **URI Path**, operator **equals**, value \`${BEACON_ENDPOINT}\``,
+      'With the same characteristics': '**IP**',
+      'When rate exceeds': '**10** requests per **10 seconds**',
+      'Then take action': '**Block**',
+      Duration: '**10 seconds**',
+    });
+  });
+
+  it('can actually fail: a rule written for another path is caught', () => {
+    const moved = doc.replace(`value \`${BEACON_ENDPOINT}\``, 'value `/api/x`');
+    expect(settingsAfter(moved, RATE_RULE)['When incoming requests match']).not.toContain(BEACON_ENDPOINT);
+    expect(settingsAfter(doc, 'no such step')).toEqual({});
   });
 
   it('states the retention period the collector enforces', () => {
