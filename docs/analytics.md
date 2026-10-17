@@ -1,0 +1,237 @@
+# Visit analytics
+
+A small, free, first-party visit log for vva227.org, built the same way as
+casachristo.com's. It answers "who looked at what, from roughly where, and
+how did they get here" without cookies, without a third-party service, and
+without storing anyone's IP address.
+
+Everything runs on Cloudflare's free tier, inside the chapter's own account:
+one script on every page, one Pages Function that records visits into a D1
+database, and one private page, `/stats`, locked with Cloudflare Access.
+
+---
+
+## What is collected
+
+One row per page view, in the `views` table of the D1 database
+`vva227-beacon` (schema: [`migrations/0001_views.sql`](../migrations/0001_views.sql)).
+
+| Column | What it holds | Where it comes from |
+| --- | --- | --- |
+| `path` | The page, e.g. `/get-help`. Never the query string. | The visitor's browser |
+| `referrer` | The page that linked here, with `?…` and `#…` removed | The browser, stripped again on the server |
+| `country`, `region`, `city` | Approximate location, e.g. `Fairfax, VA, US` | Cloudflare's edge (`request.cf`) |
+| `as_org`, `asn` | Internet provider, e.g. `Comcast Cable Communications, LLC` / `7922` | Cloudflare's edge |
+| `viewport_w`, `viewport_h` | Browser window size, for phone vs. computer | The browser |
+| `engaged_ms` | How long the page was open **and visible** | The browser, updated as the visitor reads |
+| `ts` | When the visit started (UTC; `/stats` shows Eastern time) | The server |
+| `visitor` | A code: SHA-256 of a secret salt, today's date, the IP and the browser's user-agent string. It changes every day and cannot be reversed. | The server |
+| `view` | A random id for this one page view, held only in the page's memory | The browser |
+| `site` | Always `vva227` | The server |
+
+**Not kept:** the IP address (used for the visitor code, then discarded),
+cookies, anything in the browser's storage, postcode or coordinates.
+
+**Kept for 730 days** (24 months), then deleted: the collector removes expired
+rows every time a new visit arrives. The number lives once, as `RETENTION_DAYS`
+in [`src/data/analytics.ts`](../src/data/analytics.ts), and `/privacy` derives
+its wording from it.
+
+**Opt-out:** a browser sending Global Privacy Control or Do Not Track gets a
+script that does nothing at all: no request, no listener, no timer.
+
+**The public description** is [`/privacy`](../src/pages/privacy.astro).
+`tests/invariants/privacy-disclosure.test.ts` fails if a column is added
+without a sentence there, so the page cannot quietly fall behind the code.
+
+---
+
+## Where to see it
+
+**https://vva227.org/stats**, after the one-time setup below.
+
+Cloudflare Access asks for your email address and sends a one-time code (if
+the sign-in page offers no way in, add the *One-time PIN* login method under
+Zero Trust → Settings → Authentication). A sign-in lasts 24 hours.
+
+The page shows the last 30 days by default; links switch to 7, 90 or 365.
+It lists recent visitors (one row per visitor per day: when, where, which
+provider, phone or computer, where they came from, the first page, how many
+pages, how long), then pages, sources, locations and networks. Times are
+Eastern.
+
+To everyone else, on every hostname, `/stats` is a plain `Not found`.
+
+### Why there are two locks
+
+Access is applied to a hostname and path. This site also answers on
+`vva227-refresh-12g.pages.dev` and on a fresh `<hash>.vva227-refresh-12g.pages.dev`
+for every preview. A policy that covers only vva227.org is bypassed by typing
+another hostname. So the Function **also** verifies the token Access attaches
+(`Cf-Access-Jwt-Assertion`): RS256 only, signed by a key the team publishes,
+issued by `ACCESS_TEAM_DOMAIN`, carrying `ACCESS_AUD`, unexpired. On a host
+with no Access application there is no token, so `/stats` is a 404 there.
+Edge policy = the lock. The Function's check = the deadbolt.
+
+---
+
+## One-time setup (the owner)
+
+Nothing here changes the live site until step 5.
+
+**1. Turn on Cloudflare Zero Trust, once.** Open
+https://one.dash.cloudflare.com and pick the account that owns the
+vva227.org zone (the setup script tells you which; usually "Ch 227"). Choose a
+team name (it becomes `<team>.cloudflareaccess.com`) and the **Free** plan.
+Cloudflare asks for card details even on the Free plan; it does not charge
+them. If you skip this, the script stops and says so.
+
+**2. Create an API token.** https://dash.cloudflare.com/profile/api-tokens →
+*Create Token* → *Create Custom Token*, with exactly these permissions:
+
+| Scope | Permission | Access |
+| --- | --- | --- |
+| Account | Cloudflare Pages | Edit |
+| Account | D1 | Edit |
+| Account | Access: Apps and Policies | Edit |
+| Account | Access: Organizations, Identity Providers, and Groups | Read |
+| Zone | Zone | Read |
+
+*Account Resources:* include the **Ch 227** account. If vva227.org lives in a
+different Cloudflare account, include that account too.
+*Zone Resources:* include the specific zone **vva227.org**.
+
+**3. Hand the token to the script.** Save it in a file named `.cf-api-token`
+at the top of this repository (it is gitignored), or set `CF_API_TOKEN`. The
+script never prints it.
+
+**4. Run the setup.** Repeat `--email` for each person who may open `/stats`.
+The list is the whole list every time: running again with a shorter list
+removes the missing addresses.
+
+```sh
+npm run setup:analytics -- --email you@example.com --dry-run   # look first; changes nothing
+npm run setup:analytics -- --email you@example.com
+```
+
+It checks it is talking to the project that serves vva227.org, creates the
+`vva227-beacon` database and applies `migrations/`, binds it to production as
+`BEACON`, creates the `BEACON_SALT` secret if there is none, sets up the
+Access policy and application, and writes `ACCESS_TEAM_DOMAIN` and
+`ACCESS_AUD`. Only production settings are touched, never preview ones. It
+is safe to run again: what is already done is skipped (the two Access
+settings are rewritten every time, so a rerun repairs them).
+
+**5. Deploy from a merged tree.** The settings take effect on the **next
+production deploy**, and the script does not deploy. The live site is deployed
+by a chapter volunteer and is ahead of this repository, so that deploy must
+come from a copy of the code holding **both** the volunteer's latest commits
+**and** this analytics work. Deploying either one alone undoes the other.
+From that merged copy:
+
+```sh
+npm run deploy     # builds, then publishes with --branch=main (production)
+```
+
+If the setup script warned that the project's production branch is not
+`main`, resolve that first: a deploy to any other branch is a preview, with
+none of these settings.
+
+**6. Check.** Open https://vva227.org/stats and sign in. Then delete
+`.cf-api-token` and delete (or roll) the token in the dashboard.
+
+---
+
+## Reading the logs
+
+The Function logs why it refused a request; the response never says. Wrangler
+must be logged into the account that holds the Pages project.
+
+```sh
+npx wrangler pages deployment list --project-name=vva227-refresh
+npx wrangler pages deployment tail <deployment-id> --project-name=vva227-refresh
+```
+
+Then load `/stats` in another window and read the `stats denied:` line.
+
+> Wrangler caches the account id of the first `pages` command it ran, in
+> `node_modules/.cache/wrangler/pages.json`, and later commands use it even if
+> you are logged into several accounts. Delete that file before switching
+> accounts. This once created a project in the wrong account.
+
+### Troubleshooting
+
+| Logged reason | What it means | Fix |
+| --- | --- | --- |
+| `access not configured` | The Function cannot see `ACCESS_TEAM_DOMAIN` / `ACCESS_AUD`. Usually the setup ran but nothing has been deployed since, or the deploy went to a preview branch. | Step 5: a production deploy from the merged tree. |
+| `no token` | The settings are fine, but no Access application covers the hostname you used, so Access issued no token. | Use https://vva227.org/stats. Rerun the setup script to repair the application. |
+| `wrong audience` | `ACCESS_AUD` belongs to another Access application. | Rerun the setup script, then deploy. |
+| `wrong issuer` | `ACCESS_TEAM_DOMAIN` is not the team that signed you in. | Rerun the setup script, then deploy. |
+| `cannot fetch signing keys` | The Function could not download the team's keys: the team domain is wrong, or Cloudflare was briefly unreachable. | `curl https://<team>.cloudflareaccess.com/cdn-cgi/access/certs` should print keys. Rerun the setup script, then deploy. |
+| `unknown key id` | The token was signed by a key the configured team does not publish: a different team, or keys that rotated in the last 10 minutes. | Wait 10 minutes; if it persists, rerun the setup script and deploy. |
+| `expired` | The token's time ran out (sessions last 24 hours). | Reload; Access asks you to sign in again. |
+| `not yet valid` / `issued in the future` | The token's times are more than 60 seconds ahead of the Function's clock. | Reload. If it persists, it is Cloudflare's clock, not yours. |
+| `malformed token` / `unsupported algorithm` / `no key id` / `bad signature` | Someone sent a forged or broken token. Access never produces these. | Nothing: it was refused. |
+| `gate error: …` | The request itself could not be read. | Note the message and report it. |
+| `stats: BEACON binding missing` (an error, after the gate allowed you) | No D1 binding: a preview deployment, or a deploy made before the setup. | Step 5. |
+| `stats query failed` (an error) | The database refused a query, usually because the migration was never applied. | Rerun the setup script; it applies missing migrations. |
+| nothing logged at all | The request is not reaching the Function: Access is showing its sign-in page, or the deployment does not include `functions/`. | Sign in; check you deployed with `npm run deploy` from the repo root. |
+
+---
+
+## Changing things later
+
+- **Add or remove a person:** rerun step 4 with the full new `--email` list,
+  then nothing else (Access policies apply immediately, no deploy needed).
+- **Add a column:** add a migration, describe the column on `/privacy`, add it
+  to the map in `tests/invariants/privacy-disclosure.test.ts`, rerun the setup
+  script (it applies new migrations), then deploy.
+- **Change the retention period:** change `RETENTION_DAYS`; `/privacy` follows.
+
+## What this does not protect against
+
+- **The sign-in method.** Access is as strong as the login behind it. With
+  one-time PIN, whoever controls the mailbox controls the stats.
+- **The Cloudflare dashboard.** Anyone with access to the account can read the
+  D1 database directly, without passing through Access.
+- **A borrowed browser** within its 24-hour session.
+
+---
+
+## Where the code is
+
+| Piece | Files |
+| --- | --- |
+| Shared values (endpoint, limits, retention, hosts) | `src/data/analytics.ts` |
+| The script on every page (`/b.js`) | `src/lib/tracker.ts`, `src/pages/b.js.ts`, `src/layouts/BaseLayout.astro` |
+| The collector (`/api/e`) | `functions/api/e.ts`, `src/lib/beacon.ts` |
+| The visit log (`/stats`) | `functions/stats.ts`, `src/lib/stats.ts` |
+| The lock | `src/lib/stats-gate.ts`, `src/lib/access.ts` |
+| The schema | `migrations/` |
+| The setup | `tools/setup-analytics.mjs`, `tools/lib/` |
+| Routing and headers | `public/_routes.json`, `public/_headers` |
+| The rules and their tests | `tests/BUSINESS_RULES.md`, *Visit analytics* |
+
+### Cloudflare API calls the setup script relies on
+
+Checked against Cloudflare's documentation and wrangler's source, October 2026.
+
+- `GET/PATCH /accounts/{account}/pages/projects/{project}`. A PATCH **merges**:
+  keys it omits are untouched, a key set to `null` is deleted. The script never
+  sends `preview` and never sends an empty map. A secret reads back as
+  `{ "type": "secret_text", "value": "" }`, so an existing secret is detected by
+  its type, never compared.
+- With no wrangler config in the repo, `wrangler pages deploy` uses the
+  project's own settings. A committed config would replace them, which is why
+  `tests/contracts/analytics-routes.test.ts` forbids one.
+- `GET /accounts/{account}/d1/database?name=` (matched exactly by the script),
+  `POST /accounts/{account}/d1/database`, and
+  `POST /accounts/{account}/d1/database/{id}/query`. Migrations are recorded in
+  wrangler's own `d1_migrations` table, so `wrangler d1 migrations list` agrees.
+- `GET /zones?name=vva227.org` gives the zone's account, which is where Access
+  must live: an Access application may only name hostnames in its own account's
+  zones, plus that account's own `*.pages.dev` project.
+- `GET /accounts/{account}/access/organizations` gives the team domain.
+- Reusable policies (`/access/policies`, paged, matched by name) attached to a
+  self-hosted application (`/access/apps`) by `destinations`; the application's
+  `aud` is the Audience tag.

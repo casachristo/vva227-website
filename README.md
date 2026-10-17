@@ -5,7 +5,8 @@ of America **Chapter 227, the Dean K. Phillips Memorial Chapter** of Northern
 Virginia.
 
 Built with [Astro](https://astro.build), deployed static to Cloudflare Pages.
-Ships **zero JavaScript**.
+Ships **one small script of its own**: a first-party visit counter, no cookies,
+no third parties (see [Visit analytics](#visit-analytics)).
 
 > **Status: mock for client review.** See [REVIEW.md](./REVIEW.md) for the
 > questions the chapter needs to answer before this can go live.
@@ -16,12 +17,12 @@ Ships **zero JavaScript**.
 
 | | Before | After |
 |---|---|---|
-| Pages | 50 | 20 |
+| Pages | 50 | 16 |
 | Empty / stub pages in the nav | 20 | 0 |
 | Nav depth | 4 levels, hover dropdowns | 1 level, flat |
-| JavaScript | jQuery 1.4.3, FancyBox 1.3.4, a slider, a reload loop | none |
+| JavaScript | jQuery 1.4.3, FancyBox 1.3.4, a slider, a reload loop | one first-party visit counter |
 | Mobile support | none (fixed 1047px tables, no viewport tag) | responsive from 320px |
-| Unique page titles | 1 (shared by all 50) | 20 |
+| Unique page titles | 1 (shared by all 50) | 16 |
 | Working contact route | 0 | phone, post, per-role, Facebook |
 
 The old site's content was not deleted — it was consolidated. A test suite
@@ -41,19 +42,20 @@ npm run preview    # serve the built site
 ## Testing
 
 ```bash
-npm test           # builds, then runs vitest (228 tests)
-npm run test:system  # Playwright, desktop + mobile (82 tests)
+npm test             # builds, then runs vitest (about 1,000 tests)
+npm run test:system  # Playwright: desktop, mobile, and the real Pages runtime (about 110 tests)
+npm run test:runtime # only the Pages-runtime project: the beacon, collector and /stats in workerd
 ```
 
 | Tier | Location | What it protects |
 |---|---|---|
-| unit | `tests/unit` | pure functions — date parsing, ordinals, currency, nav matching, link classification |
-| feature | `tests/feature` | the Foundation page's core run for real — validation and view construction together, including branches the built site cannot contain |
+| unit | `tests/unit` | pure functions — date parsing, ordinals, currency, nav matching, link classification, the beacon, the collector's validation, the stats page, the setup script's decisions |
+| feature | `tests/feature` | the Foundation page's core run for real — validation and view construction together, including branches the built site cannot contain; the collector, `/stats` behind a really signed Access token, and the setup script against a scripted Cloudflare, each run whole |
 | contracts | `tests/contracts` | the shape every rendered page must have: one h1, unique title, real OG tags, alt text, no meta refresh; and that every key a page reads out of a data file exists |
 | integration | `tests/integration` | the build as a whole — every nav route exists, every internal link resolves, every legacy redirect lands somewhere real |
 | invariants | `tests/invariants` | **migration coverage**, and that every recorded disagreement actually renders — see below |
-| security | `tests/security` | no personal data, no scripts, no insecure links, CSP headers |
-| system | `tests/system` | real browser at desktop and 375px — no console errors, no horizontal scroll, menu opens, images load |
+| security | `tests/security` | no personal data, no third-party scripts, no insecure links, CSP headers; the collector, the `/stats` lock (forged and misdirected Access tokens), the setup script's token handling |
+| system | `tests/system` | real browser at desktop and 375px — no console errors, no horizontal scroll, menu opens, images load; and the built site in `wrangler pages dev` with a local D1, asserting what the database received |
 
 ### Migration coverage
 
@@ -92,16 +94,22 @@ src/
     events.json          meeting details and the annual rhythm
     officers.json        leadership roster
     nvvvf.json           the Foundation — a separate 501(c)(3), separately sourced
+    analytics.ts         the visit counter's shared values (endpoint, limits, retention)
     newsletter.json      The Journey archive
     facts-registry.json  migration coverage registry
   components/          one job each
   layouts/             BaseLayout (document shell) → PageLayout (interior page)
-  lib/                 format.ts, nav.ts — pure, unit-tested
+  lib/                 format.ts, nav.ts, and the visit counter — pure, unit-tested
   pages/               routes
   styles/tokens.css    every color, size and space
 public/
   _headers             CSP and caching
-  _redirects           50 legacy URLs → their replacements
+  _redirects           legacy URLs → their replacements
+  _routes.json         the only two paths Pages Functions handle
+functions/             the visit collector (/api/e) and the visit log (/stats)
+migrations/            the visit log's D1 schema
+tools/                 setup-analytics.mjs — the one-time Cloudflare setup
+docs/analytics.md      the visit counter: what it records, setup, troubleshooting
 ```
 
 ### Editing content
@@ -123,6 +131,30 @@ once [REVIEW.md](./REVIEW.md) is answered.
 
 ---
 
+## Visit analytics
+
+Every page loads `/b.js`, a small script of this site's own, which reports
+each page view to `/api/e` on this same site: the page, the site that linked
+to it (without its `?…`), the window size and how long the page was read. Cloudflare adds an approximate city and the visitor's internet provider.
+Nothing is stored on the visitor's device, the IP address is never kept, and a
+browser sending Global Privacy Control or Do Not Track is not counted at all.
+`/privacy` describes it for visitors, and a test keeps that page in step with
+the database.
+
+The log is at **`/stats`**, behind Cloudflare Access, for the addresses the
+owner names. Everyone else gets a plain `Not found`.
+
+Setting it up is one command, run once by the owner, followed by a deploy:
+
+```bash
+npm run setup:analytics -- --email you@example.com
+```
+
+[docs/analytics.md](./docs/analytics.md) has what is collected, the token to
+create, the setup, how to read the logs, and what each refusal in them means.
+
+---
+
 ## Deploying
 
 ```bash
@@ -131,7 +163,7 @@ npm run deploy     # builds and pushes to Cloudflare Pages
 
 Target project: `vva227-refresh` → https://vva227-refresh.pages.dev -- url deprecated
 
-`public/_redirects` maps all 50 legacy URLs. It is written for the real domain,
+`public/_redirects` maps every legacy URL. It is written for the real domain,
 so it becomes active the moment the site is pointed at `vva227.org`; no existing
 link, bookmark or search result breaks.
 

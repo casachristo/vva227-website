@@ -106,6 +106,17 @@ analytics*.
   runtime hands a request no Function matches to its asset server, which still
   applies `_redirects`. Whether production does the same was not measured. The
   contract test is what holds the pin.
+- **A9's allowed path has never run in workerd.** Every token test runs the
+  verifier in Node. The `runtime` project has no Access settings and no
+  reachable certs endpoint, so it proves only the refusal there. The verifier
+  is casachristo.com's, ported unchanged in its WebCrypto calls, and that one
+  runs in Pages production; the first allowed request on vva227.org is still
+  this code's first in workerd.
+- **A11-A14 are proven against a fake Cloudflare, not the real API.** The fake
+  follows the documented shapes, and is pessimistic where they are silent (it
+  wipes on an empty map; it answers "Zero Trust off" with a 404). The script
+  has never been run against the chapter's account, by design: only the owner
+  runs it.
 - **The privacy page's wording is not yet the chapter's.** `/privacy` now
   describes the visit log and is tied to it by A17, but the chapter has not
   approved either the counting or the words; its review note says so.
