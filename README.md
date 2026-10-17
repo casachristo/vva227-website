@@ -168,6 +168,11 @@ create, the setup, how to read the logs, and what each refusal in them means.
 npm run deploy     # builds and pushes to Cloudflare Pages
 ```
 
+From a copy of the code where wrangler may remember another account, give the
+"Ch 227" account: `CLOUDFLARE_ACCOUNT_ID=d4afcdf7502fa80e6443dbb67ecd1d5f npm run deploy`
+(see step 5 of [docs/analytics.md](./docs/analytics.md), which also gives the
+Windows forms).
+
 Target project: `vva227-refresh` → https://vva227-refresh.pages.dev -- url deprecated
 
 `public/_redirects` maps every legacy URL. It is written for the real domain,

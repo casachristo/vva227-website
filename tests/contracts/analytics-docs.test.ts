@@ -283,6 +283,16 @@ describe('README.md', () => {
     expect(flat).not.toContain('Everyone else gets a plain `Not found`.');
     expect(flat).toContain("Everyone else is stopped at Cloudflare's sign-in page, or gets a plain `Not found` on an address Access does not cover.");
   });
+
+  it('gives the deploy under Deploying with the "Ch 227" account id, as step 5 does', () => {
+    // A plain `npm run deploy` goes to whichever account wrangler remembers,
+    // which in one copy of this code was not the chapter's.
+    const start = readme.indexOf('## Deploying');
+    expect(start).toBeGreaterThan(-1);
+    const deploying = readme.slice(start, readme.indexOf('\n---', start));
+    expect(deploying).toContain(`CLOUDFLARE_ACCOUNT_ID=${ACCOUNT} npm run deploy`);
+    expect(deploying).toContain('](./docs/analytics.md)');
+  });
 });
 
 describe('tests/BUSINESS_RULES.md, Visit analytics', () => {
