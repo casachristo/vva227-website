@@ -257,6 +257,8 @@ export async function runSetup({
       'Access application',
     );
     const existingApp = foundApp ? (await api('GET', `${appsPath}/${foundApp.id}`)).result : null;
+    // Any other policy on it comes off: this script's alone decides who opens /stats.
+    const removed = existingApp ? plan.otherPolicies(existingApp, policyId, listedPolicies) : [];
     const covers = destinations.map((d) => d.uri).join(', ');
     let aud = existingApp?.aud ?? null;
     if (!existingApp) {
@@ -266,8 +268,6 @@ export async function runSetup({
         act(`created the Access application "${plan.APP}"${there} covering ${covers}`);
       }
     } else if (!plan.appMatches(existingApp, { policyId, destinations })) {
-      // Any other policy on it comes off: this script's alone decides who opens /stats.
-      const removed = plan.otherPolicies(existingApp, policyId, listedPolicies);
       if (dryRun) {
         for (const p of removed) say(`   would remove the policy ${plan.policyLabel(p)} from the application, so that "${plan.POLICY}" alone decides who can open ${plan.STATS_PATH}`);
         act(`update the Access application "${plan.APP}"${there} to cover ${covers}, with "${plan.POLICY}" as its only policy`);
@@ -278,6 +278,22 @@ export async function runSetup({
         for (const p of removed) act(`removed the policy ${plan.policyLabel(p)} from the Access application "${plan.APP}"`);
       }
     } else say(`   application "${plan.APP}" already covers ${covers}, with "${plan.POLICY}" as its only policy`);
+
+    // Access checks a changed policy only at each person's next sign-in. So
+    // when this run takes access away from anyone (an address left out, a
+    // wider rule put back, another policy taken off), the sign-ins already
+    // open are ended as well, after those changes. Adding someone ends none.
+    let endedSignIns = false;
+    if (existingApp && (plan.policyNarrows(existingPolicy, emails) || removed.length)) {
+      if (dryRun) {
+        say(`   would end existing sign-ins to ${plan.STATS_PATH}, because this run takes access away from someone`);
+        act(`end every existing sign-in to ${plan.STATS_PATH} (the people still on the list sign in again)`);
+      } else {
+        await api('POST', `${appsPath}/${existingApp.id}/revoke_tokens`);
+        endedSignIns = true;
+        act(`ended every existing sign-in to ${plan.STATS_PATH}, because this run took access away from someone; the people still on the list sign in again`);
+      }
+    }
 
     // (e) The two settings the Function checks tokens against. Always
     // written, so a rerun repairs a pasted or stale value.
@@ -300,7 +316,7 @@ export async function runSetup({
       say('Done. What changed in this run:');
       for (const line of done) say(`  - ${line}`);
       say('');
-      for (const line of plan.whoCanOpen(emails, existingPolicy)) say(line);
+      for (const line of plan.whoCanOpen(emails, existingPolicy, { endedWherePagesDevUncovered: endedSignIns && skipped !== null })) say(line);
       say(`\n${plan.nextSteps()}`);
     }
     return 0;

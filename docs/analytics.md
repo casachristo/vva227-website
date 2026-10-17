@@ -130,9 +130,10 @@ Or set `CF_API_TOKEN` instead. The script never prints the token.
 
 **4. Run the setup.** Repeat `--email` for each person who may open `/stats`.
 The list is the whole list every time: running again with a shorter list
-removes the missing addresses. The Access application gets the script's one
-policy and no other: a policy someone adds to it in the dashboard is taken
-off at the next run, and the script names it.
+removes the missing addresses, and ends every sign-in to `/stats` already
+open, so the people still on the list sign in again. The Access application
+gets the script's one policy and no other: a policy someone adds to it in the
+dashboard is taken off at the next run, and the script names it.
 
 ```sh
 npm run setup:analytics -- --email you@example.com --dry-run   # look first; changes nothing
@@ -263,8 +264,14 @@ ran, not the answer it gave), so read the lines beneath it.
 
 ## Changing things later
 
-- **Add or remove a person:** rerun step 4 with the full new `--email` list,
-  then nothing else (Access policies apply immediately, no deploy needed).
+- **Add or remove a person:** create a token again (steps 2 and 3; step 6
+  had you delete it), then rerun step 4 with the full new `--email` list. No
+  deploy is needed. Someone added can open `/stats` from their next sign-in.
+  Removing someone also ends every sign-in already open on the addresses
+  Access covers, so the people still on the list sign in again. Editing the
+  policy *vva227 stats owners* in the Zero Trust dashboard works too, but it
+  ends nobody's sign-in, and the next run of the script puts its own list
+  back.
 - **Add a column:** add a migration, describe the column on `/privacy`, add it
   to the map in `tests/invariants/privacy-disclosure.test.ts`, rerun the setup
   script (it applies new migrations), then deploy.
@@ -277,6 +284,12 @@ ran, not the answer it gave), so read the lines beneath it.
 - **The Cloudflare dashboard.** Anyone with access to the account can read the
   D1 database directly, without passing through Access.
 - **A borrowed browser** within its 24-hour session.
+- **A copied sign-in at the pages.dev address, when vva227.org is in another
+  Cloudflare account.** Access cannot cover `vva227-refresh-12g.pages.dev`
+  then, so it cannot end a sign-in there either. Someone removed from the
+  list who kept a copy of their sign-in can still open `/stats` at that
+  address until it runs out (at most 24 hours). The setup script says so when
+  it removes someone in that case.
 - **A flood of fake visits.** The collector must accept posts from anyone.
   Step 7 slows one sender down, but a patient or spread-out sender can still
   use up the free database's writes for the day (counting stops until
@@ -324,6 +337,11 @@ Checked against Cloudflare's documentation and wrangler's source, October 2026.
 - Reusable policies (`/access/policies`, paged, matched by name) attached to a
   self-hosted application (`/access/apps`) by `destinations`; the application's
   `aud` is the Audience tag.
+- `POST /accounts/{account}/access/apps/{id}/revoke_tokens`, with no body,
+  ends every sign-in to the application. Access checks a changed policy only
+  at each person's next sign-in, so the script sends this, after its changes,
+  whenever a run takes access away from anyone. *Access: Apps and Policies*
+  Edit covers it.
 - An application or policy is updated with a `PUT`, and the reference does not
   say whether a `PUT` merges. So an update sends back everything the `GET`
   returned, minus what Cloudflare keeps itself (`id`, `aud`, the timestamps,

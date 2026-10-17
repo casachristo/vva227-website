@@ -310,6 +310,13 @@ export class FakeCloudflare {
       }
     }
 
+    // Ending every sign-in to an application: POST, no body, as documented.
+    if ((m = /^\/accounts\/([^/]+)\/access\/apps\/([^/]+)\/revoke_tokens$/.exec(path))) {
+      if (method !== 'POST') return json(405, fail(10405, 'Method not allowed'));
+      if (!(this.apps.get(m[1]) ?? []).some((a) => a.id === m![2])) return json(404, fail(12130, 'access.api.error.not_found'));
+      return json(200, ok({}));
+    }
+
     // Access applications
     if ((m = /^\/accounts\/([^/]+)\/access\/apps(?:\/([^/]+))?$/.exec(path))) {
       const acct = m[1];

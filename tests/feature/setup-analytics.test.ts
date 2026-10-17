@@ -221,13 +221,17 @@ describe('running it again', () => {
     expect(fake.policies.get(CH227)!.filter((p) => p.name.startsWith('someone else'))).toHaveLength(4);
   });
 
-  it('with a different --email list, changes the policy to exactly that list and touches nothing else in Access', async () => {
+  it('with a different --email list, changes the policy to exactly that list, ends the sign-ins of whoever it left out, and changes nothing else in Access', async () => {
     const fake = cloudflare();
     await run(fake);
     const appBefore = structuredClone(fake.apps.get(CH227));
     const again = await run(fake, ['--email', 'second@example.org', '--email', 'Third@Example.org']);
     expect(again.code).toBe(0);
-    expect(again.writes.map(line)).toEqual([`PUT /accounts/${CH227}/access/policies/${fake.policies.get(CH227)![0].id}`, `PATCH ${PROJECT_PATH}`]);
+    expect(again.writes.map(line)).toEqual([
+      `PUT /accounts/${CH227}/access/policies/${fake.policies.get(CH227)![0].id}`,
+      `POST /accounts/${CH227}/access/apps/${appBefore![0].id}/revoke_tokens`,
+      `PATCH ${PROJECT_PATH}`,
+    ]);
     expect(fake.policies.get(CH227)![0].include).toEqual([{ email: { email: 'second@example.org' } }, { email: { email: 'third@example.org' } }]);
     expect(fake.apps.get(CH227)).toEqual(appBefore);
   });
@@ -309,11 +313,15 @@ describe('what it says about who can open /stats', () => {
   const SECOND = 'second@example.org';
   const other = { zoneAccount: OTHER_ACCOUNT, tokenAccounts: [CH227, OTHER_ACCOUNT], teams: { [OTHER_ACCOUNT]: TEAM_DOMAIN } };
 
-  it.each<[string, FakeOptions, (fake: FakeCloudflare, account: string) => Promise<unknown>, string[]]>([
-    ['a fresh account', {}, async () => {}, [EMAIL]],
-    ['a rerun with the same list', {}, (fake) => run(fake), [EMAIL]],
-    ['a rerun with a longer list', {}, (fake) => run(fake), [EMAIL, SECOND]],
-    ['a rerun with a shorter list', {}, (fake) => run(fake, ['--email', EMAIL, '--email', SECOND]), [EMAIL]],
+  // The last column: does this run take access away from anyone? Access
+  // checks a changed policy only at the next sign-in, so then the sign-ins
+  // already open must be ended, after the change, or the line is not yet true.
+  it.each<[string, FakeOptions, (fake: FakeCloudflare, account: string) => Promise<unknown>, string[], boolean]>([
+    ['a fresh account', {}, async () => {}, [EMAIL], false],
+    ['a rerun with the same list', {}, (fake) => run(fake), [EMAIL], false],
+    ['a rerun with a longer list', {}, (fake) => run(fake), [EMAIL, SECOND], false],
+    ['a rerun with a shorter list', {}, (fake) => run(fake, ['--email', EMAIL, '--email', SECOND]), [EMAIL], true],
+    ['a rerun with a different list of the same length', {}, (fake) => run(fake, ['--email', SECOND]), [EMAIL], true],
     [
       'a rerun after someone attached another policy to the application',
       {},
@@ -323,6 +331,7 @@ describe('what it says about who can open /stats', () => {
         fake.apps.get(account)![0].policies.push({ id: 'wide', precedence: 2 });
       },
       [EMAIL],
+      true,
     ],
     [
       'a rerun after someone widened its policy to a whole domain',
@@ -332,17 +341,30 @@ describe('what it says about who can open /stats', () => {
         fake.policies.get(account)![0].include = [{ email_domain: { domain: 'example.org' } }];
       },
       [EMAIL],
+      true,
     ],
-    ['vva227.org in another account', other, async () => {}, [EMAIL]],
-    ['a rerun with a shorter list, vva227.org in another account', other, (fake) => run(fake, ['--email', EMAIL, '--email', SECOND]), [EMAIL]],
-  ])('is true after %s', async (_label, options, before, emails) => {
+    ['vva227.org in another account', other, async () => {}, [EMAIL], false],
+    ['a rerun with a shorter list, vva227.org in another account', other, (fake) => run(fake, ['--email', EMAIL, '--email', SECOND]), [EMAIL], true],
+  ])('is true after %s', async (_label, options, before, emails, endsSignIns) => {
     const fake = cloudflare(options);
     const account = fake.zoneAccount;
     await before(fake, account);
-    const { code, output } = await run(fake, emails.flatMap((e) => ['--email', e]));
+    const { code, output, requests } = await run(fake, emails.flatMap((e) => ['--email', e]));
     expect(code, output).toBe(0);
     expect(fake.admits(account)).toEqual([...emails].sort());
     expect(said(output)).toEqual(fake.admits(account));
+
+    const revokes = requests.filter((r) => r.path.endsWith('/revoke_tokens'));
+    if (!endsSignIns) {
+      expect(revokes).toEqual([]);
+      return;
+    }
+    const app = fake.apps.get(account)![0];
+    expect(revokes.map(line)).toEqual([`POST /accounts/${account}/access/apps/${app.id}/revoke_tokens`]);
+    const lastPut = requests.map((r) => r.method).lastIndexOf('PUT');
+    expect(lastPut).toBeGreaterThanOrEqual(0);
+    expect(requests.indexOf(revokes[0])).toBeGreaterThan(lastPut);
+    expect(output).toContain('ended every existing sign-in to /stats');
   });
 
   it('can actually fail: a second policy on the application shows in what Access admits', async () => {
@@ -361,6 +383,67 @@ describe('what it says about who can open /stats', () => {
     expect(code, output).toBe(0);
     expect(fake.policies.get(CH227)![0].exclude).toEqual([{ email: { email: SECOND } }]);
     expect(output).toMatch(/^Who can open \/stats: .*\n\(.*the policy's exclude rules/m);
+  });
+});
+
+describe('ending sign-ins when someone is taken off the list', () => {
+  const SECOND = 'second@example.org';
+
+  it('ends them after the policy changes, and says so, when a rerun leaves an address out', async () => {
+    const fake = cloudflare();
+    await run(fake, ['--email', EMAIL, '--email', SECOND]);
+    const { code, output, writes } = await run(fake, ['--email', EMAIL]);
+    expect(code, output).toBe(0);
+    const policy = fake.policies.get(CH227)![0];
+    const app = fake.apps.get(CH227)![0];
+    expect(writes.map(line)).toEqual([
+      `PUT /accounts/${CH227}/access/policies/${policy.id}`,
+      `POST /accounts/${CH227}/access/apps/${app.id}/revoke_tokens`,
+      `PATCH ${PROJECT_PATH}`,
+    ]);
+    expect(writes[1].body).toBeUndefined();
+    expect(output).toContain('ended every existing sign-in to /stats, because this run took access away from someone');
+    expect(output).toContain('the people still on the list sign in again');
+  });
+
+  it('ends none when a rerun only adds someone', async () => {
+    const fake = cloudflare();
+    await run(fake);
+    const { code, writes, output } = await run(fake, ['--email', EMAIL, '--email', SECOND]);
+    expect(code).toBe(0);
+    expect(writes.filter((w) => w.path.endsWith('/revoke_tokens'))).toEqual([]);
+    expect(output).not.toContain('sign-in to /stats');
+  });
+
+  it('in a dry run, says it would end them, and sends only GETs', async () => {
+    const fake = cloudflare();
+    await run(fake, ['--email', EMAIL, '--email', SECOND]);
+    const { code, output, requests } = await run(fake, ['--email', EMAIL, '--dry-run']);
+    expect(code, output).toBe(0);
+    expect(requests.filter((r) => r.method !== 'GET')).toEqual([]);
+    expect(output).toContain('   would end existing sign-ins to /stats');
+    expect(output).toContain('  - end every existing sign-in to /stats');
+  });
+
+  it('when vva227.org is in another account, says a copied sign-in still works at the pages.dev address until it runs out', async () => {
+    const fake = cloudflare({ zoneAccount: OTHER_ACCOUNT, tokenAccounts: [CH227, OTHER_ACCOUNT], teams: { [OTHER_ACCOUNT]: TEAM_DOMAIN } });
+    await run(fake, ['--email', EMAIL, '--email', SECOND]);
+    const { code, output } = await run(fake, ['--email', EMAIL]);
+    expect(code, output).toBe(0);
+    expect(output).toMatch(/^Who can open \/stats: owner@example\.org\n.*pages\.dev address.*\n?.*24h/m);
+  });
+
+  it('stops, keeping the policy change, if Cloudflare refuses to end them', async () => {
+    const fake = cloudflare();
+    await run(fake, ['--email', EMAIL, '--email', SECOND]);
+    fake.failNext({ method: 'POST', path: /revoke_tokens$/, status: 403, body: { success: false, errors: [{ code: 10000, message: 'Authentication error' }] } });
+    const { code, output } = await run(fake, ['--email', EMAIL]);
+    expect(code).toBe(1);
+    expect(output).toContain('/revoke_tokens (HTTP 403)');
+    expect(output).toContain('It needs "Account › Access: Apps and Policies › Edit".');
+    expect(output).toMatch(/Already done in this run, and kept:\n {2}- changed the Access policy "vva227 stats owners" to admit exactly owner@example\.org/);
+    expect(output).not.toContain('Who can open /stats');
+    expect(fake.policies.get(CH227)![0].include).toEqual([{ email: { email: EMAIL } }]);
   });
 });
 

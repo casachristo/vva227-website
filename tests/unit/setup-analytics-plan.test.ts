@@ -443,6 +443,27 @@ describe('the policy', () => {
     expect(plan.policyMatches({ decision: 'allow', include }, ['a@example.org'])).toBe(false);
   });
 
+  it.each([
+    ['an address left out', 'allow', [{ email: { email: 'a@example.org' } }, { email: { email: 'b@example.org' } }], ['a@example.org'], true],
+    ['every address replaced', 'allow', [{ email: { email: 'b@example.org' } }], ['a@example.org'], true],
+    ['everyone', 'allow', [{ everyone: {} }], ['a@example.org'], true],
+    ['the right address and everyone', 'allow', [{ email: { email: 'a@example.org' } }, { everyone: {} }], ['a@example.org'], true],
+    ['a whole domain', 'allow', [{ email_domain: { domain: 'example.org' } }], ['a@example.org'], true],
+    ['an email rule with something else beside it', 'allow', [{ email: { email: 'a@example.org' }, everyone: {} }], ['a@example.org'], true],
+    ['a bypass of someone left out', 'bypass', [{ email: { email: 'b@example.org' } }], ['a@example.org'], true],
+    ['the same list', 'allow', [{ email: { email: 'A@Example.org' } }], ['a@example.org'], false],
+    ['a list only added to', 'allow', [{ email: { email: 'a@example.org' } }], ['a@example.org', 'b@example.org'], false],
+    ['no rules', 'allow', [], ['a@example.org'], false],
+    ['a deny, which let nobody in', 'deny', [{ email: { email: 'b@example.org' } }], ['a@example.org'], false],
+  ])('takes access away from someone (or not) when it admitted %s', (_label, decision, include, emails, narrows) => {
+    expect(plan.policyNarrows({ decision, include }, emails)).toBe(narrows);
+  });
+
+  it('takes nothing away when there was no policy', () => {
+    expect(plan.policyNarrows(null, ['a@example.org'])).toBe(false);
+    expect(plan.policyNarrows({ decision: 'allow' }, ['a@example.org'])).toBe(false);
+  });
+
   it('does not match a policy that is not an allow, or is not a policy', () => {
     expect(plan.policyMatches({ decision: 'deny', include: [{ email: { email: 'a@example.org' } }] }, ['a@example.org'])).toBe(false);
     expect(plan.policyMatches(null, ['a@example.org'])).toBe(false);
@@ -612,6 +633,14 @@ describe('what the run says about who can open /stats', () => {
   it('is the list, when the policy has no rules of its own beside it', () => {
     expect(plan.whoCanOpen(['a@example.org', 'b@example.org'])).toEqual(['Who can open /stats: a@example.org, b@example.org']);
     expect(plan.whoCanOpen(['a@example.org'], { exclude: [], require: [] })).toEqual(['Who can open /stats: a@example.org']);
+  });
+
+  it('says a copied sign-in still works where Access cannot end it, for as long as the policy\'s sign-ins last', () => {
+    const [, note] = plan.whoCanOpen(['a@example.org'], { session_duration: '2h' }, { endedWherePagesDevUncovered: true });
+    expect(note).toContain('Access cannot end a sign-in at the pages.dev address');
+    expect(note).toContain('at most 2h');
+    expect(plan.whoCanOpen(['a@example.org'], null, { endedWherePagesDevUncovered: true })[1]).toContain('at most 24h');
+    expect(plan.whoCanOpen(['a@example.org'], { session_duration: '2h' }, { endedWherePagesDevUncovered: false })).toHaveLength(1);
   });
 
   it('says so when the policy keeps require or exclude rules someone set in the dashboard, which narrow it', () => {

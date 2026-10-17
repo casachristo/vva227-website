@@ -170,6 +170,17 @@ describe('who the policy admits', () => {
     expect(output).toContain(`Who can open /stats: ${EMAIL}`);
   });
 
+  it('takes away the open sign-in of someone removed, not only their next one', async () => {
+    const fake = cloudflare();
+    await run(fake, ['--email', EMAIL, '--email', 'departed@example.org']);
+    const { code, writes } = await run(fake);
+    expect(code).toBe(0);
+    const revoke = writes.findIndex((w) => w.method === 'POST' && w.path === `/accounts/${CH227}/access/apps/${fake.apps.get(CH227)![0].id}/revoke_tokens`);
+    const narrowed = writes.findIndex((w) => w.method === 'PUT' && w.path.includes('/access/policies/'));
+    expect(narrowed).toBeGreaterThanOrEqual(0);
+    expect(revoke).toBeGreaterThan(narrowed);
+  });
+
   it('is never a deny-by-default policy turned into an allow by accident, nor the reverse', () => {
     expect(policyMatches({ decision: 'deny', include: [{ email: { email: EMAIL } }] }, [EMAIL])).toBe(false);
     expect(policyBody([EMAIL]).decision).toBe('allow');

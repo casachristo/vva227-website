@@ -36,6 +36,15 @@ function setupStep(text: string, n: number): string {
   return text.slice(start, end === -1 ? text.indexOf('\n---', start) : end);
 }
 
+/** One bullet of a list, from its bold label to the next bullet or blank line. Empty if it is missing. */
+function bulletAt(text: string, label: string): string {
+  const start = text.indexOf(`- **${label}**`);
+  if (start === -1) return '';
+  const rest = text.slice(start + 2);
+  const end = rest.search(/\n(- |\n)/);
+  return text.slice(start, end === -1 ? undefined : start + 2 + end);
+}
+
 /** First-column cells of every markdown table row in a text. */
 function tableKeys(text: string): string[] {
   return text
@@ -139,6 +148,21 @@ describe('docs/analytics.md', () => {
       expect(step5).toContain(name);
       expect(nextSteps()).toContain(name);
     }
+  });
+
+  it('says that removing a person ends the sign-ins already open, and that a rerun needs a token again', () => {
+    // Access checks a changed policy only at the next sign-in; the setup
+    // script ends the open ones when a rerun takes anyone's access away.
+    const bullet = bulletAt(doc, 'Add or remove a person:');
+    expect(bullet).toContain('ends every sign-in');
+    expect(bullet).toContain('next sign-in');
+    expect(bullet).toContain('steps 2');
+    expect(bullet).not.toMatch(/apply immediately/);
+  });
+
+  it('can actually fail: a bullet that is not there reads as empty, and one ends at the next', () => {
+    expect(bulletAt(doc, 'No such bullet:')).toBe('');
+    expect(bulletAt(doc, 'Add or remove a person:')).not.toContain('**Add a column:**');
   });
 
   it('can actually fail: a step that is not there reads as empty', () => {

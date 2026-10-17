@@ -466,6 +466,12 @@ export function policyBody(emails, existing = null) {
   return body;
 }
 
+/** The address a single-address include rule admits, lower-cased; null for any wider rule. */
+function ruleEmail(rule) {
+  const email = typeof rule?.email?.email === 'string' ? rule.email.email.trim().toLowerCase() : null;
+  return email && Object.keys(rule).length === 1 ? email : null;
+}
+
 /**
  * Does the existing policy admit exactly these addresses, and nothing else?
  * Any include rule that is not a single email (everyone, a whole domain, a
@@ -476,12 +482,25 @@ export function policyMatches(policy, emails) {
   const include = Array.isArray(policy?.include) ? policy.include : [];
   const have = [];
   for (const rule of include) {
-    const email = typeof rule?.email?.email === 'string' ? rule.email.email.trim().toLowerCase() : null;
-    if (!email || Object.keys(rule).length !== 1) return false;
+    const email = ruleEmail(rule);
+    if (!email) return false;
     have.push(email);
   }
   const want = [...new Set(emails)].sort();
   return JSON.stringify([...new Set(have)].sort()) === JSON.stringify(want);
+}
+
+/**
+ * Does replacing this policy's include list with `emails` take access away
+ * from anyone? True when it let in an address the new list leaves out, or
+ * anyone by a wider rule (everyone, a domain, a group). A deny let nobody in.
+ * Access checks a changed policy only at each person's next sign-in, so
+ * whoever this is true for may still be signed in.
+ */
+export function policyNarrows(policy, emails) {
+  if (!policy || policy.decision === 'deny') return false;
+  const keep = new Set(emails);
+  return (Array.isArray(policy.include) ? policy.include : []).some((rule) => !keep.has(ruleEmail(rule)));
 }
 
 /**
@@ -588,14 +607,25 @@ export function policyLabel({ id, name, decision }) {
 
 /**
  * What a run says last about who can open /stats. It is the --email list,
- * because the application carries this one policy and the policy admits
- * exactly that list; require or exclude rules someone set on the policy in
- * the dashboard are kept and narrow it further, so then it says so.
+ * because the application carries this one policy, the policy admits exactly
+ * that list, and a run that took anyone's access away ended the sign-ins
+ * already open. Two things qualify it, and then it says so: require or
+ * exclude rules someone set on the policy in the dashboard, which are kept
+ * and narrow it further; and, when sign-ins were ended but the pages.dev
+ * address is not covered by Access, a copied sign-in still working there.
+ *
+ * @param {{ endedWherePagesDevUncovered?: boolean }} [options]
  */
-export function whoCanOpen(emails, existing = null) {
+export function whoCanOpen(emails, existing = null, { endedWherePagesDevUncovered = false } = {}) {
   const lines = [`Who can open ${STATS_PATH}: ${emails.join(', ')}`];
   const kept = ['require', 'exclude'].filter((key) => Array.isArray(existing?.[key]) && existing[key].length);
   if (kept.length) lines.push(`(only while they also meet the policy's ${kept.join(' and ')} rules, which were set in the dashboard and are kept)`);
+  if (endedWherePagesDevUncovered) {
+    const lasts = typeof existing?.session_duration === 'string' && existing.session_duration ? existing.session_duration : SESSION_DURATION;
+    lines.push(
+      `(Access cannot end a sign-in at the pages.dev address, which it does not cover here: someone just removed who kept a copy of theirs can use it there until it runs out, at most ${lasts}.)`,
+    );
+  }
   return lines;
 }
 
