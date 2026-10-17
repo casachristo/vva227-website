@@ -203,7 +203,7 @@ describe('edge cases', () => {
     expect(byView[VIEW]).not.toBe(byView.eeeeeeeeffffffff);
   });
 
-  it('gives the same visitor a new id the next UTC day', async () => {
+  it('gives the same visitor a new id the next day', async () => {
     await post(view());
     clock.mockReturnValue(T0 + 86_400_000);
     await post(view({ v: 'ccccccccdddddddd' }));

@@ -340,8 +340,9 @@ describe('groupVisitorDays', () => {
   });
 
   it('splits one hash across Eastern midnight into two visitor-days', () => {
-    // The hash rotates at UTC midnight (8pm EDT), so 11pm and 1am Eastern on
-    // the same UTC day share a hash — and are two of the owner's days.
+    // One hash on both sides of midnight is what a SALT_PERIOD_DAYS above 1
+    // produces: 11pm and 1am Eastern under one code are still two of the
+    // owner's days.
     const days = groupVisitorDays([
       row({ view: '01', visitor: A, ts: Date.UTC(2026, 9, 18, 3, 0), path: '/late' }), // 23:00 EDT Oct 17
       row({ view: '02', visitor: A, ts: Date.UTC(2026, 9, 18, 5, 0), path: '/early' }), // 01:00 EDT Oct 18

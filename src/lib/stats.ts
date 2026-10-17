@@ -14,8 +14,9 @@
  * relies on its CSP to be safe becomes unsafe the day the CSP is relaxed.
  */
 
-import { DISPLAY_TIME_ZONE, SITE_HOSTS } from '../data/analytics';
+import { SITE_HOSTS } from '../data/analytics';
 import { stripQuery } from './beacon';
+import { easternParts } from './eastern';
 
 /** The windows the page offers, in days. Anything else falls back to the default. */
 export const WINDOWS: readonly number[] = [7, 30, 90, 365];
@@ -74,45 +75,15 @@ export function formatCount(value: unknown): string {
   return Number.isFinite(n) ? String(n) : '0';
 }
 
-/**
- * Wall-clock parts in the display time zone.
- *
- * Built once at module load. hourCycle h23 rather than hour12:false, which
- * some engines render as "24:05" for five past midnight.
- */
-const ET_FORMAT = new Intl.DateTimeFormat('en-US', {
-  timeZone: DISPLAY_TIME_ZONE,
-  year: 'numeric',
-  month: '2-digit',
-  day: '2-digit',
-  hour: '2-digit',
-  minute: '2-digit',
-  hourCycle: 'h23',
-});
-
-function etParts(ts: unknown): Record<string, string> | null {
-  const n = Number(ts);
-  if (ts === null || ts === undefined || !Number.isFinite(n)) return null;
-  const date = new Date(n);
-  if (Number.isNaN(date.getTime())) return null;
-  return Object.fromEntries(ET_FORMAT.formatToParts(date).map((p) => [p.type, p.value]));
-}
-
-/**
- * The Eastern calendar day a timestamp falls on, as YYYY-MM-DD.
- *
- * Through Intl, not a fixed offset: Eastern time is UTC-5 in winter and UTC-4
- * in summer, and a hard-coded offset would put an hour of visits on the wrong
- * day for half the year.
- */
+/** The Eastern calendar day a timestamp falls on, as YYYY-MM-DD. See src/lib/eastern.ts. */
 export function etDay(ts: unknown): string {
-  const p = etParts(ts);
+  const p = easternParts(ts);
   return p ? `${p.year}-${p.month}-${p.day}` : 'unknown';
 }
 
 /** A timestamp as "YYYY-MM-DD HH:MM" Eastern time. The page labels it ET. */
 export function formatEt(ts: unknown): string {
-  const p = etParts(ts);
+  const p = easternParts(ts);
   return p ? `${p.year}-${p.month}-${p.day} ${p.hour}:${p.minute}` : '-';
 }
 
@@ -231,10 +202,10 @@ const byTimeThenId = (a: VisitRow, b: VisitRow) =>
  * Group visit rows into visitor-days: one per visitor hash per Eastern
  * calendar day.
  *
- * WHY THE DAY IS PART OF THE KEY when the hash already rotates daily: the hash
- * rotates at UTC midnight, which is 7 or 8 in the evening Eastern. Someone
- * reading at 11pm and again at 9am shares one hash across two of the owner's
- * days; keyed on the hash alone they would be one row spanning two dates.
+ * WHY THE DAY IS PART OF THE KEY when the hash already changes at midnight
+ * Eastern time: that holds only while SALT_PERIOD_DAYS is 1. With a longer
+ * period one hash spans several of the owner's days, and keyed on the hash
+ * alone it would be one row covering all of them.
  *
  * Which visitor-days are kept: the `limit` most recently ACTIVE (latest view).
  * That matches the query, which fetches every row for the visitor hashes with
@@ -499,7 +470,7 @@ export function renderStatsPage(data: StatsPageData): string {
 <p class="meta">Last ${escapeHtml(data.days)} days &middot; generated ${escapeHtml(formatEt(data.generatedAt))} ET</p>
 <p class="windows">${windowLinks}</p>
 <p class="summary"><strong>${escapeHtml(formatCount(data.summary.views))}</strong> views &middot; <strong>${escapeHtml(formatCount(data.summary.visitors))}</strong> visitors &middot; <strong>${escapeHtml(formatCount(data.summary.pages))}</strong> pages</p>
-<p class="note">Visitor ids reset every day, so someone who comes back on another day is counted again. Location and network come from Cloudflare, which works them out from the connection as it arrives; IP addresses are never stored. A company or datacentre name under Network, where you would expect a home or mobile provider, usually means an automated crawler. All times are Eastern (ET).</p>
+<p class="note">Visitor ids reset at midnight Eastern time, so someone who comes back on another day is counted again. Location and network come from Cloudflare, which works them out from the connection as it arrives; IP addresses are never stored. A company or datacentre name under Network, where you would expect a home or mobile provider, usually means an automated crawler. All times are Eastern (ET).</p>
 ${table(
   'Recent visitors',
   ['First seen (ET)', 'Visitor', 'Where', 'Network', 'Device', 'Came from', 'Entry page', 'Pages viewed', 'Read time'],

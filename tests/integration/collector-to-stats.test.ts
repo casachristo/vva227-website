@@ -116,7 +116,7 @@ describe('a visit, collected and then reported', () => {
     expect(await visitorDays()).toHaveLength(2);
   });
 
-  it('shows the same person on two UTC days as two visitors — the daily rotation, end to end', async () => {
+  it('shows the same person on two days as two visitors — the daily rotation, end to end', async () => {
     await at(NOW - DAY, HOME_IP, view('3000000000000001', '/'));
     await at(NOW, HOME_IP, view('3000000000000002', '/'));
     const days = await visitorDays();
@@ -124,19 +124,38 @@ describe('a visit, collected and then reported', () => {
     expect(days[0].visitor).not.toBe(days[1].visitor);
   });
 
-  it('splits one hash at Eastern midnight into two visitor-days', async () => {
-    // 23:30 and 00:30 Eastern on Oct 17/18 are 03:30 and 04:30 UTC on Oct 18:
-    // one salt window, so one hash, but two of the owner's days.
+  it('splits a visit at Eastern midnight into two visitor-days, each with its own code', async () => {
+    // 23:30 and 00:30 Eastern on Oct 17/18 are 03:30 and 04:30 UTC on Oct 18.
+    // The code changes at Eastern midnight, which is where the owner's day
+    // changes too.
     await at(Date.UTC(2026, 9, 18, 3, 30), HOME_IP, view('4000000000000001', '/late'));
     await at(Date.UTC(2026, 9, 18, 4, 30), HOME_IP, view('4000000000000002', '/early'));
     const rows = d1.rows();
-    expect(rows[0].visitor).toBe(rows[1].visitor);
+    expect(rows).toHaveLength(2);
+    expect(rows[0].visitor).not.toBe(rows[1].visitor);
 
     const days = await visitorDays(30, Date.UTC(2026, 9, 18, 12));
     expect(days.map((d) => [d.day, d.entry])).toEqual([
       ['2026-10-18', '/early'],
       ['2026-10-17', '/late'],
     ]);
+  });
+
+  it('keeps one evening visit across 8pm Eastern as one visitor, with its source and entry page', async () => {
+    // 19:50 and 20:10 EDT on Oct 14 are 23:50 UTC Oct 14 and 00:10 UTC Oct 15.
+    // UTC midnight falls between them; the owner's day does not.
+    await at(Date.UTC(2026, 9, 14, 23, 50), HOME_IP, view('4100000000000001', '/', 'https://www.google.com/'));
+    await at(Date.UTC(2026, 9, 15, 0, 10), HOME_IP, view('4100000000000002', '/get-help', 'https://vva227.org/'));
+    const rows = d1.rows();
+    expect(rows).toHaveLength(2);
+    expect(rows[0].visitor).toBe(rows[1].visitor);
+
+    const days = await visitorDays();
+    expect(days).toHaveLength(1);
+    expect(days[0]).toMatchObject({ day: '2026-10-14', source: 'www.google.com', entry: '/', views: 2 });
+
+    const summary = await d1.binding.prepare(STATS_SQL.summary).bind(SITE_KEY, NOW - 30 * DAY).first<Record<string, number>>();
+    expect(summary).toEqual({ views: 2, visitors: 1, pages: 2 });
   });
 });
 

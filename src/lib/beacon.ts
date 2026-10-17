@@ -17,6 +17,7 @@ import {
   RETENTION_DAYS,
   SALT_PERIOD_DAYS,
 } from '../data/analytics';
+import { easternDayNumber } from './eastern';
 import type { CfProperties } from './runtime';
 
 const MS_PER_DAY = 86_400_000;
@@ -98,12 +99,17 @@ const SEP = String.fromCharCode(0x1f);
 const CONTROL_CHARS = new RegExp('[\\u0000-\\u001F\\u007F]', 'g');
 
 /**
- * Which salt window a timestamp falls in: a whole number of periods since the
- * epoch. A 'YYYY-MM-DD' string would work too and would invite a local-time-
- * zone bug at the boundary; this changes exactly once per period, in UTC.
+ * Which salt window a timestamp falls in: a whole number of periods of
+ * consecutive Eastern calendar days, counted from 1 January 1970.
+ *
+ * It changes at midnight Eastern time because that is where /stats starts a
+ * new day. Changing at UTC midnight, 8pm Eastern (7pm in winter), split one
+ * evening's reader into two visitors on the same day of the log, the second
+ * with no source and a mid-visit entry page. A day number rather than a
+ * 'YYYY-MM-DD' string, so a period of N days is N days at every month end.
  */
 export function saltWindow(nowMs: number, periodDays: number = SALT_PERIOD_DAYS): number {
-  return Math.floor(nowMs / (MS_PER_DAY * periodDays));
+  return Math.floor(easternDayNumber(nowMs) / periodDays);
 }
 
 export interface VisitorHashInput {

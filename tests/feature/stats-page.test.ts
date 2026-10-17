@@ -132,7 +132,7 @@ describe('happy path — a populated page', () => {
     expect($('.summary').text()).toBe('4 views · 3 visitors · 4 pages');
 
     const note = $('.note').text();
-    expect(note).toContain('Visitor ids reset every day');
+    expect(note).toContain('Visitor ids reset at midnight Eastern time');
     expect(note).toContain('come from Cloudflare');
     expect(note).toContain('IP addresses are never stored');
     expect(note).toContain('Eastern (ET)');

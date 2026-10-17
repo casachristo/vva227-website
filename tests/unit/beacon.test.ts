@@ -333,21 +333,80 @@ describe('upsertBindings', () => {
 
 describe('saltWindow and pruneCutoff', () => {
   const DAY = 86_400_000;
+  const H = 3_600_000;
 
-  it('is stable within a day and moves by exactly one at UTC midnight', () => {
-    const midnight = Date.UTC(2026, 9, 17);
-    expect(saltWindow(midnight)).toBe(saltWindow(midnight + DAY - 1));
-    expect(saltWindow(midnight + DAY)).toBe(saltWindow(midnight) + 1);
-    expect(saltWindow(midnight - 1)).toBe(saltWindow(midnight) - 1);
+  /** Every time the window changes between two instants, sampled each minute. */
+  function changes(from: number, to: number, period?: number): number[] {
+    const out: number[] = [];
+    let last = saltWindow(from, period);
+    for (let t = from + 60_000; t <= to; t += 60_000) {
+      const w = saltWindow(t, period);
+      if (w !== last) out.push(t);
+      last = w;
+    }
+    return out;
+  }
+
+  it('keeps one window across 8pm Eastern, where UTC midnight falls', () => {
+    // 19:50 and 20:10 EDT on Oct 14: one evening's reading, one visitor. With
+    // a UTC rotation these were two codes on the same day of /stats.
+    expect(saltWindow(Date.UTC(2026, 9, 14, 23, 50))).toBe(saltWindow(Date.UTC(2026, 9, 15, 0, 10)));
   });
 
-  it('honours a longer period, anchored to the epoch rather than to any chosen date', () => {
-    const period = 30;
-    const span = period * DAY;
-    const w = saltWindow(Date.UTC(2026, 9, 17), period);
-    expect(saltWindow(w * span, period)).toBe(w);
-    expect(saltWindow(w * span + span - 1, period)).toBe(w);
-    expect(saltWindow(w * span + span, period)).toBe(w + 1);
+  it('changes at midnight Eastern time: 04:00 UTC in summer (EDT)', () => {
+    const midnight = Date.UTC(2026, 9, 15, 4, 0); // 00:00 EDT Oct 15
+    expect(saltWindow(midnight)).toBe(saltWindow(midnight - 1) + 1);
+    expect(saltWindow(midnight + DAY - 1)).toBe(saltWindow(midnight));
+    expect(saltWindow(midnight + DAY)).toBe(saltWindow(midnight) + 1);
+  });
+
+  it('changes at midnight Eastern time: 05:00 UTC in winter (EST)', () => {
+    const midnight = Date.UTC(2026, 0, 15, 5, 0); // 00:00 EST Jan 15
+    expect(saltWindow(midnight)).toBe(saltWindow(midnight - 1) + 1);
+    expect(saltWindow(midnight - 1)).toBe(saltWindow(Date.UTC(2026, 0, 14, 5, 0)));
+    expect(saltWindow(midnight + DAY - 1)).toBe(saltWindow(midnight));
+  });
+
+  it('changes exactly once across the 23-hour day when the clocks go forward', () => {
+    // Sunday 8 March 2026 runs from 05:00 UTC (EST) to 04:00 UTC the next day (EDT).
+    const start = Date.UTC(2026, 2, 8, 5, 0);
+    const next = Date.UTC(2026, 2, 9, 4, 0);
+    expect(next - start).toBe(23 * H);
+    expect(changes(start - 2 * H, next + 2 * H)).toEqual([start, next]);
+    expect(saltWindow(next)).toBe(saltWindow(start) + 1);
+  });
+
+  it('changes exactly once across the 25-hour day when the clocks go back', () => {
+    // Sunday 1 November 2026 runs from 04:00 UTC (EDT) to 05:00 UTC the next day (EST).
+    const start = Date.UTC(2026, 10, 1, 4, 0);
+    const next = Date.UTC(2026, 10, 2, 5, 0);
+    expect(next - start).toBe(25 * H);
+    expect(changes(start - 2 * H, next + 2 * H)).toEqual([start, next]);
+    expect(saltWindow(next)).toBe(saltWindow(start) + 1);
+  });
+
+  it('counts whole Eastern days from the epoch, so consecutive days are consecutive numbers', () => {
+    // Midnight Eastern on 1 January 1970 is 05:00 UTC. A date-shaped number
+    // such as 20261015 would jump at every month end, and a period of N
+    // days would stop meaning N days.
+    expect(saltWindow(Date.UTC(1970, 0, 1, 5, 0))).toBe(0);
+    expect(saltWindow(Date.UTC(1970, 0, 1, 5, 0) - 1)).toBe(-1);
+    expect(saltWindow(Date.UTC(2026, 10, 1, 4, 0))).toBe(saltWindow(Date.UTC(2026, 9, 31, 4, 0)) + 1);
+  });
+
+  it('honours a longer period: that many consecutive Eastern days, anchored to the epoch', () => {
+    // Day 20760 since the epoch is 3 November 2026, whose Eastern midnight is
+    // 05:00 UTC; 20760 = 692 * 30, so a 30-day window starts there.
+    const boundary = Date.UTC(2026, 10, 3, 5, 0);
+    expect(saltWindow(boundary, 30)).toBe(692);
+    expect(saltWindow(boundary - 1, 30)).toBe(691);
+    expect(saltWindow(boundary + 30 * DAY - 1, 30)).toBe(692);
+    expect(changes(boundary - 40 * DAY, boundary + 10 * DAY, 30)).toEqual([boundary - 30 * DAY - H, boundary]);
+  });
+
+  it('is not a number for a time that is not a time, rather than throwing', () => {
+    expect(saltWindow(Number.NaN)).toBeNaN();
+    expect(saltWindow(Number.POSITIVE_INFINITY)).toBeNaN();
   });
 
   it('puts the retention cutoff exactly RETENTION_DAYS back', () => {

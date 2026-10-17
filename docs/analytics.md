@@ -25,7 +25,7 @@ One row per page view, in the `views` table of the D1 database
 | `viewport_w`, `viewport_h` | Browser window size, for phone vs. computer | The browser |
 | `engaged_ms` | How long the page was open **and visible** | The browser, updated as the visitor reads |
 | `ts` | When the visit started (UTC; `/stats` shows Eastern time) | The server |
-| `visitor` | A code: SHA-256 of a secret salt, today's date, the IP and the browser's user-agent string. It changes every day and cannot be reversed. | The server |
+| `visitor` | A code: SHA-256 of a secret salt, today's date in Eastern time, the IP and the browser's user-agent string. It changes every day at midnight Eastern time, where `/stats` starts a new day, and cannot be reversed. | The server |
 | `view` | A random id for this one page view, held only in the page's memory | The browser |
 | `site` | Always `vva227` | The server |
 
