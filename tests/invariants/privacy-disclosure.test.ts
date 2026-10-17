@@ -66,8 +66,15 @@ const NOT_ABOUT_VISITORS: Record<string, string> = {
 /** Column names that would hold what the page says is not kept. */
 const FORBIDDEN_COLUMN = /(^|_)(ip|ips|ip_?addr(ess)?|addr(ess)?|user_?agent|ua|lat|lon|lng|latitude|longitude|postal|zip|postcode|cookie|email)($|_)/i;
 
-const privacy = loadPages().find((p) => p.route === '/privacy');
+const pages = loadPages();
+const privacy = pages.find((p) => p.route === '/privacy');
 const text = (privacy?.text ?? '').replace(/\s+/g, ' ');
+
+/** Every email address printed on a built page other than /privacy, lowercased. */
+function publishedEmails(): string[] {
+  const found = pages.filter((p) => p.route !== '/privacy').flatMap((p) => p.text.match(/[\w.%+-]+@[\w-]+(?:\.[\w-]+)+/g) ?? []);
+  return [...new Set(found.map((e) => e.toLowerCase()))];
+}
 
 const read = (path: string) => readFileSync(join(process.cwd(), path), 'utf8');
 
@@ -240,6 +247,18 @@ describe('the privacy page', () => {
       expect(text, String(claim)).not.toMatch(claim);
     }
     expect(text).toContain('this website counts visits to its pages');
+  });
+
+  it('says leaders are listed with their email addresses, some of them personal, as the built site shows', () => {
+    // /about prints every officer's and director's address, and many are
+    // personal mailboxes. The page used to promise the site published no
+    // members' personal contact details.
+    const published = publishedEmails();
+    expect(published.length, 'no page prints an email address any more; rewrite "Members and privacy"').toBeGreaterThan(0);
+    expect(published.filter((e) => !/@(?:vva227\.org|[\w.-]+\.gov)$/.test(e)).length, 'none of them is personal any more').toBeGreaterThan(0);
+    expect(text).toContain('listed with the email address they use for the chapter, and some of those are personal addresses');
+    expect(text).toContain('The site does not publish other members’ contact details, home addresses or donation amounts.');
+    expect(text).not.toMatch(/does not publish members.s personal contact details/);
   });
 
   it('carries the note that the chapter has not yet approved the counting', () => {

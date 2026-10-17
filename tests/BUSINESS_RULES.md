@@ -34,6 +34,7 @@ analytics*.
 | V2 | No assistance recipient's story or identifying detail reaches the build — including inside a note explaining that it is withheld. | `tests/security/output-safety.test.ts` — same suite; the testimonial phrases are listed there |
 | V3 | Nobody is named on this site who does not already appear in the chapter's own records. | `tests/security/output-safety.test.ts` — *Foundation roster name* |
 | V4 | Where the legacy site published two values for one person, neither is published. | `tests/security/output-safety.test.ts` — *conflicting contact details are not guessed at* |
+| V5 | `/privacy` says what the site publishes about people: while any page prints an email address, it says the leaders listed are shown with the address they use for the chapter, some of them personal, and never claims the site publishes no personal contact details. | `tests/invariants/privacy-disclosure.test.ts` — *says leaders are listed with their email addresses, some of them personal, as the built site shows* |
 
 ## Solicitation
 
