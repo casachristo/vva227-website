@@ -248,6 +248,16 @@ describe('docs/analytics.md', () => {
     });
   });
 
+  it('says the rule counts per address, so people sharing one network share its limit', () => {
+    // 'With the same characteristics: IP' counts every reader behind one
+    // address together: a meeting hall's Wi-Fi after an announcement is the
+    // likeliest way to go over it, not one fast clicker.
+    const step7 = setupStep(doc, 7).replace(/\s+/g, ' ');
+    expect(step7).toMatch(/counts per internet address/);
+    expect(step7).toMatch(/share|same (Wi-Fi|network)/i);
+    expect(step7).toMatch(/leave the rule out or raise the number/);
+  });
+
   it('can actually fail: a rule written for another path is caught', () => {
     const moved = doc.replace(`value \`${BEACON_ENDPOINT}\``, 'value `/api/x`');
     expect(settingsAfter(moved, RATE_RULE)['When incoming requests match']).not.toContain(BEACON_ENDPOINT);

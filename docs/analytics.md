@@ -228,7 +228,10 @@ both times, and the domain gets only this one rule: if it already has one,
 leave this step out rather than replace it. A reader sends one or two posts
 for each page, far below the limit. If a fast clicker ever goes over it, a
 few of their page views go uncounted for ten seconds; the pages themselves
-always load.
+always load. The limit counts per internet address, so a group on one
+network, such as a meeting hall's Wi-Fi, shares it: if many of them open the
+site at once, some of their views go uncounted for ten seconds. If that
+matters more than the protection, leave the rule out or raise the number.
 
 It slows a flood down; it does not stop one. A script that stays under the
 limit, or posts from many addresses, can still use up a day's writes, and
