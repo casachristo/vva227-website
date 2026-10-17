@@ -161,6 +161,7 @@ export function tokenFileOpenMessage() {
   return [
     `${TOKEN_FILE} can be read by other accounts on this computer, so this script will not use it.`,
     `Make it readable by you alone, then run this again:  chmod 600 ${TOKEN_FILE}`,
+    'Or set CF_API_TOKEN instead, for example where chmod has no effect, such as a Windows drive opened under WSL.',
     'Nothing was changed.',
   ].join('\n');
 }

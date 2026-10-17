@@ -114,6 +114,15 @@ describe('tokenFileOpenToOthers', () => {
     expect(text).toContain('chmod 600 .cf-api-token');
     expect(text).toContain('Nothing was changed.');
   });
+
+  it('offers CF_API_TOKEN where chmod has no effect, such as a Windows drive under WSL', () => {
+    // There every file reads as open to everyone, whatever chmod is given,
+    // so the refusal would repeat for ever with chmod as its only way out.
+    const text = plan.tokenFileOpenMessage();
+    expect(text).toContain('Or set CF_API_TOKEN instead');
+    expect(text).toContain('WSL');
+    expect(text.indexOf('CF_API_TOKEN')).toBeLessThan(text.indexOf('Nothing was changed.'));
+  });
 });
 
 describe('redact', () => {

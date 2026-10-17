@@ -103,6 +103,8 @@ describe('the token', () => {
       expect(requests).toEqual([]);
       expect(output).toContain('can be read by other accounts on this computer');
       expect(output).toContain('chmod 600 .cf-api-token');
+      // The way out where chmod changes nothing (the next test shows it works).
+      expect(output).toContain('Or set CF_API_TOKEN instead');
       expect(output).not.toContain(TOKEN);
     });
 

@@ -132,7 +132,8 @@ chmod 600 .cf-api-token
 ```
 
 The script refuses the file while other accounts on the computer can read it.
-Or set `CF_API_TOKEN` instead. The script never prints the token.
+Or set `CF_API_TOKEN` instead, which also works where chmod has no effect,
+such as a Windows drive opened under WSL. The script never prints the token.
 
 **4. Run the setup.** Repeat `--email` for each person who may open `/stats`.
 The list is the whole list every time: running again with a shorter list
