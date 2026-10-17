@@ -26,7 +26,7 @@ One row per page view, in the `views` table of the D1 database
 | `viewport_w`, `viewport_h` | Browser window size, for phone vs. computer | The browser |
 | `engaged_ms` | How long the page was open **and visible** | The browser, updated as the visitor reads |
 | `ts` | When the visit started (UTC; `/stats` shows Eastern time) | The server |
-| `visitor` | A code: SHA-256 of a secret salt, today's date in Eastern time, the IP and the browser's user-agent string. It changes every day at midnight Eastern time, where `/stats` starts a new day, and cannot be reversed. | The server |
+| `visitor` | A code: SHA-256 of a secret salt, today's date in Eastern time, the site, the IP and the browser's user-agent string. It changes every day at midnight Eastern time, where `/stats` starts a new day, and cannot be reversed without the `BEACON_SALT` secret. | The server |
 | `view` | A random id for this one page view, held only in the page's memory | The browser |
 | `site` | Always `vva227` | The server |
 
@@ -284,6 +284,13 @@ ran, not the answer it gave), so read the lines beneath it.
 - **The Cloudflare dashboard.** Anyone with access to the account can read the
   D1 database directly, without passing through Access.
 - **A borrowed browser** within its 24-hour session.
+- **Anyone who can deploy the site.** The visitor code is made with one
+  secret, `BEACON_SALT`, which the setup script writes once and never
+  changes. Cloudflare will not show it, but anyone who can deploy to the
+  Pages project can deploy code that reads it. With it, they can work an
+  IPv4 visitor's address back out of a stored code, by trying every address
+  on that visitor's network, and then link that visitor's visits across
+  days. Keep the list of people who can deploy short.
 - **A copied sign-in at the pages.dev address, when vva227.org is in another
   Cloudflare account.** Access cannot cover `vva227-refresh-12g.pages.dev`
   then, so it cannot end a sign-in there either. Someone removed from the

@@ -124,9 +124,12 @@ export interface VisitorHashInput {
  * The pseudonymous visitor identifier: SHA-256 of a secret salt, the salt
  * window, the site, the IP and the user agent, as 32 hex characters.
  *
- * The IP and user agent go in and never come out. Nothing stored can be
- * reversed into either, and once the window rolls the same visitor hashes
- * differently, so rows cannot be linked across days even by us.
+ * The IP and user agent go in and are never stored. Without the secret,
+ * nothing stored can be reversed into either, and once the window rolls the
+ * same visitor hashes differently, so the hash alone links no two days. The
+ * secret is one fixed value, though: whoever holds it can try every IPv4
+ * address against a stored hash, then recompute that visitor's hash for any
+ * other day (Known gaps in tests/BUSINESS_RULES.md).
  *
  * The secret is REQUIRED. A missing one must be a loud failure rather than an
  * empty-string default: with a known salt, anyone can hash an IP + user agent

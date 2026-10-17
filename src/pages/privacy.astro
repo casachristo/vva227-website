@@ -89,10 +89,10 @@ import { RETENTION_MONTHS } from '../data/analytics';
   <h2>The daily visitor code</h2>
   <p>
     So that three pages read by one person count as one visitor rather than three, each record carries a code made by
-    scrambling your IP address and your browser&rsquo;s name together with a secret value and today&rsquo;s date. The
-    code cannot be turned back into your IP address. Because the date is part of it, the code changes every day, so
-    it cannot be used by anyone, the chapter included, to tell that a visitor today and a visitor tomorrow were the
-    same person.
+    scrambling your IP address and your browser&rsquo;s name together with the date and a secret key that only this
+    website&rsquo;s server holds. Without that key, the code cannot be traced back to your internet connection.
+    Because the date is part of it, the code changes every day, so the code by itself cannot link a visit on one day
+    to a visit on another.
   </p>
 
   <h2>Who can see it, and for how long</h2>

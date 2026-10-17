@@ -462,6 +462,29 @@ describe('visitorHash', () => {
   it('treats a missing IP or user agent as empty rather than throwing', async () => {
     await expect(visitorHash({ ...base, ip: null, ua: undefined })).resolves.toMatch(/^[0-9a-f]{32}$/);
   });
+
+  it('can be worked back to an IPv4 address, and linked across days, by whoever holds the secret (a known gap)', async () => {
+    // The secret is one value, written once by the setup script and never
+    // changed; only the date moves. Holding it is enough to try every address
+    // of a network against a stored code, then recompute that visitor's code
+    // for any other day. So /privacy promises only what survives this: without
+    // the key the code cannot be traced back, and the code by itself links no
+    // two days. See Known gaps in tests/BUSINESS_RULES.md.
+    const ua = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36';
+    const ip = '73.12.201.44';
+    const day = saltWindow(Date.UTC(2026, 9, 17, 16));
+    const today = await visitorHash({ ...base, window: day, ip, ua });
+    const tomorrow = await visitorHash({ ...base, window: day + 1, ip, ua });
+    expect(today).not.toBe(tomorrow);
+
+    let found: string | null = null;
+    for (let last = 0; last < 256 && !found; last++) {
+      const guess = `73.12.201.${last}`;
+      if ((await visitorHash({ ...base, window: day, ip: guess, ua })) === today) found = guess;
+    }
+    expect(found).toBe(ip);
+    expect(await visitorHash({ ...base, window: day + 1, ip: found, ua })).toBe(tomorrow);
+  });
 });
 
 describe('readBodyCapped', () => {

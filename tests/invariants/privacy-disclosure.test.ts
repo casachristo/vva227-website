@@ -1,4 +1,6 @@
 import { describe, it, expect } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
 import { loadPages, readPublicFile } from '../helpers/dist';
 import { schemaSql } from '../helpers/d1';
@@ -19,6 +21,8 @@ import { pruneCutoff } from '../../src/lib/beacon';
  *   - no column could hold an IP address or a browser string;
  *   - the retention period on the page is the one the collector enforces;
  *   - the "changes every day" claim holds only while the salt period is a day;
+ *   - the code is promised to be irreversible and unlinkable only as far as
+ *     one fixed secret allows;
  *   - the opt-out the page describes is the one the SHIPPED beacon honours;
  *   - the old "collects nothing" claims are gone.
  *
@@ -64,6 +68,38 @@ const FORBIDDEN_COLUMN = /(^|_)(ip|ips|ip_?addr(ess)?|addr(ess)?|user_?agent|ua|
 
 const privacy = loadPages().find((p) => p.route === '/privacy');
 const text = (privacy?.text ?? '').replace(/\s+/g, ' ');
+
+const read = (path: string) => readFileSync(join(process.cwd(), path), 'utf8');
+
+/** docs/analytics.md, which tells the owner what /privacy tells a visitor. */
+const doc = read('docs/analytics.md').replace(/\s+/g, ' ');
+
+/** The collector's source: its handler and the logic it runs. */
+const collector = ['functions/api/e.ts', 'src/lib/beacon.ts'].map(read).join('\n');
+
+/**
+ * Whether each day's key is forgotten: a salt table in the schema that the
+ * collector deletes from. Today there is none. The hash takes one BEACON_SALT,
+ * written once by the setup script and never changed, and only the date in it
+ * moves.
+ */
+function forgetsDailyKeys(schema: string, collectorSource: string): boolean {
+  const tables = [...schema.matchAll(/CREATE TABLE (?:IF NOT EXISTS )?(\w*salt\w*)/gi)].map((m) => m[1]);
+  return tables.some((table) => new RegExp(`DELETE FROM ${table}\\b`, 'i').test(collectorSource));
+}
+
+/** Words that say the code cannot be undone, and words that say nobody at all could link it. */
+const IRREVERSIBLE = /cannot be (?:turned back|traced back|reversed)|not reversible|irreversible/i;
+const NOBODY = /the chapter included|even by us|by anyone/i;
+
+/**
+ * Sentences that promise more than one fixed secret allows: that the code
+ * cannot be undone, with no "without" to say what it takes, or that nobody,
+ * the chapter included, could use it to link one day's visitor to the next.
+ */
+function overclaims(words: string): string[] {
+  return words.split(/(?<=[.!?]) /).filter((s) => NOBODY.test(s) || (IRREVERSIBLE.test(s) && !/\bwithout\b/i.test(s)));
+}
 
 /** Every `table.column` in a schema, visitor tables and bookkeeping alike. */
 function columnsOf(sql: string): string[] {
@@ -146,6 +182,34 @@ describe('the privacy page', () => {
     expect(SALT_PERIOD_DAYS, 'the salt period changed; rewrite "The daily visitor code" on /privacy').toBe(1);
     expect(text).toContain('the code changes every day');
     expect(text).toContain('A visitor code that changes every day');
+  });
+
+  it('promises the visitor code cannot be undone or linked only as far as one fixed secret allows', () => {
+    // Whoever holds BEACON_SALT can work an IPv4 address back out of a stored
+    // code and recompute that visitor's code for any other day (the unit test
+    // of visitorHash shows it). Until each day's key is forgotten, neither
+    // the page nor the owner's documentation may say otherwise.
+    const found = forgetsDailyKeys(schemaSql(), collector)
+      ? []
+      : [...overclaims(text).map((s) => `/privacy: ${s}`), ...overclaims(doc).map((s) => `docs/analytics.md: ${s}`)];
+    expect(found).toEqual([]);
+    expect(text).toContain('a secret key that only this website’s server holds');
+    expect(text).toContain('Without that key, the code cannot be traced back to your internet connection');
+    expect(text).toContain('the code by itself cannot link a visit on one day to a visit on another');
+    expect(doc).toContain('cannot be reversed without the `BEACON_SALT` secret');
+  });
+
+  it('can actually fail: the old promise is caught, a qualified one is not, and only a forgotten daily key allows it', () => {
+    const old =
+      'The code cannot be turned back into your IP address. Because the date is part of it, the code changes every day, so it cannot be used by anyone, the chapter included, to tell that a visitor today and a visitor tomorrow were the same person.';
+    expect(overclaims(old)).toHaveLength(2);
+    expect(overclaims('It changes every day and cannot be reversed.')).toHaveLength(1);
+    expect(overclaims('It cannot be reversed without the `BEACON_SALT` secret.')).toEqual([]);
+
+    expect(forgetsDailyKeys(schemaSql(), collector)).toBe(false);
+    const daily = `${schemaSql()}\nCREATE TABLE salts (day INTEGER PRIMARY KEY, value TEXT NOT NULL);`;
+    expect(forgetsDailyKeys(daily, collector), 'a table nothing empties forgets nothing').toBe(false);
+    expect(forgetsDailyKeys(daily, `${collector}\nDELETE FROM salts WHERE day < ?1`)).toBe(true);
   });
 
   it('describes the opt-out the shipped beacon honours: with either signal, nothing at all happens', () => {

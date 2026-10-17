@@ -8,11 +8,11 @@
 -- list of visits.
 --
 -- NO IP COLUMN, and that is the load-bearing decision. The visitor hash below
--- is salted with a secret and a window that rolls every 24 hours precisely so
--- two rows from different days cannot be tied to one person. Storing the IP
--- beside it would make that rotation cosmetic. Location and network are
--- already resolved by Cloudflare at the edge, which answers the only questions
--- the IP would have been asked.
+-- is salted with a secret and a window that changes at midnight Eastern time,
+-- so that the hash alone does not tie two rows from different days to one
+-- person. Storing the IP beside it would make that rotation cosmetic. Location
+-- and network are already resolved by Cloudflare at the edge, which answers
+-- the only questions the IP would have been asked.
 
 CREATE TABLE IF NOT EXISTS views (
   -- The client-generated pageview id. Random, held only in a JS variable for
@@ -25,7 +25,7 @@ CREATE TABLE IF NOT EXISTS views (
   site       TEXT    NOT NULL,
 
   -- Salted one-way hash of IP + user agent (src/lib/beacon.ts, visitorHash).
-  -- Not reversible, and not comparable across salt windows.
+  -- Not reversible without BEACON_SALT, and not comparable across salt windows.
   visitor    TEXT    NOT NULL,
 
   -- location.pathname only. Never the query string: campaign tags, session
