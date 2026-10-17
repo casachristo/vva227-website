@@ -70,18 +70,20 @@ function expectStoredView(row: Row | undefined, expected: { path: string; referr
   expect(Number.isInteger(r.engaged_ms) && (r.engaged_ms as number) >= 0).toBe(true);
   expect(r.ts as number).toBeGreaterThan(Date.now() - 10 * 60_000);
   expect(r.ts as number).toBeLessThanOrEqual(Date.now());
-  // Location and network, from the request.cf the runtime really attaches.
-  // wrangler pages dev always supplies one: fetched from Cloudflare, or
-  // miniflare's built-in fallback (country US, asn 395747, regionCode TX).
-  // Every other tier feeds the collector a hand-written cf object that uses
-  // the collector's own field names, so a field read under the wrong name
-  // passes there and stores null here.
-  expect(r.country).toMatch(/^[A-Z]{2}$/);
-  expect(Number.isInteger(r.asn) && (r.asn as number) > 0, `asn is ${String(r.asn)}`).toBe(true);
-  expect(typeof r.region === 'string' && r.region.length > 0, `region is ${String(r.region)}`).toBe(true);
-  // These two can be missing: the fallback's asOrganization is empty, and a
-  // real edge does not always know the city.
-  for (const col of ['city', 'as_org']) expect(r[col] === null || typeof r[col] === 'string', col).toBe(true);
+  // Location and network, from the request.cf the runtime really attaches:
+  // miniflare's built-in placeholder, always, because the server turns off
+  // its download of this machine's real one (RUNTIME_OFFLINE_ENV). Every
+  // other tier feeds the collector a hand-written cf object that uses the
+  // collector's own field names, so a field read under the wrong name passes
+  // there and stores the wrong value here. The placeholder's asOrganization
+  // is empty, which the collector stores as nothing.
+  expect({ country: r.country, region: r.region, city: r.city, asn: r.asn, as_org: r.as_org }).toEqual({
+    country: 'US',
+    region: 'TX',
+    city: 'Austin',
+    asn: 395747,
+    as_org: null,
+  });
   return r;
 }
 

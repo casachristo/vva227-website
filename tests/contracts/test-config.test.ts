@@ -3,6 +3,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import defaultConfig from '../../playwright.config';
 import runtimeConfig from '../../playwright.runtime.config';
+import { RUNTIME_OFFLINE_ENV } from '../helpers/pages-runtime';
 
 /**
  * CONTRACT — how the test commands are wired, for whoever runs them next.
@@ -78,6 +79,18 @@ describe('the runtime run (npm run test:runtime)', () => {
     expect((config.projects ?? []).map((p) => p.name)).toEqual(['runtime']);
     expect(matches(config.testMatch, RUNTIME_SPEC)).toBe(true);
     expect(matches(config.testMatch, 'tests/system/smoke.spec.ts')).toBe(false);
+  });
+
+  it('runs wrangler offline: no usage report, no download of this machine\'s location, no update check', () => {
+    // Left on, miniflare downloads where Cloudflare places this machine and
+    // the runtime spec's rows depend on the network it runs on; the banner
+    // asks the npm registry for a newer wrangler.
+    expect(RUNTIME_OFFLINE_ENV).toEqual({
+      WRANGLER_SEND_METRICS: 'false',
+      CLOUDFLARE_CF_FETCH_ENABLED: 'false',
+      WRANGLER_HIDE_BANNER: 'true',
+    });
+    expect(read('tests/helpers/pages-runtime-server.ts')).toContain('const env = { ...process.env, ...RUNTIME_OFFLINE_ENV };');
   });
 });
 

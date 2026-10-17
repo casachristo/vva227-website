@@ -19,8 +19,10 @@
  * `pages dev` gets the binding as a flag; both name the same database id, so
  * both reach the same local SQLite file.
  *
- * Nothing here can reach Cloudflare: every wrangler call is --local, and the
- * database id is a placeholder that exists nowhere else.
+ * Nothing here reaches the network: every wrangler call is --local, the
+ * database id is a placeholder that exists nowhere else, and
+ * RUNTIME_OFFLINE_ENV turns off the three things wrangler would otherwise
+ * fetch or send on its own.
  *
  * State is wiped before the run, so a crashed earlier run cannot leak rows
  * into this one, and removed after it.
@@ -32,6 +34,7 @@ import { fileURLToPath } from 'node:url';
 import {
   RUNTIME_COMPATIBILITY_DATE,
   RUNTIME_DB,
+  RUNTIME_OFFLINE_ENV,
   RUNTIME_PORT,
   RUNTIME_SALT,
   RUNTIME_STATE,
@@ -43,7 +46,7 @@ const WRANGLER = join(ROOT, 'node_modules', '.bin', 'wrangler');
 const PERSIST = join(RUNTIME_STATE, 'persist');
 const CONFIG_DIR = join(RUNTIME_STATE, 'migrate');
 
-const env = { ...process.env, WRANGLER_SEND_METRICS: 'false' };
+const env = { ...process.env, ...RUNTIME_OFFLINE_ENV };
 
 function fail(message: string): never {
   console.error(`[pages-runtime] ${message}`);

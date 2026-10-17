@@ -32,5 +32,18 @@ export const RUNTIME_SALT = 'system-test-salt-not-the-real-one';
 /** Workers compatibility date for the local runtime. */
 export const RUNTIME_COMPATIBILITY_DATE = '2025-09-01';
 
+/**
+ * Added to the environment of every wrangler call the server makes, so the
+ * run touches no network: no usage report, no download of where Cloudflare
+ * places this machine (miniflare then attaches its fixed placeholder as
+ * request.cf: Austin, TX, US, network 395747), and no banner, which would ask
+ * the npm registry for a newer wrangler.
+ */
+export const RUNTIME_OFFLINE_ENV = {
+  WRANGLER_SEND_METRICS: 'false',
+  CLOUDFLARE_CF_FETCH_ENABLED: 'false',
+  WRANGLER_HIDE_BANNER: 'true',
+};
+
 /** Where miniflare keeps the D1 database's SQLite file under RUNTIME_STATE. */
 export const RUNTIME_D1_DIR = join(RUNTIME_STATE, 'persist', 'v3', 'd1', 'miniflare-D1DatabaseObject');
