@@ -8,6 +8,7 @@ import { onRequest } from '../../functions/api/e';
 import { beaconRequest, createD1, createEnv } from '../helpers/d1';
 import { expectAccepted, expectViewRow } from '../helpers/analytics';
 import { DIST, loadPages } from '../helpers/dist';
+import { cspDirectives, headersPolicy } from '../helpers/pages-files';
 import { emittedConfig, runTracker, type SentRequest, type TrackerRun, type TrackerRunOptions } from '../helpers/tracker-harness';
 
 /**
@@ -294,39 +295,13 @@ describe('through the real collector, into the real schema', () => {
 });
 
 describe('the Content-Security-Policy the built site is served with', () => {
-  /** The /* block's CSP from dist/_headers, as directive -> sources. */
-  function cspOf(headersText: string): Record<string, string[]> {
-    const lines = headersText.split(/\r?\n/);
-    const policies: string[] = [];
-    let block = '';
-    for (const line of lines) {
-      if (!line.trim() || line.trim().startsWith('#')) continue;
-      if (!/^\s/.test(line)) block = line.trim();
-      else if (/^\s+Content-Security-Policy:/i.test(line)) {
-        expect(block, 'a CSP outside the /* block').toBe('/*');
-        policies.push(line.slice(line.indexOf(':') + 1).trim());
-      }
-    }
-    expect(policies).toHaveLength(1);
-    return Object.fromEntries(
-      policies[0]
-        .split(';')
-        .map((d) => d.trim())
-        .filter(Boolean)
-        .map((d) => {
-          const [name, ...sources] = d.split(/\s+/);
-          return [name, sources];
-        }),
-    );
-  }
-
   /** Every source that is not a keyword or a bare scheme names an origin. */
   const origins = (csp: Record<string, string[]>) =>
     Object.entries(csp).flatMap(([name, sources]) =>
       sources.filter((s) => !/^'(self|none|unsafe-inline)'$/.test(s) && !/^(data|blob):$/.test(s)).map((s) => `${name} ${s}`),
     );
 
-  const csp = () => cspOf(readFileSync(join(DIST, '_headers'), 'utf8'));
+  const csp = () => cspDirectives(headersPolicy(readFileSync(join(DIST, '_headers'), 'utf8')));
 
   it("lets the beacon load and post: script-src 'self' and connect-src 'self', stated", () => {
     expect(csp()['script-src']).toEqual(["'self'"]);
@@ -341,6 +316,15 @@ describe('the Content-Security-Policy the built site is served with', () => {
     const all = Object.values(csp()).flat();
     expect(all).not.toContain("'unsafe-eval'");
     expect(csp()['script-src']).not.toContain("'unsafe-inline'");
+  });
+
+  it('is set once, on every path, and a policy anywhere else is refused', () => {
+    // A second policy on a narrower block would be enforced alongside this
+    // one, holding those pages to rules nothing here reads.
+    expect(() => csp()).not.toThrow();
+    const extra = `${readFileSync(join(DIST, '_headers'), 'utf8')}\n/give/*\n  Content-Security-Policy: default-src 'none'\n`;
+    expect(() => headersPolicy(extra)).toThrow(/one Content-Security-Policy/);
+    expect(() => headersPolicy('/*\n  X-Frame-Options: DENY\n')).toThrow(/one Content-Security-Policy/);
   });
 
   it('can fail: a hosted analytics origin would be caught', () => {

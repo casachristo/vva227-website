@@ -3,6 +3,7 @@ import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join, relative, sep } from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
 import { BEACON_ENDPOINT, BEACON_SCRIPT, EVENT_VIEW, SITE_KEY, STATS_PATH } from '../../src/data/analytics';
+import { headersPolicy, redirectRules } from '../helpers/pages-files';
 import { RUNTIME_D1_DIR, RUNTIME_ORIGIN } from '../helpers/pages-runtime';
 
 /**
@@ -87,14 +88,8 @@ function builtRoutes(): string[] {
   return out.sort();
 }
 
-/** The Content-Security-Policy the /* block of dist/_headers sets. */
-function shippedPolicy(): string {
-  const line = readFileSync(join(DIST, '_headers'), 'utf8')
-    .split(/\r?\n/)
-    .find((l) => /^\s+Content-Security-Policy:/i.test(l));
-  if (!line) throw new Error('dist/_headers sets no Content-Security-Policy');
-  return line.slice(line.indexOf(':') + 1).trim();
-}
+/** The Content-Security-Policy dist/_headers sets on every path. */
+const shippedPolicy = () => headersPolicy(readFileSync(join(DIST, '_headers'), 'utf8'));
 
 interface Visitor {
   page: Page;
@@ -376,15 +371,11 @@ test.describe('routing with Functions present', () => {
     // what this runtime does catch is the opposite mistake, a routes file
     // that leaves the collector out (see the next test, and every page test
     // above, whose beacon would then be answered by the asset server).
-    const rules = readFileSync(join(DIST, '_redirects'), 'utf8')
-      .split(/\r?\n/)
-      .map((l) => l.trim())
-      .filter((l) => l && !l.startsWith('#'))
-      .map((l) => l.split(/\s+/));
+    const rules = redirectRules(readFileSync(join(DIST, '_redirects'), 'utf8'));
     expect(rules.length).toBeGreaterThan(40);
-    for (const [from, to, status] of rules) {
+    for (const { from, to, status } of rules) {
       const res = await request.get(from, { maxRedirects: 0 });
-      expect(res.status(), from).toBe(Number(status ?? 302));
+      expect(res.status(), from).toBe(status);
       expect(new URL(res.headers()['location'], RUNTIME_ORIGIN).pathname, from).toBe(to);
     }
   });

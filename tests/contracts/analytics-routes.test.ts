@@ -9,6 +9,7 @@ import { UPSERT_SQL } from '../../src/lib/beacon';
 import { schemaSql } from '../helpers/d1';
 import { VIEW_COLUMNS } from '../helpers/analytics';
 import { DIST } from '../helpers/dist';
+import { redirectRules } from '../helpers/pages-files';
 
 /**
  * CONTRACT — the files that must agree for the Functions to run at all.
@@ -49,11 +50,7 @@ function handlerRoutes(): string[] {
 
 /** Source sides of public/_redirects. */
 function redirectSources(): string[] {
-  return readFileSync(join(ROOT, 'public', '_redirects'), 'utf8')
-    .split(/\r?\n/)
-    .map((l) => l.trim())
-    .filter((l) => l && !l.startsWith('#'))
-    .map((l) => l.split(/\s+/)[0]);
+  return redirectRules(readFileSync(join(ROOT, 'public', '_redirects'), 'utf8')).map((r) => r.from);
 }
 
 describe('public/_routes.json and functions/', () => {
