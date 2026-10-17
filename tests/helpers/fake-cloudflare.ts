@@ -20,6 +20,7 @@ import { DatabaseSync } from 'node:sqlite';
 export const CH227 = 'd4afcdf7502fa80e6443dbb67ecd1d5f';
 /** A second account, for the zone living somewhere other than the Pages project. */
 export const OTHER_ACCOUNT = 'b'.repeat(32);
+export const OTHER_ACCOUNT_NAME = 'Another Org';
 export const PAGES_SUBDOMAIN = 'vva227-refresh-12g.pages.dev';
 export const TEAM_DOMAIN = 'vva227-test.cloudflareaccess.com';
 
@@ -72,6 +73,8 @@ export interface FakeOptions {
   tokenAccounts?: string[];
   /** Which account owns vva227.org. */
   zoneAccount?: string;
+  /** That account's name, as the zones API reports it. */
+  zoneAccountName?: string;
   /** Whether the token can read the zone. Defaults to whether it covers the zone's account. */
   zoneVisible?: boolean;
   /** The project as it exists in CH227; null when there is none. */
@@ -121,6 +124,7 @@ export class FakeCloudflare {
   readonly token: string;
   tokenAccounts: string[];
   zoneAccount: string;
+  zoneAccountName: string;
   zoneVisible: boolean;
   project: ProjectState | null;
   teams: Record<string, string>;
@@ -134,6 +138,7 @@ export class FakeCloudflare {
     this.token = options.token ?? 'test-token-0123456789abcdef';
     this.tokenAccounts = options.tokenAccounts ?? [CH227];
     this.zoneAccount = options.zoneAccount ?? CH227;
+    this.zoneAccountName = options.zoneAccountName ?? (this.zoneAccount === CH227 ? 'Ch 227' : OTHER_ACCOUNT_NAME);
     this.zoneVisible = options.zoneVisible ?? this.tokenAccounts.includes(this.zoneAccount);
     this.project = options.project === undefined ? freshProject() : options.project;
     this.teams = options.teams ?? { [CH227]: TEAM_DOMAIN };
@@ -246,7 +251,7 @@ export class FakeCloudflare {
     // Zones: the token sees a zone only in an account it covers.
     if (path === '/zones' && method === 'GET') {
       const visible = this.zoneVisible && q.get('name') === 'vva227.org';
-      return json(200, ok(visible ? [{ id: 'zone-1', name: 'vva227.org', status: 'active', account: { id: this.zoneAccount, name: 'zone owner' } }] : []));
+      return json(200, ok(visible ? [{ id: 'zone-1', name: 'vva227.org', status: 'active', account: { id: this.zoneAccount, name: this.zoneAccountName } }] : []));
     }
 
     // Zero Trust organisation

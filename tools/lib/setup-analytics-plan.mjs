@@ -375,11 +375,23 @@ export function queryRows(result) {
 // Access
 // ---------------------------------------------------------------------------
 
-/** The account that owns the zone, from GET /zones?name=. Null when the token cannot see it. */
-export function zoneAccountId(zones) {
+/**
+ * The account that owns the zone, from GET /zones?name=, as { id, name }.
+ * Null when the token cannot see it. The name is printed, so it keeps no
+ * control characters; it is null when Cloudflare gives none.
+ */
+export function zoneAccount(zones) {
   const zone = findByName(zones, ZONE, 'zone');
   const id = zone?.account?.id;
-  return typeof id === 'string' && id ? id : null;
+  if (typeof id !== 'string' || !id) return null;
+  const name = typeof zone.account.name === 'string' ? zone.account.name.replace(/[\u0000-\u001f\u007f]+/g, ' ').trim() : '';
+  return { id, name: name || null };
+}
+
+/** An account the way the person running this can find it in the dashboard: its name, then its id. */
+export function accountLabel({ id, name }) {
+  if (id === ACCOUNT) return `"Ch 227" (${ACCOUNT})`;
+  return name ? `"${name}" (${id})` : id;
 }
 
 export function zoneNotVisibleMessage() {
@@ -387,6 +399,8 @@ export function zoneNotVisibleMessage() {
     `The token cannot see the ${ZONE} zone, so this script cannot tell which Cloudflare account Access belongs in.`,
     `Give the token "Zone › Zone › Read" for ${ZONE}. If ${ZONE} lives in a different Cloudflare account from "Ch 227",`,
     'the token must include that account too. Then run this again; what is already done will be skipped.',
+    `If you cannot select ${ZONE} in the token form, the zone is in an account your login is not a member of:`,
+    "ask that account's administrator to add you, or to run this script, before /stats can be opened.",
   ].join('\n');
 }
 
@@ -397,9 +411,10 @@ export function teamDomainFrom(organization) {
   return domain || null;
 }
 
-export function zeroTrustInstructions(accountId) {
+/** @param {{ id: string, name: string | null }} account the account that owns the zone */
+export function zeroTrustInstructions(account) {
   return [
-    `Cloudflare Zero Trust is not turned on for account ${accountId}${accountId === ACCOUNT ? ' ("Ch 227")' : ` (the account that owns ${ZONE})`}.`,
+    `Cloudflare Zero Trust is not turned on for the account ${accountLabel(account)}, which owns ${ZONE}.`,
     'This has to be done once, by hand, in the dashboard:',
     '  1. Open https://one.dash.cloudflare.com and pick that account.',
     '  2. Choose a team name (it becomes <team>.cloudflareaccess.com; anything short works).',
@@ -455,8 +470,8 @@ export function policyMatches(policy, emails) {
 export function destinationsFor({ accessAccount, subdomain }) {
   const hosts = [ZONE, `www.${ZONE}`];
   let skipped = null;
-  if (accessAccount !== ACCOUNT) {
-    skipped = `${ZONE} is in a different Cloudflare account (${accessAccount}) from the Pages project, and Access can only cover hostnames in its own account, so the pages.dev address is not covered. /stats there stays a plain "Not found" for everyone; use https://${ZONE}${STATS_PATH}.`;
+  if (accessAccount.id !== ACCOUNT) {
+    skipped = `${ZONE} is in a different Cloudflare account, ${accountLabel(accessAccount)}, from the Pages project, and Access can only cover hostnames in its own account, so the pages.dev address is not covered. /stats there stays a plain "Not found" for everyone; use https://${ZONE}${STATS_PATH}.`;
   } else if (!subdomain) {
     skipped = `The project reported no pages.dev address, so only ${ZONE} is covered. /stats elsewhere stays a plain "Not found" for everyone.`;
   } else {
@@ -552,8 +567,9 @@ export function isAuthRefusal({ status, body }) {
  * permission and which account the call needed.
  *
  * @param {{ method: string, path: string, status: number, body: unknown, text?: string }} failure
+ * @param {{ id: string, name: string | null } | null} [zoneOwner] the zone's account, once known, to name it
  */
-export function describeApiError({ method, path, status, body, text = '' }) {
+export function describeApiError({ method, path, status, body, text = '' }, zoneOwner = null) {
   const errors = Array.isArray(body?.errors) ? body.errors : [];
   const detail = errors.length
     ? errors
@@ -571,7 +587,7 @@ export function describeApiError({ method, path, status, body, text = '' }) {
     lines.push(`The token was not allowed to do this.${permission ? ` It needs "${permission}".` : ''}`);
     if (account && account !== ACCOUNT) {
       lines.push(
-        `This call is in account ${account}, which owns ${ZONE} but is not the "Ch 227" account (${ACCOUNT}). ` +
+        `This call is in account ${zoneOwner?.id === account ? accountLabel(zoneOwner) : account}, which owns ${ZONE} but is not the "Ch 227" account (${ACCOUNT}). ` +
           'The token must include BOTH accounts: edit it, add the second account under Account Resources, and run this again.',
       );
     } else if (account) {

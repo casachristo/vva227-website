@@ -323,12 +323,37 @@ describe('migrations', () => {
 });
 
 describe('zone and Zero Trust', () => {
-  it('reads the owning account of the exact zone', () => {
-    expect(plan.zoneAccountId([{ name: 'vva227.org.example', account: { id: 'x' } }, { name: 'vva227.org', account: { id: OTHER } }])).toBe(OTHER);
+  it('reads the owning account of the exact zone, by id and by name', () => {
+    expect(plan.zoneAccount([{ name: 'vva227.org.example', account: { id: 'x', name: 'Wrong' } }, { name: 'vva227.org', account: { id: OTHER, name: ' Other Org ' } }])).toEqual({
+      id: OTHER,
+      name: 'Other Org',
+    });
+  });
+
+  it('has no name when Cloudflare gives none, and prints none of the control characters one could carry', () => {
+    expect(plan.zoneAccount([{ name: 'vva227.org', account: { id: OTHER } }])).toEqual({ id: OTHER, name: null });
+    expect(plan.zoneAccount([{ name: 'vva227.org', account: { id: OTHER, name: 7 } }])).toEqual({ id: OTHER, name: null });
+    expect(plan.zoneAccount([{ name: 'vva227.org', account: { id: OTHER, name: ' \n ' } }])).toEqual({ id: OTHER, name: null });
+    const esc = String.fromCharCode(27);
+    expect(plan.zoneAccount([{ name: 'vva227.org', account: { id: OTHER, name: `Evil${esc}[2J\nOrg` } }])).toEqual({ id: OTHER, name: 'Evil [2J Org' });
   });
 
   it.each([[[]], [undefined], [[{ name: 'vva227.org' }]], [[{ name: 'vva227.org', account: { id: '' } }]]])('is null when the zone or its account is not visible: %j', (zones) => {
-    expect(plan.zoneAccountId(zones)).toBeNull();
+    expect(plan.zoneAccount(zones)).toBeNull();
+  });
+
+  it('names "Ch 227" by its own name, and any other account by the name Cloudflare gave, each with its id', () => {
+    expect(plan.accountLabel({ id: ACCOUNT, name: 'whatever Cloudflare says' })).toBe(`"Ch 227" (${ACCOUNT})`);
+    expect(plan.accountLabel({ id: OTHER, name: 'Other Org' })).toBe(`"Other Org" (${OTHER})`);
+    expect(plan.accountLabel({ id: OTHER, name: null })).toBe(OTHER);
+  });
+
+  it('says what to do when the token cannot see the zone, including when the owner\'s login cannot', () => {
+    const text = plan.zoneNotVisibleMessage();
+    expect(text).toContain('Give the token "Zone › Zone › Read" for vva227.org');
+    expect(text).toContain('If you cannot select vva227.org in the token form');
+    expect(text).toContain('an account your login is not a member of');
+    expect(text).toContain("ask that account's administrator to add you, or to run this script");
   });
 
   it('reads the team domain from an object or a one-item list', () => {
@@ -340,13 +365,13 @@ describe('zone and Zero Trust', () => {
     expect(plan.teamDomainFrom(org)).toBeNull();
   });
 
-  it('gives the dashboard steps, naming the account', () => {
-    const own = plan.zeroTrustInstructions(ACCOUNT);
-    expect(own).toContain(`account ${ACCOUNT} ("Ch 227")`);
+  it('gives the dashboard steps, naming the account by name and id', () => {
+    const own = plan.zeroTrustInstructions({ id: ACCOUNT, name: 'Ch 227' });
+    expect(own).toContain(`Cloudflare Zero Trust is not turned on for the account "Ch 227" (${ACCOUNT}), which owns vva227.org.`);
     for (const step of ['one.dash.cloudflare.com', 'team name', 'Free plan', 'card details', 'does not charge', 'Nothing after this point was changed.']) {
       expect(own).toContain(step);
     }
-    expect(plan.zeroTrustInstructions(OTHER)).toContain(`account ${OTHER} (the account that owns vva227.org)`);
+    expect(plan.zeroTrustInstructions({ id: OTHER, name: 'Other Org' })).toContain(`for the account "Other Org" (${OTHER}), which owns vva227.org.`);
   });
 });
 
@@ -389,29 +414,31 @@ describe('the policy', () => {
 });
 
 describe('destinationsFor', () => {
+  const CH227 = { id: ACCOUNT, name: 'Ch 227' };
+
   it('covers the apex, www, and the project\'s pages.dev names when the zone is in the project\'s account', () => {
-    expect(plan.destinationsFor({ accessAccount: ACCOUNT, subdomain: SUBDOMAIN })).toEqual({
+    expect(plan.destinationsFor({ accessAccount: CH227, subdomain: SUBDOMAIN })).toEqual({
       destinations: ['vva227.org/stats', 'www.vva227.org/stats', `${SUBDOMAIN}/stats`, `*.${SUBDOMAIN}/stats`].map((uri) => ({ type: 'public', uri })),
       skipped: null,
     });
   });
 
-  it('leaves the pages.dev names out, and says why, when the zone is in another account', () => {
-    const { destinations, skipped } = plan.destinationsFor({ accessAccount: OTHER, subdomain: SUBDOMAIN });
+  it('leaves the pages.dev names out, and says why, naming the account, when the zone is in another account', () => {
+    const { destinations, skipped } = plan.destinationsFor({ accessAccount: { id: OTHER, name: 'Other Org' }, subdomain: SUBDOMAIN });
     expect(destinations.map((d: { uri: string }) => d.uri)).toEqual(['vva227.org/stats', 'www.vva227.org/stats']);
-    expect(skipped).toContain(`different Cloudflare account (${OTHER})`);
+    expect(skipped).toContain(`different Cloudflare account, "Other Org" (${OTHER}), from the Pages project`);
     expect(skipped).toContain('stays a plain "Not found" for everyone');
   });
 
   it('leaves them out when the project reported no pages.dev name', () => {
-    const { destinations, skipped } = plan.destinationsFor({ accessAccount: ACCOUNT, subdomain: null });
+    const { destinations, skipped } = plan.destinationsFor({ accessAccount: CH227, subdomain: null });
     expect(destinations).toHaveLength(2);
     expect(skipped).toMatch(/reported no pages\.dev address/);
   });
 });
 
 describe('the application', () => {
-  const destinations = plan.destinationsFor({ accessAccount: ACCOUNT, subdomain: SUBDOMAIN }).destinations;
+  const destinations = plan.destinationsFor({ accessAccount: { id: ACCOUNT, name: 'Ch 227' }, subdomain: SUBDOMAIN }).destinations;
 
   it('is created hidden from the launcher, for a day, with only this policy', () => {
     expect(plan.appBody({ policyId: 'p1', destinations })).toEqual({
@@ -509,6 +536,13 @@ describe('describing a failed call', () => {
     const text = plan.describeApiError({ method: 'GET', path: ZT, status: 403, body: { success: false, errors: [{ code: 10000, message: 'Authentication error' }] } });
     expect(text).toContain(`This call is in account ${OTHER}, which owns vva227.org but is not the "Ch 227" account (${ACCOUNT}).`);
     expect(text).toContain('must include BOTH accounts');
+  });
+
+  it('names that account by its name once the zone has said it', () => {
+    const failure = { method: 'GET', path: ZT, status: 403, body: { success: false, errors: [{ code: 10000, message: 'Authentication error' }] } };
+    expect(plan.describeApiError(failure, { id: OTHER, name: 'Other Org' })).toContain(`This call is in account "Other Org" (${OTHER}), which owns vva227.org`);
+    // A name for some other account is not applied to this one.
+    expect(plan.describeApiError(failure, { id: 'c'.repeat(32), name: 'Third' })).toContain(`This call is in account ${OTHER}, which owns`);
   });
 
   it('a refusal in the Ch 227 account names it', () => {

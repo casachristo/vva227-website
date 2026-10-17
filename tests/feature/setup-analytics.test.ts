@@ -14,6 +14,7 @@ import {
   FakeCloudflare,
   freshProject,
   OTHER_ACCOUNT,
+  OTHER_ACCOUNT_NAME,
   PAGES_SUBDOMAIN,
   TEAM_DOMAIN,
   type FakeOptions,
@@ -393,7 +394,8 @@ describe('vva227.org in a different Cloudflare account', () => {
       { type: 'public', uri: 'www.vva227.org/stats' },
     ]);
     expectProductionConfigured(fake, { aud: app.aud, team: 'other-team.cloudflareaccess.com' });
-    expect(output).toContain(`vva227.org is in a different Cloudflare account (${OTHER_ACCOUNT})`);
+    expect(output).toContain(`vva227.org is in a different Cloudflare account, "${OTHER_ACCOUNT_NAME}" (${OTHER_ACCOUNT}); Access is set up there`);
+    expect(output).toContain(`created the Access policy "vva227 stats owners" in the account "${OTHER_ACCOUNT_NAME}" (${OTHER_ACCOUNT}) admitting ${EMAIL}`);
     expect(output).toContain('the pages.dev address is not covered');
     expect(output).toContain('use https://vva227.org/stats');
   });
@@ -416,7 +418,7 @@ describe('vva227.org in a different Cloudflare account', () => {
     const { code, output } = await run(fake);
     expect(code).toBe(1);
     expect(output).toContain(`Cloudflare refused GET /accounts/${OTHER_ACCOUNT}/access/organizations (HTTP 403)`);
-    expect(output).toContain(`This call is in account ${OTHER_ACCOUNT}, which owns vva227.org but is not the "Ch 227" account`);
+    expect(output).toContain(`This call is in account "${OTHER_ACCOUNT_NAME}" (${OTHER_ACCOUNT}), which owns vva227.org but is not the "Ch 227" account`);
     expect(output).toContain('The token must include BOTH accounts');
   });
 
@@ -426,13 +428,26 @@ describe('vva227.org in a different Cloudflare account', () => {
     expect(code).toBe(1);
     expect(output).toContain('The token cannot see the vva227.org zone');
     expect(output).toContain('the token must include that account too');
+    // The case the owner cannot fix with the token form alone.
+    expect(output).toContain('If you cannot select vva227.org in the token form');
   });
 
   it('names the zone\'s account when Zero Trust is missing there', async () => {
     const fake = cloudflare({ zoneAccount: OTHER_ACCOUNT, tokenAccounts: [CH227, OTHER_ACCOUNT], teams: { [CH227]: TEAM_DOMAIN } });
     const { code, output } = await run(fake);
     expect(code).toBe(1);
-    expect(output).toContain(`Cloudflare Zero Trust is not turned on for account ${OTHER_ACCOUNT} (the account that owns vva227.org).`);
+    expect(output).toContain(`Cloudflare Zero Trust is not turned on for the account "${OTHER_ACCOUNT_NAME}" (${OTHER_ACCOUNT}), which owns vva227.org.`);
+  });
+
+  it('names that account, by name and id, in what a dry run says it would do there', async () => {
+    const fake = cloudflare({ zoneAccount: OTHER_ACCOUNT, tokenAccounts: [CH227, OTHER_ACCOUNT], teams: { [OTHER_ACCOUNT]: TEAM_DOMAIN } });
+    const { code, output, requests } = await run(fake, ['--email', EMAIL, '--dry-run']);
+    expect(code, output).toBe(0);
+    expect(requests.filter((r) => r.method !== 'GET')).toEqual([]);
+    const there = `in the account "${OTHER_ACCOUNT_NAME}" (${OTHER_ACCOUNT})`;
+    expect(output).toContain(`vva227.org is in a different Cloudflare account, "${OTHER_ACCOUNT_NAME}" (${OTHER_ACCOUNT}); Access is set up there`);
+    expect(output).toContain(`  - create the Access policy "vva227 stats owners" ${there} admitting ${EMAIL}`);
+    expect(output).toContain(`  - create the Access application "vva227 stats" ${there} covering vva227.org/stats, www.vva227.org/stats`);
   });
 });
 

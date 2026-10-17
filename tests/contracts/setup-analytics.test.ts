@@ -85,7 +85,7 @@ describe('the script, the registry and the repo agree', () => {
   });
 
   it('covers only hostnames the site counts as itself', () => {
-    const { destinations } = plan.destinationsFor({ accessAccount: plan.ACCOUNT, subdomain: 'vva227-refresh-12g.pages.dev' });
+    const { destinations } = plan.destinationsFor({ accessAccount: { id: plan.ACCOUNT, name: 'Ch 227' }, subdomain: 'vva227-refresh-12g.pages.dev' });
     for (const { uri } of destinations) {
       const host = uri.slice(0, uri.indexOf('/')).replace(/^\*\./, 'preview.');
       expect(isSiteHost(host), `${host} is not in SITE_HOSTS`).toBe(true);

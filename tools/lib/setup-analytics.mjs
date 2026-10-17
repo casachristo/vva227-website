@@ -131,6 +131,10 @@ export async function runSetup({
     }
   }
 
+  // The account that owns the zone, once step (d) has asked; it names that
+  // account in an error.
+  let accessAccount = null;
+
   try {
     if (dryRun) say('DRY RUN: looking only. Nothing will be changed.\n');
 
@@ -199,17 +203,20 @@ export async function runSetup({
 
     // (d) Access: which account, its team, the policy, the application.
     say(`\n4. Cloudflare Access for ${plan.ZONE}${plan.STATS_PATH}`);
-    const accessAccount = plan.zoneAccountId((await api('GET', `/zones?name=${encodeURIComponent(plan.ZONE)}`)).result);
+    accessAccount = plan.zoneAccount((await api('GET', `/zones?name=${encodeURIComponent(plan.ZONE)}`)).result);
     if (!accessAccount) throw new plan.StopError(plan.zoneNotVisibleMessage());
+    const elsewhere = accessAccount.id !== plan.ACCOUNT;
     say(
-      accessAccount === plan.ACCOUNT
-        ? `   ${plan.ZONE} is in the "Ch 227" account`
-        : `   ${plan.ZONE} is in a different Cloudflare account (${accessAccount}); Access is set up there`,
+      elsewhere
+        ? `   ${plan.ZONE} is in a different Cloudflare account, ${plan.accountLabel(accessAccount)}; Access is set up there`
+        : `   ${plan.ZONE} is in the "Ch 227" account`,
     );
+    // Said in every change made there, so the summary names the account too.
+    const there = elsewhere ? ` in the account ${plan.accountLabel(accessAccount)}` : '';
 
     let organization;
     try {
-      organization = (await api('GET', `/accounts/${accessAccount}/access/organizations`)).result;
+      organization = (await api('GET', `/accounts/${accessAccount.id}/access/organizations`)).result;
     } catch (err) {
       if (err instanceof ApiError && !plan.isAuthRefusal(err.failure)) {
         throw new plan.StopError(`${plan.zeroTrustInstructions(accessAccount)}\n(Cloudflare said: ${plan.describeApiError(err.failure).split('\n')[0]})`);
@@ -220,29 +227,29 @@ export async function runSetup({
     if (!teamDomain) throw new plan.StopError(plan.zeroTrustInstructions(accessAccount));
     say(`   Zero Trust team: ${teamDomain}`);
 
-    const policiesPath = `/accounts/${accessAccount}/access/policies`;
+    const policiesPath = `/accounts/${accessAccount.id}/access/policies`;
     const found = plan.findByName(await listAll(policiesPath), plan.POLICY, 'Access policy');
     // The list may abbreviate a policy; its own GET has the rules.
     const existingPolicy = found ? (await api('GET', `${policiesPath}/${found.id}`)).result : null;
     let policyId = existingPolicy?.id ?? null;
     if (!existingPolicy) {
-      if (dryRun) act(`create the Access policy "${plan.POLICY}" admitting ${emails.join(', ')}`);
+      if (dryRun) act(`create the Access policy "${plan.POLICY}"${there} admitting ${emails.join(', ')}`);
       else {
         policyId = (await api('POST', policiesPath, plan.policyBody(emails))).result?.id ?? null;
         if (!policyId) throw new plan.StopError('Cloudflare created the policy but did not say its id. Run this again; it will find it by name.');
-        act(`created the Access policy "${plan.POLICY}" admitting ${emails.join(', ')}`);
+        act(`created the Access policy "${plan.POLICY}"${there} admitting ${emails.join(', ')}`);
       }
     } else if (!plan.policyMatches(existingPolicy, emails)) {
-      if (dryRun) act(`change the Access policy "${plan.POLICY}" to admit exactly ${emails.join(', ')}`);
+      if (dryRun) act(`change the Access policy "${plan.POLICY}"${there} to admit exactly ${emails.join(', ')}`);
       else {
         await api('PUT', `${policiesPath}/${policyId}`, plan.policyBody(emails, existingPolicy));
-        act(`changed the Access policy "${plan.POLICY}" to admit exactly ${emails.join(', ')}`);
+        act(`changed the Access policy "${plan.POLICY}"${there} to admit exactly ${emails.join(', ')}`);
       }
     } else say(`   policy "${plan.POLICY}" already admits exactly ${emails.join(', ')}`);
 
     const { destinations, skipped } = plan.destinationsFor({ accessAccount, subdomain: checked.subdomain });
     if (skipped) say(`   ${skipped}`);
-    const appsPath = `/accounts/${accessAccount}/access/apps`;
+    const appsPath = `/accounts/${accessAccount.id}/access/apps`;
     const foundApp = plan.findByName(
       (await api('GET', `${appsPath}?name=${encodeURIComponent(plan.APP)}&exact=true`)).result,
       plan.APP,
@@ -252,16 +259,16 @@ export async function runSetup({
     const covers = destinations.map((d) => d.uri).join(', ');
     let aud = existingApp?.aud ?? null;
     if (!existingApp) {
-      if (dryRun) act(`create the Access application "${plan.APP}" covering ${covers}`);
+      if (dryRun) act(`create the Access application "${plan.APP}"${there} covering ${covers}`);
       else {
         aud = (await api('POST', appsPath, plan.appBody({ policyId, destinations }))).result?.aud ?? null;
-        act(`created the Access application "${plan.APP}" covering ${covers}`);
+        act(`created the Access application "${plan.APP}"${there} covering ${covers}`);
       }
     } else if (!plan.appMatches(existingApp, { policyId, destinations })) {
-      if (dryRun) act(`add ${covers} and the policy to the Access application "${plan.APP}"`);
+      if (dryRun) act(`add ${covers} and the policy to the Access application "${plan.APP}"${there}`);
       else {
         aud = (await api('PUT', `${appsPath}/${existingApp.id}`, plan.appBody({ policyId, destinations, existing: existingApp }))).result?.aud ?? aud;
-        act(`updated the Access application "${plan.APP}" to cover ${covers}`);
+        act(`updated the Access application "${plan.APP}"${there} to cover ${covers}`);
       }
     } else say(`   application "${plan.APP}" already covers ${covers}`);
 
@@ -292,7 +299,7 @@ export async function runSetup({
   } catch (err) {
     say('');
     if (err instanceof plan.StopError) say(err.message);
-    else if (err instanceof ApiError) say(plan.describeApiError(err.failure));
+    else if (err instanceof ApiError) say(plan.describeApiError(err.failure, accessAccount));
     else say(`Stopped: ${err instanceof Error ? err.message : String(err)}\n(If this says "fetch failed", Cloudflare could not be reached; check the connection and run this again.)`);
     if (done.length) {
       say('\nAlready done in this run, and kept:');

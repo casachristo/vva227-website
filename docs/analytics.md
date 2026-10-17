@@ -5,9 +5,10 @@ casachristo.com's. It answers "who looked at what, from roughly where, and
 how did they get here" without cookies, without a third-party service, and
 without storing anyone's IP address.
 
-Everything runs on Cloudflare's free tier, inside the chapter's own account:
-one script on every page, one Pages Function that records visits into a D1
-database, and one private page, `/stats`, locked with Cloudflare Access.
+Everything runs on Cloudflare's free tier: one script on every page, one
+Pages Function that records visits into a D1 database in the chapter's own
+account, and one private page, `/stats`, locked with Cloudflare Access in
+whichever account owns the vva227.org zone.
 
 ---
 
@@ -91,7 +92,9 @@ Nothing here changes the live site until step 5.
 
 **1. Turn on Cloudflare Zero Trust, once.** Open
 https://one.dash.cloudflare.com and pick the account that owns the
-vva227.org zone (the setup script tells you which; usually "Ch 227"). Choose a
+vva227.org zone. Access has to live there, whichever account that is, and
+nobody has checked yet which one it is: the setup script names it, by name
+and id (a `--dry-run` in step 4 shows it without changing anything). Choose a
 team name (it becomes `<team>.cloudflareaccess.com`) and the **Free** plan.
 Cloudflare asks for card details even on the Free plan; it does not charge
 them. If you skip this, the script stops and says so.
@@ -109,7 +112,10 @@ them. If you skip this, the script stops and says so.
 
 *Account Resources:* include the **Ch 227** account. If vva227.org lives in a
 different Cloudflare account, include that account too.
-*Zone Resources:* include the specific zone **vva227.org**.
+*Zone Resources:* include the specific zone **vva227.org**. If it is not in
+the list, it is in an account your login is not a member of: ask that
+account's administrator to add you, or to run the setup, before `/stats` can
+be opened.
 
 **3. Hand the token to the script.** Save it in a file named `.cf-api-token`
 at the top of this repository (it is gitignored), then make the file readable
