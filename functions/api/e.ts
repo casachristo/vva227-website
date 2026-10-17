@@ -22,10 +22,11 @@ import { isSiteHost } from '../../src/lib/stats';
  * A thin shell: what it accepts is decided by src/lib/beacon.ts.
  *
  * ROUTING. public/_routes.json pins the Functions runtime to this path and
- * /stats. That is not tidiness: Pages generates `include: ["/*"]` by itself the
- * moment a functions/ directory exists, and public/_redirects is NOT applied
- * to a request the Functions runtime claims. Without the pin, adding this file
- * would put all 50 legacy redirects at risk.
+ * /stats. wrangler would generate these same two paths from functions/ today;
+ * the file pins them so a future catch-all route or a root _middleware cannot
+ * silently widen the include to "/*", where public/_redirects no longer
+ * applies to the requests the Functions runtime claims, and the 50 legacy
+ * redirects would be at risk.
  *
  * THE WRITE IS AWAITED rather than handed to waitUntil(). Returning 204 first
  * and writing in the background would be marginally kinder to the visitor and

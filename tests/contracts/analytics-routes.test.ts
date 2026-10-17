@@ -79,9 +79,11 @@ describe('public/_routes.json and functions/', () => {
   });
 
   it('never claims a wildcard, and never a path a legacy redirect needs', () => {
-    // Pages generates include ["/*"] by itself once functions/ exists, and
-    // _redirects is not applied to a request the Functions runtime claims.
-    // This file is what keeps all 50 legacy redirects working.
+    // wrangler would generate these same two paths from functions/ today;
+    // the file pins them so a future catch-all route or a root _middleware
+    // cannot silently widen the include to "/*", where _redirects no longer
+    // applies to a request the Functions runtime claims, and all 50 legacy
+    // redirects would be at risk.
     const { include } = publicRoutes();
     const sources = redirectSources();
     expect(sources.length).toBeGreaterThan(40);
