@@ -13,7 +13,9 @@
  *      if there is none (an existing one is never replaced);
  *   4. sets up Cloudflare Access for vva227.org/stats in the account that owns
  *      the vva227.org zone: a reusable policy admitting exactly the --email
- *      addresses, and the application;
+ *      addresses, and the application, with that policy as its only one;
+ *      when a rerun takes anyone's access away, it ends the sign-ins already
+ *      open;
  *   5. writes ACCESS_TEAM_DOMAIN and ACCESS_AUD to production, so the Function
  *      checks tokens against that application.
  *

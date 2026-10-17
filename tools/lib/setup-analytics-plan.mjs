@@ -67,7 +67,8 @@ export const TOKEN_PERMISSIONS = [
 export const USAGE = `Usage: npm run setup:analytics -- --email you@example.com [--email someone@example.com] [--dry-run]
 
   --email    Who may open /stats. Repeat it for each person. Required: this
-             list is the whole list, so include everyone every time.
+             list is the whole list, so include everyone every time. Leaving
+             someone out ends every open /stats sign-in.
   --dry-run  Look, print what would change, and change nothing.
 
 The Cloudflare API token is read from the CF_API_TOKEN environment variable,
