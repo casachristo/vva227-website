@@ -484,13 +484,18 @@ describe('destinationsFor', () => {
     const { destinations, skipped } = plan.destinationsFor({ accessAccount: { id: OTHER, name: 'Other Org' }, subdomain: SUBDOMAIN });
     expect(destinations.map((d: { uri: string }) => d.uri)).toEqual(['vva227.org/stats', 'www.vva227.org/stats']);
     expect(skipped).toContain(`different Cloudflare account, "Other Org" (${OTHER}), from the Pages project`);
-    expect(skipped).toContain('stays a plain "Not found" for everyone');
+    // Not "for everyone": someone holding a copy of a valid sign-in can still
+    // send it there by hand (Known gaps, A13). Browsing there, nobody has one.
+    expect(skipped).toContain('stays a plain "Not found" to anyone who browses to it');
+    expect(skipped).not.toContain('for everyone');
   });
 
   it('leaves them out when the project reported no pages.dev name', () => {
     const { destinations, skipped } = plan.destinationsFor({ accessAccount: CH227, subdomain: null });
     expect(destinations).toHaveLength(2);
     expect(skipped).toMatch(/reported no pages\.dev address/);
+    expect(skipped).toContain('stays a plain "Not found" to anyone who browses to it');
+    expect(skipped).not.toContain('for everyone');
   });
 });
 

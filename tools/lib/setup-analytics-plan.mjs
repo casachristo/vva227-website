@@ -511,15 +511,18 @@ export function policyNarrows(policy, emails) {
  * plus that account's own *.pages.dev. So the pages.dev names are included
  * only when the zone's account is the Pages project's account. When they are
  * not covered, /stats there is still closed: Access issues no token on a host
- * it does not cover, and the Function refuses a request with no token.
+ * it does not cover, and the Function refuses a request with no token. A
+ * valid token copied from vva227.org and sent there by hand is accepted until
+ * it expires (Known gaps in tests/BUSINESS_RULES.md), so the messages below
+ * speak of someone browsing there, not of everyone.
  */
 export function destinationsFor({ accessAccount, subdomain }) {
   const hosts = [ZONE, `www.${ZONE}`];
   let skipped = null;
   if (accessAccount.id !== ACCOUNT) {
-    skipped = `${ZONE} is in a different Cloudflare account, ${accountLabel(accessAccount)}, from the Pages project, and Access can only cover hostnames in its own account, so the pages.dev address is not covered. /stats there stays a plain "Not found" for everyone; use https://${ZONE}${STATS_PATH}.`;
+    skipped = `${ZONE} is in a different Cloudflare account, ${accountLabel(accessAccount)}, from the Pages project, and Access can only cover hostnames in its own account, so the pages.dev address is not covered. /stats there stays a plain "Not found" to anyone who browses to it; use https://${ZONE}${STATS_PATH}.`;
   } else if (!subdomain) {
-    skipped = `The project reported no pages.dev address, so only ${ZONE} is covered. /stats elsewhere stays a plain "Not found" for everyone.`;
+    skipped = `The project reported no pages.dev address, so only ${ZONE} is covered. /stats elsewhere stays a plain "Not found" to anyone who browses to it.`;
   } else {
     hosts.push(subdomain, `*.${subdomain}`);
   }
