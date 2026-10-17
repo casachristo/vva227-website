@@ -15,6 +15,7 @@ import CrisisBanner from '../components/CrisisBanner.astro';
 import SiteHeader from '../components/SiteHeader.astro';
 import SiteFooter from '../components/SiteFooter.astro';
 import { normalizePath } from '../lib/nav';
+import { BEACON_SCRIPT } from '../data/analytics';
 import site from '../data/site.json';
 
 interface Props {
@@ -58,6 +59,13 @@ const ogImage = new URL(image, origin);
     <meta property="og:url" content={canonical.href} />
     <meta property="og:image" content={ogImage.href} />
     <meta name="twitter:card" content="summary_large_image" />
+
+    {/*
+      The site's one script: the first-party visit beacon, generated from
+      src/lib/tracker.ts. is:inline keeps the literal src rather than letting
+      Astro bundle it; defer keeps it off the critical path.
+    */}
+    <script is:inline defer src={BEACON_SCRIPT}></script>
 
     <slot name="head" />
   </head>

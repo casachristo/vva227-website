@@ -4,9 +4,11 @@ Rules this site must hold, and the test that holds each one. A rule with no test
 is a known risk and says so. If a behaviour exists in the code without an entry
 here, it is undocumented and may be wrong.
 
-This site handles no money, stores no data and runs no server. What it can still
-get wrong is publish something untrue, publish something private, or send a
-visitor somewhere they did not mean to go — so that is what the rules are about.
+This site handles no money and runs no server of its own. What it can still get
+wrong is publish something untrue, publish something private, or send a visitor
+somewhere they did not mean to go — so that is what the rules are about. The
+one thing it stores is a visit log, and the rules for that are under *Visit
+analytics*.
 
 ---
 
@@ -53,7 +55,7 @@ visitor somewhere they did not mean to go — so that is what the rules are abou
 | L5 | No source file carries a build-generated scope attribute — the fingerprint of markup pasted out of a deployed page. | `tests/integration/build-output.test.ts` — *authors no build-generated scope attributes by hand* |
 | L6 | Words set into an image are transcribed into its alt text. | `tests/feature/nvvvf-section.test.ts`; `tests/system/nvvvf.spec.ts` |
 | L7 | Pages that belong together link to each other from their content, not only from the global footer. A page reachable solely through site furniture is a page nobody reads. | `tests/integration/build-output.test.ts` — *links each page to the other from inside its content*; `tests/system/nvvvf.spec.ts` — *from the body of the page a donor is actually reading* |
-| L8 | No page ships a `<script>`. Asserted against raw HTML, because the test helper strips script elements from its parsed document — the version of this rule that used the parsed document could not fail. | `tests/security/output-safety.test.ts` — *ships no script elements at all*, *can actually fail* |
+| L8 | Every page ships exactly one `<script>`: the first-party visit beacon, `<script defer src=BEACON_SCRIPT>`, with no inline body. Nothing else. Asserted against raw HTML, because the test helper strips script elements from its parsed document — the version of this rule that used the parsed document could not fail. | `tests/security/output-safety.test.ts` — *ships exactly one script on every page*, *can actually fail* |
 
 ## Rendering
 
@@ -63,6 +65,20 @@ visitor somewhere they did not mean to go — so that is what the rules are abou
 | R2 | The two payee cards are a row on desktop and a stack at 375px, and never overlap. | `tests/system/nvvvf.spec.ts` — *sit side by side on desktop and stack on a phone* |
 | R3 | Clicking the page's primary call to action does not leave this origin. | `tests/system/nvvvf.spec.ts` — *stays on this origin* |
 | R4 | No page scrolls sideways at 375px, and none produces a console error. | `tests/system/smoke.spec.ts` |
+
+## Visit analytics
+
+| # | Rule | Test |
+|---|---|---|
+| A1 | A visitor who sends Global Privacy Control or Do-Not-Track is not counted: the beacon makes no request and attaches no listener or timer. | `tests/unit/tracker.test.ts` — *does nothing at all when … is set*, *still collects when …* |
+| A2 | Nothing is stored on or read from a visitor's device: no cookie, no localStorage or sessionStorage. The pageview id lives only in memory. | `tests/unit/tracker.test.ts` — *is never written to or read from* |
+| A3 | No query string or fragment is collected, from the page address or the referrer. The beacon never sends one, and the collector strips any that a hand-built request carries. | `tests/unit/tracker.test.ts` — *never sends a query string or fragment*; `tests/unit/beacon.test.ts` — *strips … from the referrer before it is stored* |
+| A4 | The IP address is never stored. Location and network come from Cloudflare's edge; the visitor id is a salted hash that rotates daily, and with no salt configured the collector refuses rather than falling back. | `tests/security/collector.test.ts` — *the IP address is never kept*; `tests/unit/beacon.test.ts` — *refuses to run without a secret, by name* |
+| A5 | Every payload the shipped beacon can send is accepted by the collector, and stored without the collector having to change it. A path or limit that one side produces and the other refuses loses visits with no error anywhere. | `tests/contracts/beacon-tracker.test.ts` — *passes validateEvent, and validation changes nothing a browser sent*, *stores one row per pageview, stamped with SITE_KEY* |
+| A6 | The beacon is first-party: the Content-Security-Policy names no origin but the site's own, and allows no inline or eval script. | `tests/contracts/beacon-tracker.test.ts` — *names no origin but its own*, *opened no inline or eval allowance* |
+| A7 | Adding Functions breaks no legacy redirect: `_routes.json` hands the Functions runtime only the collector and `/stats`. | `tests/contracts/analytics-routes.test.ts` — *never claims a wildcard, and never a path a legacy redirect needs* |
+| A8 | Rows older than the retention period are deleted, on every recorded pageview. | `tests/integration/collector-write.test.ts` — *deletes rows past the retention period when a view arrives* |
+| A9 | `/stats` refuses everyone until its gate is chosen, and every refusal is the same plain 404, whatever the reason. | `tests/security/stats-page.test.ts` — *the real gate, as it ships today*, *every refusal is indistinguishable* |
 
 ---
 

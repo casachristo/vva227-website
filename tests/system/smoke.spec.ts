@@ -1,4 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
+import { BEACON_ENDPOINT } from '../../src/data/analytics';
 
 /**
  * SYSTEM — the real browser, the real rendered page.
@@ -9,6 +10,17 @@ import { test, expect, type Page } from '@playwright/test';
  * image that 404s at request time. Those are precisely the failures the legacy
  * site shipped, so they get tested where they actually occur.
  */
+
+// astro preview serves dist/ with no Functions runtime, so every page's visit
+// beacon would 404 here and trip the error checks below. The real collector,
+// behind the real headers, is driven by tests/system/runtime.spec.ts; here it
+// is stood in for. Not with the 204 the collector really sends: Chromium
+// reports any request Playwright fulfils with an empty body as
+// net::ERR_ABORTED, which the checks below would read as a broken page. The
+// tracker ignores the response, so any success models it.
+test.beforeEach(async ({ page }) => {
+  await page.route(`**${BEACON_ENDPOINT}`, (route) => route.fulfill({ status: 200, contentType: 'text/plain', body: 'ok' }));
+});
 
 const ROUTES = [
   '/',

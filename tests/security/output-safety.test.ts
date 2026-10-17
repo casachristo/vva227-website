@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { loadPages, corpusHtml, readPublicFile } from '../helpers/dist';
+import { BEACON_SCRIPT } from '../../src/data/analytics';
 
 /**
  * SECURITY & PRIVACY — what must never reach the public build.
@@ -147,26 +148,50 @@ describe('the Foundation material, which came from one unverified source', () =>
   });
 });
 
-describe('no client-side JavaScript', () => {
-  it('ships no script elements at all', () => {
+describe('no client-side JavaScript but the first-party beacon', () => {
+  // Every <script ...>...</script> in a page's raw HTML, whole.
+  const scriptsIn = (raw: string) => raw.match(/<script\b[^>]*>[\s\S]*?<\/script\s*>/gi) ?? [];
+  // The beacon tag, exactly: a deferred external script at BEACON_SCRIPT, with
+  // no other attribute and nothing between the tags.
+  const isBeacon = (tag: string) => tag === `<script defer src="${BEACON_SCRIPT}"></script>`;
+  // What is wrong with a page's scripts, or [] if it carries the beacon alone.
+  const offenders = (raw: string): string[] => {
+    const tags = scriptsIn(raw);
+    const opening = (raw.match(/<script\b/gi) ?? []).length;
+    if (opening === 1 && tags.length === 1 && isBeacon(tags[0])) return [];
+    if (opening === 0) return ['(no beacon script)'];
+    // An opening tag the closed-pair pattern did not match (unclosed, or
+    // nested oddly) still counts against the page.
+    return opening > tags.length ? [...tags, `(${opening - tags.length} unclosed <script>)`] : tags;
+  };
+
+  it('ships exactly one script on every page: the beacon, with no inline body', () => {
     // The legacy site loaded jQuery 1.4.3, FancyBox 1.3.4, a slider, and an
-    // inline reload loop. This build ships none.
+    // inline reload loop. This build ships one thing: the visit beacon, from
+    // this origin, deferred. Anything else is a new script nobody reviewed.
     //
     // Asserted against the raw HTML, not the Cheerio document: loadPages() runs
     // $('script, style').remove() before handing the document over, so
     // p.$('script') is empty by construction and the version of this test that
     // used it could never have failed — including on a build that shipped
     // jQuery on every page.
-    const withScripts = pages.filter((p) => /<script\b/i.test(p.html)).map((p) => p.route);
-    expect(withScripts, `pages with <script>: ${withScripts.join(', ')}`).toEqual([]);
+    const bad = pages.map((p) => [p.route, offenders(p.html)] as const).filter(([, o]) => o.length);
+    expect(bad, `pages with a script other than the beacon:\n${bad.map(([r, o]) => `${r}: ${o.join(' ')}`).join('\n')}`).toEqual([]);
   });
 
   it('can actually fail — the raw HTML is what is inspected', () => {
     // Guards the fix above from being quietly reverted to the stripped document.
     const home = pages.find((p) => p.route === '/')!;
     expect(home.html, 'the raw HTML is not being retained').toMatch(/<\/html>/i);
-    expect(/<script\b/i.test(`${home.html}<script src="x.js"></script>`)).toBe(true);
+    expect(offenders(home.html)).toEqual([]);
     expect(home.$('script').length, 'the Cheerio document is stripped, as documented').toBe(0);
+    // A second script, an inline body, a beacon from elsewhere, a missing
+    // beacon and an unclosed tag are each caught.
+    expect(offenders(`${home.html}<script src="x.js"></script>`)).not.toEqual([]);
+    expect(offenders(home.html.replace(`src="${BEACON_SCRIPT}"></script>`, `src="${BEACON_SCRIPT}">alert(1)</script>`))).not.toEqual([]);
+    expect(offenders(home.html.replace(`src="${BEACON_SCRIPT}"`, 'src="https://cdn.example/b.js"'))).not.toEqual([]);
+    expect(offenders(home.html.replace(/<script\b[^>]*><\/script>/, ''))).not.toEqual([]);
+    expect(offenders(`${home.html}<script>`)).not.toEqual([]);
   });
 
   it('uses no inline event handlers', () => {
@@ -210,8 +235,8 @@ describe('outbound links', () => {
 describe('response headers', () => {
   const headers = readPublicFile('_headers');
 
-  it('sets a Content-Security-Policy that forbids scripts entirely', () => {
-    expect(headers).toContain("script-src 'none'");
+  it('sets a Content-Security-Policy that allows only same-origin scripts', () => {
+    expect(headers).toContain("script-src 'self';");
     expect(headers).toContain("default-src 'self'");
     expect(headers).toContain("object-src 'none'");
   });
