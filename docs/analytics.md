@@ -238,18 +238,22 @@ then no visit is recorded until midnight UTC. The site itself keeps working.
 
 ## Reading the logs
 
-The Function logs why it refused a request; the response never says. Wrangler
-must be logged into the account that holds the Pages project.
+`/stats` logs why it refused a request and answers a plain `Not found`. The
+collector logs only when it cannot record a visit (the three collector errors
+in the table below); its other refusals are named in its answer, which the
+browser's developer tools show, under *Network*, on the `POST` to `/api/e`.
+Wrangler must be logged into the account that holds the Pages project.
 
 ```sh
 CLOUDFLARE_ACCOUNT_ID=d4afcdf7502fa80e6443dbb67ecd1d5f npx wrangler pages deployment list --project-name=vva227-refresh
 CLOUDFLARE_ACCOUNT_ID=d4afcdf7502fa80e6443dbb67ecd1d5f npx wrangler pages deployment tail <deployment-id> --project-name=vva227-refresh
 ```
 
-Then load `/stats` in another window and read the `stats denied:` line, or
-open any page of https://vva227.org/ to see what the collector says. The tail
-shows a refused request as `Ok` all the same (it reports whether the code
-ran, not the answer it gave), so read the lines beneath it.
+Then load `/stats` in another window and read the `stats denied:` line. The
+tail shows a refused request as `Ok` all the same (it reports whether the
+code ran, not the answer it gave), so read the line beneath it. A visit to a
+page shows a line beneath its `POST /api/e` only for those three collector
+errors.
 
 > These commands need the same `CLOUDFLARE_ACCOUNT_ID` as step 5 (on
 > Windows, set it first, as step 5 shows). Without it they read the account
@@ -274,7 +278,7 @@ ran, not the answer it gave), so read the lines beneath it.
 | `collector not configured` (an error, when a page is visited) | The collector cannot see its database (`BEACON binding missing`) or its salt (`BEACON_SALT missing`), and records nothing. A deploy made before the setup, or a setting removed in the dashboard. | Rerun the setup script, which adds whichever is missing, then step 5. |
 | `beacon write failed` (an error, when a page is visited) | The database refused the visit: the migration was never applied, or the day's free writes are used up (see step 7). | Rerun the setup script; it applies missing migrations. If the message mentions a limit, counting resumes at midnight UTC. |
 | `beacon prune failed` (an error) | Deleting rows past the retention period failed. The visit itself was recorded. | Nothing at once; the next visit tries again. If it keeps happening, note the message and report it. |
-| *Recent visitors* stays empty, nothing logged | No visit reaches the collector. Your browser sends Global Privacy Control or Do Not Track, which this site honours; or you browsed `vva227-refresh-12g.pages.dev` or a preview, where nothing is recorded; or the pages do not load `/b.js`, usually because a merge kept the old `script-src 'none'` in `public/_headers` or lost the script tag from `src/layouts/BaseLayout.astro`. | Step 6, in a browser without either setting, on https://vva227.org. Then, in the browser's developer tools, *Network* should show `b.js` and a `POST` to `/api/e` answered `204`. If `b.js` is missing or blocked, fix the merge and deploy. |
+| *Recent visitors* stays empty, nothing logged | No visit is recorded, and the collector logs only the three errors above. Your browser sends Global Privacy Control or Do Not Track, which this site honours; or you browsed `vva227-refresh-12g.pages.dev` or a preview, where nothing is recorded; or the pages do not load `/b.js`, usually because a merge kept the old `script-src 'none'` in `public/_headers` or lost the script tag from `src/layouts/BaseLayout.astro`; or a merge changed what the script sends, and the collector refuses it. | Step 6, in a browser without either setting, on https://vva227.org. Then, in the browser's developer tools, *Network* should show `b.js` and a `POST` to `/api/e` answered `204`. If `b.js` is missing or blocked, fix the merge and deploy. If the `POST` is answered with anything else, its answer names the reason, such as `{"error":"wrong host"}`. |
 | nothing logged at all | The request is not reaching the Function: Access is showing its sign-in page, or the deployment does not include `functions/`, or it went to another Cloudflare account. | Sign in; check you deployed with step 5's command, from the repo root. |
 
 ---

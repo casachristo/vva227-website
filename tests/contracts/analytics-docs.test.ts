@@ -112,8 +112,8 @@ describe('docs/analytics.md', () => {
   });
 
   it('explains every error and warning a Function logs, under the label it logs it with', () => {
-    // A Function's answer never says why (the tracker ignores it anyway, and
-    // /stats refuses everyone alike), so a logged line with no row here is a
+    // /stats refuses everyone alike, and nobody reads the collector's answer
+    // (the tracker ignores it), so a logged line with no row here is a
     // failure the owner can see and cannot read.
     const labels = loggedLabels();
     expect(labels).toEqual(
@@ -178,6 +178,26 @@ describe('docs/analytics.md', () => {
       expect(text).not.toMatch(/node_modules\/\.cache\/wrangler\/pages\.json/);
     }
     expect(logsSection(doc)).not.toBe('');
+  });
+
+  it('says /stats keeps its reason for the log, and the collector names a refusal in its answer', () => {
+    // functions/stats.ts answers every refusal with the same Not found and
+    // logs why. functions/api/e.ts logs only when it cannot record; every
+    // other refusal is named in its JSON answer and logged nowhere, so a
+    // tail shows nothing beneath it.
+    const flat = logsSection(doc).replace(/\s+/g, ' ');
+    expect(flat).not.toContain('the response never says');
+    expect(flat).not.toContain('to see what the collector says');
+    expect(flat).toContain('`/stats` logs why it refused a request and answers a plain `Not found`.');
+    expect(flat).toContain('its other refusals are named in its answer');
+    expect(flat).toMatch(/developer tools show, under \*Network\*, on the `POST` to `\/api\/e`/);
+  });
+
+  it('has the empty Recent visitors row send the owner to the collector\'s answer', () => {
+    const row = doc.split('\n').find((l) => l.startsWith('| *Recent visitors* stays empty')) ?? '';
+    expect(row).not.toBe('');
+    expect(row).not.toContain('No visit reaches the collector.');
+    expect(row).toContain('answered with anything else, its answer names the reason');
   });
 
   it('gives every log command the "Ch 227" account id, as step 5 does', () => {
