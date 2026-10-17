@@ -3,7 +3,7 @@ import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { ACCESS_REFUSAL_REASONS } from '../../src/lib/access';
 import { BEACON_ENDPOINT, RETENTION_DAYS, RETENTION_MONTHS } from '../../src/data/analytics';
-import { TOKEN_FILE, TOKEN_PERMISSIONS } from '../../tools/lib/setup-analytics-plan.mjs';
+import { ACCOUNT, nextSteps, TOKEN_FILE, TOKEN_PERMISSIONS } from '../../tools/lib/setup-analytics-plan.mjs';
 import { VIEW_COLUMNS } from '../helpers/analytics';
 
 /**
@@ -119,6 +119,26 @@ describe('docs/analytics.md', () => {
 
   it('has the owner make the token file private, which the setup script requires', () => {
     expect(setupStep(doc, 3)).toContain(`chmod 600 ${TOKEN_FILE}`);
+  });
+
+  it('gives the deploy command with the "Ch 227" account id, in step 5 and in the script\'s closing words', () => {
+    // wrangler prefers the account it cached in node_modules/.cache/wrangler
+    // over the login, and this clone's cache once named another account.
+    // CLOUDFLARE_ACCOUNT_ID outranks the cache for `pages deploy`.
+    const command = `CLOUDFLARE_ACCOUNT_ID=${ACCOUNT} npm run deploy`;
+    const step5 = setupStep(doc, 5);
+    expect(step5).toContain(command);
+    expect(nextSteps()).toContain(command);
+    // For a shell that cannot set a variable in front of a command.
+    for (const words of ['npx wrangler whoami', 'node_modules/.cache/wrangler/pages.json']) {
+      expect(step5).toContain(words);
+      expect(nextSteps()).toContain(words);
+    }
+    // A local wrangler config, committed or not, replaces the settings the setup wrote.
+    for (const name of ['wrangler.toml', 'wrangler.json', 'wrangler.jsonc']) {
+      expect(step5).toContain(name);
+      expect(nextSteps()).toContain(name);
+    }
   });
 
   it('can actually fail: a step that is not there reads as empty', () => {

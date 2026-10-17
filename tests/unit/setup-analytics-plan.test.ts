@@ -544,7 +544,7 @@ describe('what the script tells the person', () => {
       'Nothing has been deployed',
       'NEXT production deploy',
       "chapter volunteer's latest changes AND this analytics",
-      'npm run deploy',
+      `CLOUDFLARE_ACCOUNT_ID=${ACCOUNT} npm run deploy`,
       'main branch',
       'https://vva227.org/stats',
       // Signing in proves only the lock. The check that visits are recorded

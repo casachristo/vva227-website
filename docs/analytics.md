@@ -147,8 +147,22 @@ come from a copy of the code holding **both** the volunteer's latest commits
 From that merged copy:
 
 ```sh
-npm run deploy     # builds, then publishes with --branch=main (production)
+CLOUDFLARE_ACCOUNT_ID=d4afcdf7502fa80e6443dbb67ecd1d5f npm run deploy   # builds, then publishes with --branch=main (production)
 ```
+
+That id is the "Ch 227" account's. Wrangler remembers the account of the
+first `pages` command run in a copy of the code, in
+`node_modules/.cache/wrangler/pages.json`, and uses it ahead of your login,
+even when you are logged into several accounts. This once created a project
+in the wrong account. `CLOUDFLARE_ACCOUNT_ID` overrides what it remembers.
+If your shell cannot set a variable in front of a command (Windows), run
+`npx wrangler whoami` to check your login holds "Ch 227", delete
+`node_modules/.cache/wrangler/pages.json`, then run `npm run deploy` and
+pick "Ch 227" if it asks.
+
+The folder you deploy from must contain no `wrangler.toml`, `wrangler.json`
+or `wrangler.jsonc`, committed or not: one would replace the database and
+settings the setup wrote.
 
 If the setup script warned that the project's production branch is not
 `main`, resolve that first: a deploy to any other branch is a preview, with
@@ -211,10 +225,9 @@ open any page of https://vva227.org/ to see what the collector says. The tail
 shows a refused request as `Ok` all the same (it reports whether the code
 ran, not the answer it gave), so read the lines beneath it.
 
-> Wrangler caches the account id of the first `pages` command it ran, in
-> `node_modules/.cache/wrangler/pages.json`, and later commands use it even if
-> you are logged into several accounts. Delete that file before switching
-> accounts. This once created a project in the wrong account.
+> These commands also use the account wrangler remembers (step 5). If they
+> say the project does not exist, delete
+> `node_modules/.cache/wrangler/pages.json` and run them again.
 
 ### Troubleshooting
 
@@ -236,7 +249,7 @@ ran, not the answer it gave), so read the lines beneath it.
 | `beacon write failed` (an error, when a page is visited) | The database refused the visit: the migration was never applied, or the day's free writes are used up (see step 7). | Rerun the setup script; it applies missing migrations. If the message mentions a limit, counting resumes at midnight UTC. |
 | `beacon prune failed` (an error) | Deleting rows past the retention period failed. The visit itself was recorded. | Nothing at once; the next visit tries again. If it keeps happening, note the message and report it. |
 | *Recent visitors* stays empty, nothing logged | No visit reaches the collector. Your browser sends Global Privacy Control or Do Not Track, which this site honours; or you browsed `vva227-refresh-12g.pages.dev` or a preview, where nothing is recorded; or the pages do not load `/b.js`, usually because a merge kept the old `script-src 'none'` in `public/_headers` or lost the script tag from `src/layouts/BaseLayout.astro`. | Step 6, in a browser without either setting, on https://vva227.org. Then, in the browser's developer tools, *Network* should show `b.js` and a `POST` to `/api/e` answered `204`. If `b.js` is missing or blocked, fix the merge and deploy. |
-| nothing logged at all | The request is not reaching the Function: Access is showing its sign-in page, or the deployment does not include `functions/`. | Sign in; check you deployed with `npm run deploy` from the repo root. |
+| nothing logged at all | The request is not reaching the Function: Access is showing its sign-in page, or the deployment does not include `functions/`, or it went to another Cloudflare account. | Sign in; check you deployed with step 5's command, from the repo root. |
 
 ---
 
@@ -288,9 +301,10 @@ Checked against Cloudflare's documentation and wrangler's source, October 2026.
   sends `preview` and never sends an empty map. A secret reads back as
   `{ "type": "secret_text", "value": "" }`, so an existing secret is detected by
   its type, never compared.
-- With no wrangler config in the repo, `wrangler pages deploy` uses the
-  project's own settings. A committed config would replace them, which is why
-  `tests/contracts/analytics-routes.test.ts` forbids one.
+- With no wrangler config in the folder it runs from, `wrangler pages deploy`
+  uses the project's own settings. A config there, committed or not, would
+  replace them, which is why `tests/contracts/analytics-routes.test.ts` forbids
+  committing one and step 5 says to have none.
 - `GET /accounts/{account}/d1/database?name=` (matched exactly by the script),
   `POST /accounts/{account}/d1/database`, and
   `POST /accounts/{account}/d1/database/{id}/query`. Migrations are recorded in
