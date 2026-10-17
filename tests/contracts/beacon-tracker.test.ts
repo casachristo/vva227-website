@@ -36,6 +36,9 @@ const shipped = () => {
   return readFileSync(file, 'utf8');
 };
 
+/** Every browser API that keeps something on the visitor's device. */
+const DEVICE_STORAGE = /\b(?:localStorage|sessionStorage|indexedDB|cookieStore|caches)\b|document\.cookie/;
+
 let source: string;
 beforeAll(() => {
   source = shipped();
@@ -85,6 +88,20 @@ describe('dist/b.js, the bytes a browser runs', () => {
   it('never reads the full URL or its query string', () => {
     expect(source).toContain('location.pathname');
     expect(source).not.toMatch(/location\.(href|search|hash)\b/);
+  });
+
+  it('names no API that stores anything on the device', () => {
+    // Behind the unit tier's traps, which see only the code paths a test
+    // drives: storage code anywhere in the shipped bytes fails here, run or
+    // not. Not a bare /cookie/, which a comment in b.js uses.
+    expect(source.match(new RegExp(DEVICE_STORAGE.source, 'g')) ?? []).toEqual([]);
+  });
+
+  it('can fail: the storage pattern sees each API, and not the word in a comment', () => {
+    for (const use of ['localStorage.x', 'window.sessionStorage', 'indexedDB.open(n)', 'caches.open(n)', 'cookieStore.get(n)', 'document.cookie = s']) {
+      expect(use).toMatch(DEVICE_STORAGE);
+    }
+    expect("// the request rather than of today's cookie jar.").not.toMatch(DEVICE_STORAGE);
   });
 
   it('runs, as shipped, against nothing but browser stubs', () => {

@@ -533,4 +533,27 @@ describe('the device', () => {
     const t = runTracker("window.localStorage; document.cookie = 'x=1';");
     expect(t.storageTouched).toEqual(['localStorage', 'cookie']);
   });
+
+  it('can fail: storage reached as a bare global, inside a try, on the way out, is seen', () => {
+    // Storage code as it is usually written: no `window.`, and wrapped so a
+    // browser that refuses storage breaks nothing. Put into the real
+    // tracker's pagehide listener, after the first load has passed clean.
+    const mutated = source.replace(
+      /(["']pagehide["'],\s*guard\(function\s*\(\)\s*\{)/,
+      "$1 try { sessionStorage.setItem('vva227-view', viewId); } catch (e) {} try { localStorage.setItem('vva227-last', '1'); } catch (e) {}",
+    );
+    expect(mutated).not.toBe(source);
+    const t = runTracker(mutated);
+    expect(t.storageTouched).toEqual([]);
+    t.fire('window', 'pagehide');
+    expect(t.storageTouched).toEqual(['sessionStorage', 'localStorage']);
+  });
+
+  it.each(['localStorage', 'sessionStorage', 'indexedDB', 'caches', 'cookieStore'])(
+    'can fail: %s is seen whether reached through window or as a bare global',
+    (name) => {
+      expect(runTracker(`try { ${name}.x; } catch (e) {}`).storageTouched).toEqual([name]);
+      expect(runTracker(`try { window.${name}.x; } catch (e) {}`).storageTouched).toEqual([name]);
+    },
+  );
 });

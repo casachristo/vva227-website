@@ -281,6 +281,12 @@ test.describe('a visit, as the database records it', () => {
     expect(rows.map((r) => r.path)).toEqual(['/events', '/contact']);
     expect(byView(id)).toHaveLength(1);
     expect(byView(id)[0].ts).toBe(first.ts);
+
+    // Nothing was kept on the device on the way out, either. sessionStorage
+    // survives a move to another page of the same site in the same tab, so a
+    // write made while the first page was hidden or left would still be here.
+    expect(await v.page.context().cookies()).toEqual([]);
+    expect(await v.page.evaluate(() => [localStorage.length, sessionStorage.length])).toEqual([0, 0]);
   });
 });
 

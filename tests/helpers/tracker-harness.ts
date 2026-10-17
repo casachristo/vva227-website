@@ -55,6 +55,14 @@ export interface TrackerRunOptions {
   now?: number;
 }
 
+/**
+ * Every browser API that stores something on the visitor's device, besides
+ * document.cookie. Trapped on the window stub AND on the context's own global
+ * object, because storage code is usually written as a bare
+ * `sessionStorage.setItem(...)`, and that never touches the window stub.
+ */
+const STORAGE_GLOBALS = ['localStorage', 'sessionStorage', 'indexedDB', 'caches', 'cookieStore'];
+
 export interface Listener {
   target: 'document' | 'window';
   type: string;
@@ -147,7 +155,7 @@ export function runTracker(source: string, options: TrackerRunOptions = {}): Tra
     },
   };
   extend(windowStub, options.window);
-  trap(windowStub, ['localStorage', 'sessionStorage', 'indexedDB']);
+  trap(windowStub, STORAGE_GLOBALS);
 
   const defaultBeacon = (url: string, data: unknown) => {
     const blob = data as { parts: string[]; type: string };
@@ -213,6 +221,8 @@ export function runTracker(source: string, options: TrackerRunOptions = {}): Tra
     Date: { now: () => now },
   };
   if (cryptoStub) context.crypto = cryptoStub;
+  // A getter on the sandbox object is what the context's bare globals read.
+  trap(context, STORAGE_GLOBALS);
 
   runInNewContext(source, context, { filename: 'b.js' });
 
