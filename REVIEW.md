@@ -324,6 +324,12 @@ call, not ours. A test enforces their absence until you say otherwise.
    *Foundation* officer titles on the *chapter's* site also asserts a separate
    corporation's governance on the chapter's behalf, which is the Foundation's
    disclosure to make. Not published.
+6. **Counting visits to the website.** The rebuilt site now keeps a simple log
+   of page views, for the chapter's own use: which page, the site that linked
+   to it, an approximate city and internet provider, and how long the page was
+   read. No IP address, no cookies, and old records delete themselves.
+   `/privacy` describes it in full and carries a review note. The chapter
+   should approve both the counting and that description.
 
 Also worth a decision: should members' names appear at all, and should the
 officer roster carry role-based chapter email addresses rather than personal

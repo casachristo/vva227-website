@@ -2,28 +2,115 @@
 /**
  * Privacy.
  *
- * Written to describe what this site actually does, which is very little: it is
- * static HTML with no analytics, no cookies, no third-party scripts and no
- * forms. That is worth stating plainly rather than pasting a boilerplate policy
- * describing data collection that does not happen.
+ * Written to describe what this site actually does, rather than pasted from a
+ * boilerplate policy. It is static pages plus one first-party script that
+ * counts visits (src/lib/tracker.ts, collected by functions/api/e.ts into the
+ * table in migrations/). No cookies, no third-party scripts, no forms.
+ *
+ * THIS PAGE FOLLOWS THE FEATURE. tests/invariants/privacy-disclosure.test.ts
+ * holds a disclosure here for every column the visit log stores, the
+ * retention period the collector enforces (RETENTION_MONTHS, derived from
+ * RETENTION_DAYS, never typed), the daily visitor code, and the opt-out the
+ * shipped beacon honours. Adding a column without describing it here fails
+ * that test.
+ *
+ * Written for the chapter's readers, many of them older veterans: short
+ * sentences, everyday words, no "telemetry" or "pseudonymous".
  */
 import PageLayout from '../layouts/PageLayout.astro';
 import ReviewNote from '../components/ReviewNote.astro';
 import site from '../data/site.json';
+import { RETENTION_MONTHS } from '../data/analytics';
 ---
 
 <PageLayout
   title="Privacy"
   description="What this website does and does not collect."
   eyebrow="Legal"
-  lede="Short version: this website does not collect anything about you."
+  lede="Short version: this website counts visits to its pages. It sets no cookies, stores nothing on your device, and does not keep your IP address."
   width="prose"
 >
-  <h2>What we collect</h2>
+  <h2>What we record when you visit</h2>
   <p>
-    Nothing. This site is a set of static files. It sets no cookies, runs no analytics, embeds no tracking pixels,
-    loads no third-party scripts, and has no forms that submit data to us. Fonts are served from this site rather
-    than from a font provider, so visiting a page does not tell any other company that you were here.
+    When a page of this website opens in your browser, a small piece of code that belongs to this website, not to
+    an advertising or analytics company, sends a short note back to the website. The chapter keeps one record for
+    each page you view, and that record holds only these things:
+  </p>
+  <ul class="disclosures">
+    <li><strong>Which page you looked at on this website</strong>, for example the Get Help page.</li>
+    <li>
+      <strong>The website that sent you here</strong>, if your browser says, such as a search engine or Facebook, with
+      anything after a question mark in its address removed.
+    </li>
+    <li>
+      <strong>Your approximate location: city, state and country</strong>, as Cloudflare, the company that delivers
+      this website, works it out from your internet connection. It is often only roughly right, and it is never a
+      street address.
+    </li>
+    <li>
+      <strong>The name of your internet provider</strong>, such as Comcast or Verizon, and the number that identifies
+      its network, also as Cloudflare works it out.
+    </li>
+    <li><strong>The size of your browser window</strong>, which tells us whether people read on phones or computers.</li>
+    <li>
+      <strong>How long the page was open and visible on your screen.</strong> Time it spent hidden behind another tab
+      or app is not counted.
+    </li>
+    <li><strong>The date and time of the visit.</strong></li>
+    <li>
+      <strong>A visitor code that changes every day</strong>, explained below, and <strong>a random number for that one
+      page view</strong>, which lets the record be updated while you read.
+    </li>
+  </ul>
+  <p>
+    Everything else on this website comes from this website too: the fonts, the pictures and the counting code. No
+    other company&rsquo;s scripts, ads or tracking pixels are loaded, and there are no forms that send information
+    to us.
+  </p>
+
+  <h2>What we do not keep</h2>
+  <ul class="disclosures">
+    <li>
+      <strong>Your IP address</strong>, the number that identifies your internet connection. Cloudflare reads it to work
+      out the approximate location and provider above, and it is used to make the daily visitor code, but it is never
+      stored.
+    </li>
+    <li>
+      <strong>Cookies.</strong> This website sets none for visitors. (The private page for the chapter&rsquo;s
+      administrators uses a sign-in cookie, for them only.)
+    </li>
+    <li><strong>Anything on your device.</strong> Nothing is saved in your browser, so there is nothing to clear.</li>
+    <li>
+      <strong>Your activity on other websites.</strong> This website does not follow you anywhere else, and it shares
+      nothing with advertisers.
+    </li>
+  </ul>
+
+  <h2>The daily visitor code</h2>
+  <p>
+    So that three pages read by one person count as one visitor rather than three, each record carries a code made by
+    scrambling your IP address and your browser&rsquo;s name together with a secret value and today&rsquo;s date. The
+    code cannot be turned back into your IP address. Because the date is part of it, the code changes every day, so
+    it cannot be used by anyone, the chapter included, to tell that a visitor today and a visitor tomorrow were the
+    same person.
+  </p>
+
+  <h2>Who can see it, and for how long</h2>
+  <p>
+    Only the chapter&rsquo;s website administrators, on a private page that asks them to sign in first. The records are
+    stored for the chapter by Cloudflare. The chapter does not sell them or share them with anyone.
+  </p>
+  <p>
+    Records are kept for {RETENTION_MONTHS} months. Once a record is more than {RETENTION_MONTHS} months old, it is
+    deleted automatically.
+  </p>
+
+  <h2>How to turn it off</h2>
+  <p>
+    Many browsers have a privacy setting called <strong>Global Privacy Control</strong>, or an older one called
+    <strong>Do Not Track</strong>. If either is turned on in your browser, the counting code on this website does
+    nothing at all: no note is sent, and no record of your visit is made. Turning off JavaScript in your browser also
+    stops it, and the rest of this website works the same without it.
   </p>
 
   <h2>What our host can see</h2>
@@ -63,6 +150,10 @@ import site from '../data/site.json';
       and a decision is needed about whether to publish members&rsquo; names, donors&rsquo; names, and personal
       contact details at all.
     </p>
+    <p>
+      The visit counting described above is new. It was added after the chapter last reviewed this site, and it needs
+      the chapter&rsquo;s sign-off, both for the counting itself and for this description of it.
+    </p>
   </ReviewNote>
 
   <h2>Questions</h2>
@@ -80,5 +171,22 @@ import site from '../data/site.json';
 
   h2:first-of-type {
     margin-block-start: 0;
+  }
+
+  /* The global reset zeroes every margin, so a section with more than one
+     block (a paragraph, then the list of what is recorded, then another
+     paragraph) needs its spacing stated. */
+  p + p,
+  p + .disclosures,
+  .disclosures + p {
+    margin-block-start: var(--s-3);
+  }
+
+  .disclosures {
+    padding-inline-start: var(--s-5);
+  }
+
+  .disclosures li + li {
+    margin-block-start: var(--s-2);
   }
 </style>

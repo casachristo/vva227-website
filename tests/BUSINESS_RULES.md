@@ -86,6 +86,7 @@ analytics*.
 | A14 | The setup script is idempotent and never deploys. A rerun changes nothing but rewriting `ACCESS_TEAM_DOMAIN` and `ACCESS_AUD`; a run stopped because Zero Trust is off is finished by the next one; `--dry-run` sends only GETs. Its last words say the settings wait for a production deploy from a tree holding both the volunteer's latest work and this branch. | `tests/feature/setup-analytics.test.ts` — *running it again*, *Zero Trust not turned on yet*, *--dry-run*, *a fresh account*; `tests/security/setup-analytics.test.ts` — *it never deploys* |
 | A15 | The Cloudflare API token is never printed (even when an error repeats it), goes only to `https://api.cloudflare.com` in the Authorization header, and its file is gitignored. | `tests/security/setup-analytics.test.ts` — *the token* |
 | A16 | The binding, salt, Access settings and path the setup script writes are the names the Functions read, proven by running the real handlers on the env it produces. | `tests/contracts/setup-analytics.test.ts` — *the names the script writes are the names the Functions read* |
+| A17 | The privacy page follows the feature. It names, in plain words, every column every table in the visit log stores (a column added without a disclosure fails), states the retention period the collector enforces (derived from `RETENTION_DAYS`, never typed), says the visitor code changes daily only while the salt period is one day, describes the opt-out the shipped `/b.js` honours, and no longer claims the site collects nothing. No column could hold an IP address, a browser string or a precise place. | `tests/invariants/privacy-disclosure.test.ts` — *discloses every column the visit log stores*, *keeps no column that could hold an IP address*, *states the retention period the collector enforces*, *describes the opt-out the shipped beacon honours*, *no longer claims the site collects nothing* |
 
 ---
 
@@ -105,7 +106,6 @@ analytics*.
   runtime hands a request no Function matches to its asset server, which still
   applies `_redirects`. Whether production does the same was not measured. The
   contract test is what holds the pin.
-- **The privacy page predates the visit log.** `/privacy` still says the site
-  runs no analytics and loads no scripts. No test ties that page to what the
-  beacon and collector actually do, and the wording needs the chapter's
-  approval before it changes.
+- **The privacy page's wording is not yet the chapter's.** `/privacy` now
+  describes the visit log and is tied to it by A17, but the chapter has not
+  approved either the counting or the words; its review note says so.

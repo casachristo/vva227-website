@@ -61,7 +61,9 @@ export const SITE_KEY = 'vva227';
  * At this site's traffic the useful artifact is the visit log, where each row
  * is legible on its own, not a monthly unique-visitor total. Raising this
  * number creates a longer-lived identifier, which the privacy page would then
- * have to describe. Do not raise it without changing that page.
+ * have to describe: it says the code "changes every day", and
+ * tests/invariants/privacy-disclosure.test.ts fails if this is raised without
+ * changing that page.
  */
 export const SALT_PERIOD_DAYS = 1;
 
@@ -103,10 +105,14 @@ export const MAX_BODY_BYTES = 2_048;
  * trigger, and a separate scheduled Worker to run one DELETE would be a second
  * deployable for a table that gains a few rows a day.
  *
- * Changing this number changes what the privacy page promises. Change both in
- * the same commit.
+ * The privacy page states this period, as RETENTION_MONTHS below, so changing
+ * it changes that page's promise by itself. tests/invariants/privacy-
+ * disclosure.test.ts fails on a period that is not a whole number of months.
  */
 export const RETENTION_DAYS = 730;
+
+/** RETENTION_DAYS as the privacy page states it: in months, of 365/12 days. */
+export const RETENTION_MONTHS = (RETENTION_DAYS * 12) / 365;
 
 /** Event kinds the collector accepts. Anything else is refused with a 400. */
 export const EVENT_VIEW = 'view';
