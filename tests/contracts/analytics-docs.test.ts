@@ -241,6 +241,15 @@ describe('tests/BUSINESS_RULES.md, Visit analytics', () => {
     return out;
   }
 
+  /** Why a citation points at nothing, or null if the file exists and holds the title. */
+  function unfound({ path, title }: { path: string; title: string }): string | null {
+    if (!existsSync(join(ROOT, path))) return `${path} does not exist`;
+    const text = read(path);
+    // "…" in a cited title stands for the part elided; each piece must be present.
+    const pieces = title.split('…').map((p) => p.trim()).filter(Boolean);
+    return pieces.every((p) => text.includes(p)) ? null : `${path}: no test titled "${title}"`;
+  }
+
   it('has a rule for each analytics guarantee, numbered without gaps', () => {
     expect(rows.map((r) => r.split('|')[1].trim())).toEqual(Array.from({ length: rows.length }, (_, i) => `A${i + 1}`));
     expect(rows.length).toBeGreaterThanOrEqual(17);
@@ -251,15 +260,9 @@ describe('tests/BUSINESS_RULES.md, Visit analytics', () => {
     for (const row of rows) {
       const refs = references(row);
       if (!refs.length) broken.push(`${row.slice(0, 8)}: names no test`);
-      for (const { path, title } of refs) {
-        if (!existsSync(join(ROOT, path))) {
-          broken.push(`${path} does not exist`);
-          continue;
-        }
-        const text = read(path);
-        // "…" in a cited title stands for the part elided; each piece must be present.
-        const pieces = title.split('…').map((p) => p.trim()).filter(Boolean);
-        if (!pieces.every((p) => text.includes(p))) broken.push(`${path}: no test titled "${title}"`);
+      for (const ref of refs) {
+        const why = unfound(ref);
+        if (why) broken.push(why);
       }
     }
     expect(broken).toEqual([]);
@@ -269,5 +272,14 @@ describe('tests/BUSINESS_RULES.md, Visit analytics', () => {
     const fake = '| A1 | x | `tests/feature/setup-analytics.test.ts` — *a title nobody wrote* |';
     const [ref] = references(fake);
     expect(read(ref.path)).not.toContain(ref.title);
+  });
+
+  it('leaves no cited title unfound in the other sections either', () => {
+    // The other sections cite a test by file alone as often as by title, so
+    // only the titles they do name are checked.
+    const others = rules.split('\n').filter((l) => /^\| [A-Z]\d+ \|/.test(l) && !/^\| A\d+ \|/.test(l));
+    const refs = others.flatMap((row) => references(row).map((ref) => ({ ...ref, rule: row.split('|')[1].trim() })));
+    expect(refs.length).toBeGreaterThan(10);
+    expect(refs.flatMap((ref) => (unfound(ref) ? [`${ref.rule}: ${unfound(ref)}`] : []))).toEqual([]);
   });
 });

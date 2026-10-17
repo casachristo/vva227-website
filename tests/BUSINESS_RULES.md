@@ -17,7 +17,7 @@ analytics*.
 | # | Rule | Test |
 |---|---|---|
 | P1 | Every atomic fact recovered from the legacy site is present in the built output. The count never falls. | `tests/invariants/migration-coverage.test.ts` — *carries every registered legacy fact* |
-| P2 | Facts recovered from the legacy site and facts supplied later are counted separately, so a growing total cannot disguise a legacy fact that was dropped. | `tests/invariants/migration-coverage.test.ts` — *still carries at least 79 facts recovered from the legacy site* |
+| P2 | Facts recovered from the legacy site and facts supplied later are counted separately, so a growing total cannot disguise a legacy fact that was dropped. | `tests/invariants/migration-coverage.test.ts` — *still carries at least … facts recovered from the legacy site* |
 | P3 | Every disagreement recorded in a data file is rendered visibly somewhere on the site. Recording a conflict and showing it to nobody is the failure this site exists to prevent. | `tests/invariants/review-notes.test.ts` — *renders every one of them somewhere in the built site* |
 | P4 | Every review box announces itself as unconfirmed and carries usable content. | `tests/invariants/review-notes.test.ts` — *announce themselves as unconfirmed* |
 | P5 | No figure from the Foundation newsletter is published as fact. Where its own source contradicts itself, both readings appear, inside the review box and nowhere else. | `tests/invariants/review-notes.test.ts` — *keeps every one of those figures inside the review note*; `tests/security/output-safety.test.ts` — *publishes no figure from that source outside its review note* |
@@ -42,7 +42,7 @@ analytics*.
 |---|---|---|
 | S1 | Any page that carries a route for giving to the Foundation also carries its exemption, its EIN and its postal address. An unidentified solicitation is the defect; the disclosure is the fix. | `tests/security/output-safety.test.ts` — *identifies the payee whenever it asks for money* |
 | S2 | The EIN is printed in the hyphenated form the IRS publishes. | `tests/security/output-safety.test.ts` — *prints the EIN in the form the IRS publishes it* |
-| S3 | The Foundation's website is not linked until the chapter confirms it resolves, and becomes a link when it does. | `tests/security/output-safety.test.ts` — *does not link to the Foundation site*; `tests/feature/nvvvf-section.test.ts` covers both sides of the flag; `tests/contracts/nvvvf-data.test.ts` P9 proves the page actually renders the branch |
+| S3 | The Foundation's website is not linked until the chapter confirms it resolves, and becomes a link when it does. | `tests/security/output-safety.test.ts` — *links to the Foundation site now that the chapter has confirmed it resolves*; `tests/feature/nvvvf-section.test.ts` — *renders no link while the chapter has not confirmed the site is live*, *renders the link the moment the chapter confirms it*; `tests/contracts/nvvvf-data.test.ts` P9 proves the page actually renders the branch |
 | S4 | The chapter's figures and the Foundation's figures never appear in one block, and are never summed. | `/give/impact` renders no Foundation figure — `tests/security/output-safety.test.ts` — *publishes no figure from that source outside its review note*. **Partial: the "never summed" half is held by review, not by a test.** |
 
 ## Links and assets
