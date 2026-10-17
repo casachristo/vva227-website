@@ -48,6 +48,9 @@ function handlerRoutes(): string[] {
   return out.sort();
 }
 
+/** Whether a routes include list claims more than named paths: any pattern with a wildcard. */
+const claimsWildcard = (include: readonly string[]) => include.some((p) => p.includes('*'));
+
 /** Source sides of public/_redirects. */
 function redirectSources(): string[] {
   return redirectRules(readFileSync(join(ROOT, 'public', '_redirects'), 'utf8')).map((r) => r.from);
@@ -87,13 +90,14 @@ describe('public/_routes.json and functions/', () => {
     const { include } = publicRoutes();
     const sources = redirectSources();
     expect(sources.length).toBeGreaterThan(40);
-    expect(include.some((p: string) => p.includes('*'))).toBe(false);
+    expect(claimsWildcard(include)).toBe(false);
     for (const from of sources) expect(include, `${from} must not be routed into Functions`).not.toContain(from);
   });
 
   it('can actually fail — a wildcard include would be caught', () => {
-    const wild = { include: ['/*'] };
-    expect(wild.include.some((p) => p.includes('*'))).toBe(true);
+    expect(claimsWildcard(['/*'])).toBe(true);
+    expect(claimsWildcard([...publicRoutes().include, '/api/*'])).toBe(true);
+    expect(claimsWildcard(publicRoutes().include)).toBe(false);
   });
 
   it('is copied into the build unchanged', () => {

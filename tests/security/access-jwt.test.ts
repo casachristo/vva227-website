@@ -26,7 +26,7 @@ import {
   verifyAccessJwt,
   type VerifyOptions,
 } from '../../src/lib/access';
-import { AUD, b64url, b64urlJson, claimsFor, createSigner, OWNER_EMAIL, TEAM, type Signer } from '../helpers/access-jwt';
+import { AUD, b64urlJson, claimsFor, createSigner, OWNER_EMAIL, TEAM, type Signer } from '../helpers/access-jwt';
 
 const NOW = 1_800_000_000;
 let signer: Signer;
@@ -427,9 +427,17 @@ describe('the JWKS cache', () => {
 });
 
 describe('the base64url decoding the verifier relies on', () => {
-  it('round-trips bytes that need both URL-safe substitutions', () => {
-    // 0xfb 0xff encodes to "-_8" in base64url and "+/8=" in base64. A decoder
-    // that missed either substitution would mangle real signatures.
-    expect(b64url(new Uint8Array([0xfb, 0xff]))).toBe('-_8');
+  it('accepts a token whose payload carries both URL-safe characters, - and _, and reads its claims exactly', async () => {
+    // A byte of ">" in the third place of a group of three encodes to "-",
+    // and one of "?" to "_" (base64's "+" and "/"); three of each in a row
+    // put one in that place whatever the offset. A decoder that missed
+    // either substitution would refuse this token, or read other claims.
+    // Real signatures carry both characters too, but only by chance.
+    const note = '>>>???';
+    const token = await signer.sign(claimsFor(NOW, { note }));
+    const payload = token.split('.')[1];
+    expect(payload).toContain('-');
+    expect(payload).toContain('_');
+    expect(await verifyAccessJwt(token, opts)).toEqual({ ok: true, claims: claimsFor(NOW, { note }) });
   });
 });
