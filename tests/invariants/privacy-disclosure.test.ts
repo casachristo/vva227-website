@@ -184,6 +184,15 @@ describe('the privacy page', () => {
     expect(text).toContain('A visitor code that changes every day');
   });
 
+  it('says the rest of a record is kept as it is, and can still make a frequent visitor recognizable', () => {
+    // Only the code changes daily. Place, provider and window size are stored
+    // unchanged, and /stats shows place, network and phone-or-computer for
+    // every visitor-day, so a regular reader from a small town stands out on
+    // any day without the code's help.
+    expect(text).toContain('The other details in a record, such as your town, your internet provider and the size of your browser window, are kept as they are');
+    expect(text).toContain('someone who visits often from a small place may still be recognizable from them');
+  });
+
   it('promises the visitor code cannot be undone or linked only as far as one fixed secret allows', () => {
     // Whoever holds BEACON_SALT can work an IPv4 address back out of a stored
     // code and recompute that visitor's code for any other day (the unit test
