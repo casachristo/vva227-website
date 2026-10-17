@@ -42,7 +42,7 @@ const DISCLOSURES: Record<string, string> = {
   'views.site': 'Which page you looked at on this website',
   'views.visitor': 'A visitor code that changes every day',
   'views.path': 'Which page you looked at',
-  'views.referrer': 'The website that sent you here',
+  'views.referrer': 'If you came from another page of this website, the record shows which page that was',
   'views.country': 'Your approximate location: city, state and country',
   'views.city': 'Your approximate location: city, state and country',
   'views.region': 'Your approximate location: city, state and country',
