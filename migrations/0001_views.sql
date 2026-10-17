@@ -25,7 +25,8 @@ CREATE TABLE IF NOT EXISTS views (
   site       TEXT    NOT NULL,
 
   -- Salted one-way hash of IP + user agent (src/lib/beacon.ts, visitorHash).
-  -- Not reversible without BEACON_SALT, and not comparable across salt windows.
+  -- Not reversible without the secret salt, and not comparable across salt
+  -- windows.
   visitor    TEXT    NOT NULL,
 
   -- location.pathname only. Never the query string: campaign tags, session
