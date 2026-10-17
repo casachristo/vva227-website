@@ -161,6 +161,56 @@ describe('the opt-out', () => {
   });
 });
 
+describe('a page the browser prerenders', () => {
+  // Chrome loads a page it expects you to open (one you type often, or a
+  // bookmark you hover) and runs its scripts unseen. Often it is never shown.
+  const prerendered = (options: TrackerRunOptions = {}) => run({ prerendering: true, visibility: 'hidden', ...options });
+
+  it('sends nothing and starts nothing until the page is shown', () => {
+    const t = prerendered();
+    expect(t.sent).toEqual([]);
+    expect(t.intervals).toEqual([]);
+    expect(t.listeners.map((l) => `${l.target}:${l.type}`)).toEqual(['document:prerenderingchange']);
+  });
+
+  it('sends exactly one view once shown, and counts reading time from then', () => {
+    const t = prerendered({ pathname: '/get-help', referrer: 'https://www.google.com/' });
+    t.at(T0 + 30_000); // thirty seconds unseen, which must not count
+    t.setPrerendering(false);
+    t.setVisibility('visible');
+    t.fire('document', 'prerenderingchange');
+    expect(t.sent).toHaveLength(1);
+    expectViewBody(t.sent[0].body);
+    expect(t.sent[0].body).toMatchObject({ p: '/get-help', r: 'https://www.google.com/' });
+
+    t.at(T0 + 34_000);
+    t.fire('window', 'pagehide');
+    expect(t.bodies().map((b) => [b.k, b.e])).toEqual([
+      [EVENT_VIEW, undefined],
+      [EVENT_END, 4_000],
+    ]);
+  });
+
+  it('registers the same listeners and timer as an ordinary page once shown', () => {
+    const t = prerendered();
+    t.setPrerendering(false);
+    t.fire('document', 'prerenderingchange');
+    expect(t.listeners.map((l) => `${l.target}:${l.type}`).sort()).toEqual([
+      'document:prerenderingchange',
+      'document:visibilitychange',
+      'window:pagehide',
+      'window:pageshow',
+    ]);
+    expect(t.intervals.map((i) => i.ms)).toEqual([HEARTBEAT_MS]);
+  });
+
+  it('honours the opt-out first: not even the prerender listener', () => {
+    const t = prerendered({ navigator: { globalPrivacyControl: true } });
+    expect(t.listeners).toEqual([]);
+    expect(t.sent).toEqual([]);
+  });
+});
+
 describe('the view event', () => {
   it('goes to the registered endpoint with the path, stripped referrer and viewport', () => {
     const t = run({ pathname: '/give/impact', referrer: 'https://www.facebook.com/' });

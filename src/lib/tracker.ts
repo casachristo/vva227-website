@@ -49,8 +49,13 @@ interface PrivacySignals {
   doNotTrack?: unknown;
 }
 
+/** True while the browser has loaded the page ahead of time and not yet shown it. Chromium only. */
+interface Prerendering {
+  prerendering?: boolean;
+}
+
 export function tracker(cfg: TrackerConfig): void {
-  var doc = document;
+  var doc = document as Document & Prerendering;
   var nav = navigator as Navigator & PrivacySignals;
   var win = window as Window & PrivacySignals;
 
@@ -188,62 +193,77 @@ export function tracker(cfg: TrackerConfig): void {
     };
   }
 
-  doc.addEventListener(
-    'visibilitychange',
-    guard(function () {
-      if (doc.visibilityState === 'visible') {
-        resume();
-      } else {
-        // Flushing on hide, not only on pagehide, is what makes the numbers
-        // survive a phone: iOS Safari routinely freezes a backgrounded tab
-        // and never fires pagehide at all.
+  function start(): void {
+    doc.addEventListener(
+      'visibilitychange',
+      guard(function () {
+        if (doc.visibilityState === 'visible') {
+          resume();
+        } else {
+          // Flushing on hide, not only on pagehide, is what makes the numbers
+          // survive a phone: iOS Safari routinely freezes a backgrounded tab
+          // and never fires pagehide at all.
+          pause();
+          flush(true);
+        }
+      }),
+    );
+
+    window.addEventListener(
+      'pagehide',
+      guard(function () {
         pause();
         flush(true);
-      }
-    }),
-  );
+      }),
+    );
 
-  window.addEventListener(
-    'pagehide',
-    guard(function () {
-      pause();
-      flush(true);
-    }),
-  );
+    // A page restored from the back/forward cache resumes counting. There is
+    // deliberately no `unload` listener: one makes the page ineligible for
+    // that cache in Safari and Firefox, so every Back press would reload the
+    // page, and it buys nothing, since a restored page keeps its one timer
+    // rather than starting another.
+    window.addEventListener('pageshow', guard(resume));
 
-  // A page restored from the back/forward cache resumes counting. There is
-  // deliberately no `unload` listener: one makes the page ineligible for that
-  // cache in Safari and Firefox, so every Back press would reload the page,
-  // and it buys nothing, since a restored page keeps its one timer rather
-  // than starting another.
-  window.addEventListener('pageshow', guard(resume));
+    setInterval(
+      guard(function () {
+        if (doc.visibilityState === 'visible') flush(false);
+      }),
+      cfg.heartbeatMs,
+    );
 
-  setInterval(
-    guard(function () {
-      if (doc.visibilityState === 'visible') flush(false);
-    }),
-    cfg.heartbeatMs,
-  );
+    resume();
 
-  resume();
+    send(
+      {
+        k: 'view',
+        v: viewId,
+        // The pathname only, never the full URL or its query string. Query
+        // strings are where campaign tags, session tokens and the occasional
+        // email address end up. A fragment never reaches a server anyway.
+        p: currentPath(),
+        // Query string and fragment removed before this leaves the browser. A
+        // Referer is written under the SENDING site's policy, so it can carry
+        // their tokens, and a move between two of our own pages carries OUR
+        // query string. src/lib/beacon.ts strips it again server-side and is
+        // the authority; this copy means it is never sent at all.
+        r: truncate(doc.referrer.split(/[?#]/)[0], cfg.maxReferrerChars) || null,
+        w: window.innerWidth || null,
+        h: window.innerHeight || null,
+      },
+      false,
+    );
+  }
 
-  send(
-    {
-      k: 'view',
-      v: viewId,
-      // The pathname only, never the full URL or its query string. Query
-      // strings are where campaign tags, session tokens and the occasional
-      // email address end up. A fragment never reaches a server anyway.
-      p: currentPath(),
-      // Query string and fragment removed before this leaves the browser. A
-      // Referer is written under the SENDING site's policy, so it can carry
-      // their tokens, and a move between two of our own pages carries OUR
-      // query string. src/lib/beacon.ts strips it again server-side and is
-      // the authority; this copy means it is never sent at all.
-      r: truncate(doc.referrer.split(/[?#]/)[0], cfg.maxReferrerChars) || null,
-      w: window.innerWidth || null,
-      h: window.innerHeight || null,
-    },
-    false,
-  );
+  // A PRERENDERED page has not been seen. Chrome loads a page it expects you
+  // to open, such as one you type often or a bookmark you hover, and runs its
+  // scripts out of sight; often you go somewhere else and it is thrown away.
+  // Counting it would add a visit that never happened, mostly from the
+  // site's own most frequent readers. So nothing starts, not even a listener
+  // that could send an `end`, until the browser says the page is shown.
+  // prerenderingchange fires once, on that moment.
+  if (doc.prerendering) {
+    doc.addEventListener('prerenderingchange', guard(start));
+  } else {
+    start();
+  }
 }

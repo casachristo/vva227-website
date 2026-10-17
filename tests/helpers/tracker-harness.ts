@@ -37,6 +37,8 @@ export interface TrackerRunOptions {
   hash?: string;
   referrer?: string;
   visibility?: 'visible' | 'hidden';
+  /** document.prerendering: true for a page the browser loads before anyone opens it. */
+  prerendering?: boolean;
   innerWidth?: number;
   innerHeight?: number;
   /** Extra navigator properties, e.g. globalPrivacyControl or doNotTrack. */
@@ -70,6 +72,8 @@ export interface TrackerRun {
   /** Move the clock to an absolute time. */
   at(ms: number): void;
   setVisibility(v: 'visible' | 'hidden'): void;
+  /** Change document.prerendering, as activating a prerendered page does. */
+  setPrerendering(p: boolean): void;
   /** Replace location.pathname, or make reading it throw. */
   setPathname(p: string | (() => string)): void;
   /** Dispatch an event to every listener the tracker registered for it. */
@@ -94,6 +98,7 @@ export function runTracker(source: string, options: TrackerRunOptions = {}): Tra
   let now = options.now ?? 1_000_000;
   let pathname: string | (() => string) = options.pathname ?? '/about';
   let visibility = options.visibility ?? 'visible';
+  let prerendering = options.prerendering ?? false;
   const sent: SentRequest[] = [];
   const listeners: Listener[] = [];
   const intervals: Array<{ fn: () => void; ms: number }> = [];
@@ -117,6 +122,9 @@ export function runTracker(source: string, options: TrackerRunOptions = {}): Tra
   const documentStub = {
     get visibilityState() {
       return visibility;
+    },
+    get prerendering() {
+      return prerendering;
     },
     referrer: options.referrer ?? '',
     addEventListener(type: string, fn: Listener['fn']) {
@@ -221,6 +229,9 @@ export function runTracker(source: string, options: TrackerRunOptions = {}): Tra
     },
     setVisibility(v) {
       visibility = v;
+    },
+    setPrerendering(p) {
+      prerendering = p;
     },
     setPathname(p) {
       pathname = p;

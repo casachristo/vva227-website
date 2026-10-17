@@ -40,6 +40,11 @@ its wording from it.
 **Opt-out:** a browser sending Global Privacy Control or Do Not Track gets a
 script that does nothing at all: no request, no listener, no timer.
 
+**Pages loaded ahead of time:** Chrome sometimes loads a page it expects you
+to open (one you type often, or a bookmark you hover) before you open it. The
+script waits until such a page is actually shown, so one you never open is
+not counted.
+
 **The public description** is [`/privacy`](../src/pages/privacy.astro).
 `tests/invariants/privacy-disclosure.test.ts` fails if a column is added
 without a sentence there, so the page cannot quietly fall behind the code.
