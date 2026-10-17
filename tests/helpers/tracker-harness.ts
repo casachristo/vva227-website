@@ -201,7 +201,6 @@ export function runTracker(source: string, options: TrackerRunOptions = {}): Tra
       intervals.push({ fn, ms });
       return intervals.length;
     },
-    clearInterval() {},
     // Shadows the context's own Date, so the tests own the clock.
     Date: { now: () => now },
   };

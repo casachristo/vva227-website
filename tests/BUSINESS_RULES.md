@@ -70,15 +70,16 @@ analytics*.
 
 | # | Rule | Test |
 |---|---|---|
-| A1 | A visitor who sends Global Privacy Control or Do-Not-Track is not counted: the beacon makes no request and attaches no listener or timer. | `tests/unit/tracker.test.ts` — *does nothing at all when … is set*, *still collects when …* |
-| A2 | Nothing is stored on or read from a visitor's device: no cookie, no localStorage or sessionStorage. The pageview id lives only in memory. | `tests/unit/tracker.test.ts` — *is never written to or read from* |
-| A3 | No query string or fragment is collected, from the page address or the referrer. The beacon never sends one, and the collector strips any that a hand-built request carries. | `tests/unit/tracker.test.ts` — *never sends a query string or fragment*; `tests/unit/beacon.test.ts` — *strips … from the referrer before it is stored* |
+| A1 | A visitor who sends Global Privacy Control or Do-Not-Track is not counted: the beacon makes no request and attaches no listener or timer. | `tests/unit/tracker.test.ts` — *does nothing at all when … is set*, *still collects when …*; `tests/system/runtime.spec.ts` — *with Global Privacy Control on, no request reaches the collector* |
+| A2 | Nothing is stored on or read from a visitor's device: no cookie, no localStorage or sessionStorage. The pageview id lives only in memory. | `tests/unit/tracker.test.ts` — *is never written to or read from*; `tests/system/runtime.spec.ts` — *one page load writes exactly one row* |
+| A3 | No query string or fragment is collected, from the page address or the referrer. The beacon never sends one, and the collector strips any that a hand-built request carries. | `tests/unit/tracker.test.ts` — *never sends a query string or fragment*; `tests/unit/beacon.test.ts` — *strips … from the referrer before it is stored*; `tests/system/runtime.spec.ts` — *arriving from a URL that carries ?token=secret* |
 | A4 | The IP address is never stored. Location and network come from Cloudflare's edge; the visitor id is a salted hash that rotates daily, and with no salt configured the collector refuses rather than falling back. | `tests/security/collector.test.ts` — *the IP address is never kept*; `tests/unit/beacon.test.ts` — *refuses to run without a secret, by name* |
 | A5 | Every payload the shipped beacon can send is accepted by the collector, and stored without the collector having to change it. A path or limit that one side produces and the other refuses loses visits with no error anywhere. | `tests/contracts/beacon-tracker.test.ts` — *passes validateEvent, and validation changes nothing a browser sent*, *stores one row per pageview, stamped with SITE_KEY* |
-| A6 | The beacon is first-party: the Content-Security-Policy names no origin but the site's own, and allows no inline or eval script. | `tests/contracts/beacon-tracker.test.ts` — *names no origin but its own*, *opened no inline or eval allowance* |
-| A7 | Adding Functions breaks no legacy redirect: `_routes.json` hands the Functions runtime only the collector and `/stats`. | `tests/contracts/analytics-routes.test.ts` — *never claims a wildcard, and never a path a legacy redirect needs* |
+| A6 | The beacon is first-party: the Content-Security-Policy names no origin but the site's own, and allows no inline or eval script. Under that policy every page loads it and records its visit with no violation. | `tests/contracts/beacon-tracker.test.ts` — *names no origin but its own*, *opened no inline or eval allowance*; `tests/system/runtime.spec.ts` — *every built page, under the real policy*, *under the site's old policy … the beacon is blocked* |
+| A7 | Adding Functions breaks no legacy redirect: `_routes.json` hands the Functions runtime only the collector and `/stats`. | `tests/contracts/analytics-routes.test.ts` — *never claims a wildcard, and never a path a legacy redirect needs*; `tests/system/runtime.spec.ts` — *every legacy redirect in _redirects still answers*. **Partial: see Known gaps.** |
 | A8 | Rows older than the retention period are deleted, on every recorded pageview. | `tests/integration/collector-write.test.ts` — *deletes rows past the retention period when a view arrives* |
-| A9 | `/stats` refuses everyone until its gate is chosen, and every refusal is the same plain 404, whatever the reason. | `tests/security/stats-page.test.ts` — *the real gate, as it ships today*, *every refusal is indistinguishable* |
+| A9 | `/stats` refuses everyone until its gate is chosen, and every refusal is the same plain 404, whatever the reason. | `tests/security/stats-page.test.ts` — *the real gate, as it ships today*, *every refusal is indistinguishable*; `tests/system/runtime.spec.ts` — */stats answers the handler's plain 404* |
+| A10 | One pageview is one row. Reading time counts only while the page is visible, rises on that same row as the visitor hides or leaves the page, and never moves the time the visit started. | `tests/integration/collector-write.test.ts` — *never restamps ts when a late end arrives*; `tests/unit/tracker.test.ts` — *counts only the time the page is visible*; `tests/system/runtime.spec.ts` — *hiding the page, then leaving it, raises reading time on that same row* |
 
 ---
 
@@ -92,7 +93,13 @@ analytics*.
   — `"349"`, `"$50"`, `"April"`, `"Arlington"` each match most of the site — and
   would keep passing if the fact itself were deleted. Tightening them is its own
   piece of work; see `tests/invariants/migration-coverage.test.ts`.
-- **`public/_headers` is not exercised by a browser.** `astro preview` does not
-  apply it, so the Content-Security-Policy is asserted as a string in a file and
-  never as a response header. A `wrangler pages dev` project in
-  `playwright.config.ts` would close this.
+- **A7 is only half provable locally.** The `runtime` Playwright project serves
+  the build through `wrangler pages dev`, and every legacy redirect works there.
+  But swapping `_routes.json` for `include: ["/*"]` still passes: the local
+  runtime hands a request no Function matches to its asset server, which still
+  applies `_redirects`. Whether production does the same was not measured. The
+  contract test is what holds the pin.
+- **The privacy page predates the visit log.** `/privacy` still says the site
+  runs no analytics and loads no scripts. No test ties that page to what the
+  beacon and collector actually do, and the wording needs the chapter's
+  approval before it changes.
