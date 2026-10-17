@@ -3,8 +3,9 @@ import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join, relative, sep } from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
 import { BEACON_ENDPOINT, BEACON_SCRIPT, EVENT_VIEW, SITE_KEY, STATS_PATH } from '../../src/data/analytics';
+import { saltWindow, visitorHash } from '../../src/lib/beacon';
 import { headersPolicy, redirectRules } from '../helpers/pages-files';
-import { RUNTIME_D1_DIR, RUNTIME_ORIGIN } from '../helpers/pages-runtime';
+import { RUNTIME_D1_DIR, RUNTIME_ORIGIN, RUNTIME_SALT } from '../helpers/pages-runtime';
 
 /**
  * SYSTEM — the built site in the real Pages runtime, in a real browser.
@@ -45,7 +46,15 @@ function query(sql: string, ...args: Array<string | number>): Row[] {
 }
 
 const byView = (view: string) => query('SELECT * FROM views WHERE view = ?', view);
-const byVisitor = (visitor: string) => query('SELECT * FROM views WHERE visitor = ? ORDER BY ts', visitor);
+const byVisitors = (visitors: string[]) =>
+  query(`SELECT * FROM views WHERE visitor IN (${visitors.map(() => '?').join(', ')}) ORDER BY ts`, ...visitors);
+
+/**
+ * The address wrangler pages dev hands the collector as CF-Connecting-IP for
+ * a request from this machine. The first test proves it: a code built with it
+ * is the code the browser's own row carries.
+ */
+const RUNTIME_IP = '127.0.0.1';
 
 /** A stored row, checked whole. */
 function expectStoredView(row: Row | undefined, expected: { path: string; referrer: string | null }): Row {
@@ -104,9 +113,16 @@ interface Visitor {
   consoleViolations: string[];
   /** POST a beacon directly, as this visitor, and return the stored row. */
   control(): Promise<Row>;
+  /**
+   * Every visitor code this visitor can have had, built with the collector's
+   * own visitorHash: one per salt window from before its first page to now.
+   * One code, unless the run crossed midnight Eastern, where it changes.
+   */
+  hashes(): Promise<string[]>;
 }
 
 async function newVisitor(browser: Browser, testInfo: TestInfo, { gpc = false } = {}): Promise<Visitor> {
+  const firstWindow = saltWindow(Date.now());
   const ua = `Mozilla/5.0 (vva227 runtime test ${testInfo.testId}.${testInfo.retry}) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0 Safari/537.36`;
   const context = await browser.newContext({ baseURL: RUNTIME_ORIGIN, userAgent: ua, viewport: { width: 1280, height: 720 } });
   await testInfo.attach('user agent', { body: ua });
@@ -129,15 +145,22 @@ async function newVisitor(browser: Browser, testInfo: TestInfo, { gpc = false } 
     pageErrors: [],
     consoleViolations: [],
     async control() {
-      // Same user agent, same address, same day: the same visitor hash the
-      // browser's own rows carry. Proven to match in the first test below.
-      const id = `c0${Date.now().toString(16)}${Math.floor(Math.random() * 0xffff).toString(16)}`.slice(0, 16).padEnd(16, '0');
+      // Same user agent, same address: hashed as the browser's own requests
+      // are, so its code is one of hashes(). Proven in the first test below.
+      const id = crypto.randomUUID().replace(/-/g, '').slice(0, 16);
       const res = await context.request.post(BEACON_ENDPOINT, {
         headers: { 'User-Agent': ua, 'Content-Type': 'application/json' },
         data: { k: EVENT_VIEW, v: id, p: '/control' },
       });
       expect(res.status()).toBe(204);
       return byView(id)[0];
+    },
+    async hashes() {
+      const out: string[] = [];
+      for (let w = firstWindow; w <= saltWindow(Date.now()); w++) {
+        out.push(await visitorHash({ secret: RUNTIME_SALT, window: w, site: SITE_KEY, ip: RUNTIME_IP, ua }));
+      }
+      return out;
     },
   };
   context.on('request', (r) => {
@@ -178,14 +201,16 @@ test.describe('a visit, as the database records it', () => {
     const row = expectStoredView(byView(sent.v)[0], { path: '/give', referrer: null });
     expect(row.engaged_ms).toBe(0);
 
-    // Exactly one: give a duplicate time to land, then count this visitor's rows.
+    // The codes this visitor can have had include the one its row carries,
+    // and the control post's. That is what makes "no row for this visitor"
+    // meaningful in the opt-out tests below.
     await v.page.waitForTimeout(500);
-    expect(byVisitor(row.visitor as string)).toHaveLength(1);
-
-    // The control post lands under the same visitor hash. This is what makes
-    // "no row for this visitor" meaningful in the opt-out tests below.
     const control = await v.control();
-    expect(control.visitor).toBe(row.visitor);
+    const hashes = await v.hashes();
+    expect(hashes).toContain(row.visitor);
+    expect(hashes).toContain(control.visitor);
+    // Exactly one row from the browser: a duplicate had time to land.
+    expect(byVisitors(hashes).map((r) => r.path)).toEqual(['/give', '/control']);
 
     // Nothing was written to the device, checked in a real engine.
     expect(await v.page.context().cookies()).toEqual([]);
@@ -242,7 +267,7 @@ test.describe('a visit, as the database records it', () => {
     // seconds: counting them would put this past 2,500.
     expect((byView(id)[0].engaged_ms as number) - (afterHide.engaged_ms as number)).toBeLessThan(1_800);
 
-    const rows = byVisitor(first.visitor as string);
+    const rows = byVisitors(await v.hashes());
     expect(rows.map((r) => r.path)).toEqual(['/events', '/contact']);
     expect(byView(id)).toHaveLength(1);
     expect(byView(id)[0].ts).toBe(first.ts);
@@ -300,7 +325,9 @@ test.describe('the opt-out, in a real browser', () => {
 
     // Server side: this visitor's only row is the control post.
     const control = await v.control();
-    expect(byVisitor(control.visitor as string).map((r) => r.path)).toEqual(['/control']);
+    const hashes = await v.hashes();
+    expect(hashes).toContain(control.visitor);
+    expect(byVisitors(hashes).map((r) => r.path)).toEqual(['/control']);
   });
 });
 
@@ -353,7 +380,9 @@ test.describe('the policy is actually doing the work', () => {
     // The page itself still renders perfectly, which is the danger.
     await expect(v.page.locator('h1')).toBeVisible();
     const control = await v.control();
-    expect(byVisitor(control.visitor as string).map((r) => r.path)).toEqual(['/control']);
+    const hashes = await v.hashes();
+    expect(hashes).toContain(control.visitor);
+    expect(byVisitors(hashes).map((r) => r.path)).toEqual(['/control']);
   });
 });
 
