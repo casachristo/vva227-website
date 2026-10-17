@@ -3,6 +3,8 @@ import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative, sep } from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
 import * as registry from '../../src/data/analytics';
+import { SELF_ORIGINS } from '../../src/lib/links';
+import { isSiteHost } from '../../src/lib/stats';
 import { UPSERT_SQL } from '../../src/lib/beacon';
 import { schemaSql } from '../helpers/d1';
 import { VIEW_COLUMNS } from '../helpers/analytics';
@@ -58,7 +60,7 @@ describe('public/_routes.json and functions/', () => {
   it('routes exactly the registered Function paths', () => {
     expect(publicRoutes()).toEqual({
       version: 1,
-      include: [registry.BEACON_ENDPOINT],
+      include: [registry.BEACON_ENDPOINT, registry.STATS_PATH],
       exclude: [],
     });
   });
@@ -140,7 +142,15 @@ describe('the registry is the only place these values are written', () => {
   });
 });
 
-describe('deploy configuration', () => {
+describe('the registry agrees with the rest of the site', () => {
+  it('counts every origin src/lib/links.ts calls this site as a same-site referrer', () => {
+    // Two lists of "what is this site", kept for different jobs. A host in one
+    // and not the other would show internal navigation as a traffic source.
+    for (const origin of SELF_ORIGINS) {
+      expect(isSiteHost(new URL(origin).hostname), `${origin} is missing from SITE_HOSTS`).toBe(true);
+    }
+  });
+
   it('commits no wrangler config, so the dashboard binding is never overridden', () => {
     // The live site is deployed by direct upload from another tree, and the
     // D1 binding and salt live in the Pages project's production settings. A

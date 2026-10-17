@@ -83,3 +83,31 @@ export async function expectRefused(
   });
   await expect(res.json()).resolves.toEqual({ error: reason });
 }
+
+/** The stats handler's one refusal, identical whatever the reason. */
+export async function expectStatsNotFound(res: Response): Promise<void> {
+  expect(res.status).toBe(404);
+  expect(Object.fromEntries(res.headers)).toEqual({
+    'content-type': 'text/plain; charset=utf-8',
+    'cache-control': 'no-store',
+    'x-content-type-options': 'nosniff',
+  });
+  await expect(res.text()).resolves.toBe('Not found');
+}
+
+/** The stats page's headers, in full. Returns the CSP for further checks. */
+export function expectStatsPageHeaders(res: Response): string {
+  const headers = Object.fromEntries(res.headers);
+  const csp = headers['content-security-policy'];
+  expect(csp).toMatch(/^default-src 'none'; style-src 'sha256-[A-Za-z0-9+/]+=*'; img-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'$/);
+  expect(headers).toEqual({
+    'content-type': 'text/html; charset=utf-8',
+    'content-security-policy': csp,
+    'cache-control': 'no-store',
+    'x-content-type-options': 'nosniff',
+    'x-frame-options': 'DENY',
+    'referrer-policy': 'no-referrer',
+    'x-robots-tag': 'noindex, nofollow',
+  });
+  return csp;
+}
