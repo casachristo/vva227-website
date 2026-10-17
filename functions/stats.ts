@@ -31,7 +31,9 @@ import { errorMessage, type AnalyticsEnv, type PagesContext } from '../src/lib/r
  * — and not a different answer for "not configured" versus "expired token",
  * which would tell a stranger how close they are. The reason goes to the log
  * (console.warn, readable with `wrangler pages deployment tail`), never to the
- * response.
+ * response. On a hostname the Access application covers, a stranger never
+ * gets this far: Access shows its sign-in page first. This 404 is what every
+ * other hostname answers.
  *
  * On a preview deployment there is no D1 binding, so even a request the gate
  * allowed gets the same 404.

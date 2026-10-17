@@ -199,6 +199,16 @@ describe('docs/analytics.md', () => {
   it('states the retention period the collector enforces', () => {
     expect(doc).toContain(`Kept for ${RETENTION_DAYS} days** (${RETENTION_MONTHS} months)`);
   });
+
+  it('says a stranger meets the Access sign-in page where Access stands, and the plain Not found only elsewhere', () => {
+    // Access stops a request with no sign-in at the edge, before the Function
+    // runs, on every hostname its application covers. The Function's own 404
+    // is what the hostnames it does not cover answer.
+    const flat = doc.replace(/\s+/g, ' ');
+    expect(flat).not.toContain('on every hostname, `/stats` is a plain');
+    expect(flat).toContain("anyone not signed in sees Cloudflare's sign-in page, and only the listed addresses get past it");
+    expect(flat).toContain('On any address Access does not cover, `/stats` is a plain `Not found`.');
+  });
 });
 
 describe('README.md', () => {
@@ -208,6 +218,12 @@ describe('README.md', () => {
     expect(readme).not.toMatch(/zero JavaScript/i);
     expect(readme).toContain('](./docs/analytics.md)');
     expect(existsSync(join(ROOT, 'docs', 'analytics.md'))).toBe(true);
+  });
+
+  it('says a stranger at /stats meets the Access sign-in page, or the plain Not found where Access does not stand', () => {
+    const flat = readme.replace(/\s+/g, ' ');
+    expect(flat).not.toContain('Everyone else gets a plain `Not found`.');
+    expect(flat).toContain("Everyone else is stopped at Cloudflare's sign-in page, or gets a plain `Not found` on an address Access does not cover.");
   });
 });
 

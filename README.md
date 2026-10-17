@@ -146,7 +146,8 @@ browser sending Global Privacy Control or Do Not Track is not counted at all.
 the database.
 
 The log is at **`/stats`**, behind Cloudflare Access, for the addresses the
-owner names. Everyone else gets a plain `Not found`.
+owner names. Everyone else is stopped at Cloudflare's sign-in page, or gets a
+plain `Not found` on an address Access does not cover.
 
 Setting it up is one command, run once by the owner, followed by a deploy:
 

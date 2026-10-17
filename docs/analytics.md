@@ -71,7 +71,11 @@ provider, phone or computer, where they came from, the first page, how many
 pages, how long), then pages, sources, locations and networks. Times are
 Eastern.
 
-To everyone else, on every hostname, `/stats` is a plain `Not found`.
+Where Access stands (vva227.org and www.vva227.org, and the project's
+`pages.dev` addresses, previews included, when they are in the same
+Cloudflare account as vva227.org), anyone not signed in sees Cloudflare's
+sign-in page, and only the listed addresses get past it. On any address
+Access does not cover, `/stats` is a plain `Not found`.
 
 ### Why there are two locks
 
