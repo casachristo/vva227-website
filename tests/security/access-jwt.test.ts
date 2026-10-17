@@ -260,6 +260,12 @@ describe('failing closed', () => {
     expect(await verifyAccessJwt(token, { ...opts, ...over })).toEqual({ ok: false, reason: 'access not configured' });
   });
 
+  it('denies, without throwing, when called with no options or no key source', async () => {
+    const token = await signer.sign(claimsFor(NOW));
+    expect(await verifyAccessJwt(token)).toEqual({ ok: false, reason: 'access not configured' });
+    expect(await verifyAccessJwt(token, { teamDomain: TEAM, aud: AUD, nowSeconds: NOW })).toEqual({ ok: false, reason: 'cannot fetch signing keys' });
+  });
+
   it('denies when the signing keys cannot be fetched', async () => {
     // An outage at the key endpoint must lock the door, not open it. Written
     // the other way round this is a total bypass triggered by someone else's

@@ -146,7 +146,10 @@ export const accessSetting = (value: unknown): string => (typeof value === 'stri
  *
  * Never throws, and never returns claims it did not verify.
  */
-export async function verifyAccessJwt(token: unknown, { teamDomain, aud, getJwks, nowSeconds }: VerifyOptions): Promise<AccessVerdict> {
+export async function verifyAccessJwt(
+  token: unknown,
+  { teamDomain, aud, getJwks, nowSeconds }: Partial<VerifyOptions> = {},
+): Promise<AccessVerdict> {
   // Configuration first. Without either of these there is no correct answer,
   // and "allow" must not be reachable from here.
   const team = accessSetting(teamDomain);
@@ -174,6 +177,7 @@ export async function verifyAccessJwt(token: unknown, { teamDomain, aud, getJwks
 
   let jwks: unknown;
   try {
+    if (typeof getJwks !== 'function') throw new Error('no key source');
     jwks = await getJwks();
   } catch {
     // A signing-key fetch that fails must deny, not allow. This is the branch
