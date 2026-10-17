@@ -159,6 +159,36 @@ describe('a visit, collected and then reported', () => {
   });
 });
 
+describe('which visitors Recent visitors keeps, once there are more than it lists', () => {
+  // The SQL picks which hashes to fetch and groupVisitorDays makes the final
+  // cut; both must mean "the most recently active". Every visitor-day is a new
+  // hash, so the 90- and 365-day windows pass the limit even at this traffic.
+
+  it('fetches only the most recently active, in the query as in the grouping', async () => {
+    // C arrived first and is still reading; B left earliest; A came in between.
+    await at(NOW - 5 * H, '198.51.100.41', view('a100000000000001', '/c-arrives'));
+    await at(NOW - 4 * H, '198.51.100.42', view('a100000000000002', '/b-leaves-first'));
+    await at(NOW - 3 * H, '198.51.100.43', view('a100000000000003', '/a-between'));
+    await at(NOW - H, '198.51.100.41', view('a100000000000004', '/c-still-here'));
+
+    const { results } = await d1.binding.prepare(STATS_SQL.visits).bind(SITE_KEY, NOW - DAY, 2).all<VisitRow>();
+    expect(results.map((r) => r.path).sort()).toEqual(['/a-between', '/c-arrives', '/c-still-here']);
+    // Newest arrival first: A, then C, whose day began earliest.
+    expect(groupVisitorDays(results, 2).map((d) => d.entry)).toEqual(['/a-between', '/c-arrives']);
+  });
+
+  it(`lists exactly ${RECENT_VISITORS_LIMIT}, leaving out the least recently active`, async () => {
+    const total = RECENT_VISITORS_LIMIT + 5;
+    for (let i = 0; i < total; i++) {
+      // One visitor each, a minute apart: visitor i was last seen i minutes after visitor 0.
+      await at(NOW - (total - i) * 60_000, `10.0.${Math.floor(i / 256)}.${i % 256}`, view(`b${String(i).padStart(15, '0')}`, `/p-${i}`));
+    }
+    const days = await visitorDays();
+    expect(days).toHaveLength(RECENT_VISITORS_LIMIT);
+    expect(days.map((d) => d.entry)).toEqual(Array.from({ length: RECENT_VISITORS_LIMIT }, (_, k) => `/p-${total - 1 - k}`));
+  });
+});
+
 describe('the upsert, as the owner sees it', () => {
   it('shows when a visit STARTED, not when its last flush arrived', async () => {
     await at(NOW - 3 * H, HOME_IP, view('5000000000000001', '/'));

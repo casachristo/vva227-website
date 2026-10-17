@@ -9,7 +9,7 @@ import { STATS_PATH } from '../../src/data/analytics';
 import { ACCESS_REFUSAL_REASONS } from '../../src/lib/access';
 import { ACCESS_JWT_HEADER } from '../../src/lib/stats-gate';
 import type { D1Like } from '../../src/lib/runtime';
-import { shortVisitor, WINDOWS } from '../../src/lib/stats';
+import { RECENT_VISITORS_LIMIT, shortVisitor, WINDOWS } from '../../src/lib/stats';
 
 /**
  * FEATURE — the /stats page, run whole: rows in the database, a signed-in
@@ -201,6 +201,32 @@ describe('happy path — a populated page', () => {
     expect(res.status).toBe(200);
     expectStatsPageHeaders(res);
     await expect(res.text()).resolves.toBe('');
+  });
+});
+
+describe('more visitors than Recent visitors lists', () => {
+  it(`shows the ${RECENT_VISITORS_LIMIT} most recently active, the earliest arrival among them if still active, while the summary counts all`, async () => {
+    // One reader arrived before everyone, the same day, and was still reading
+    // at the end. Ordered by arrival they would be the first cut; by last
+    // activity they are the first kept, which is what the table promises.
+    const early = 'e'.repeat(32);
+    d1.seed({ view: '3000000000000001', visitor: early, ts: NOW - 11 * H, path: '/early-arrival' });
+    d1.seed({ view: '3000000000000002', visitor: early, ts: NOW - 60_000, path: '/early-again' });
+    const others = RECENT_VISITORS_LIMIT + 4;
+    for (let i = 0; i < others; i++) {
+      d1.seed({ view: `4${String(i).padStart(15, '0')}`, visitor: i.toString(16).padStart(32, '0'), ts: NOW - 10 * H + i * 60_000, path: `/p-${i}` });
+    }
+
+    const $ = cheerio.load(await (await get()).text());
+    const rows = tableOf($, 'Recent visitors').slice(1);
+    expect(rows).toHaveLength(RECENT_VISITORS_LIMIT);
+    const entries = rows.map((r) => r[6]);
+    // Newest arrival first, so the early reader is the last row, with both pages.
+    expect(rows.at(-1)).toEqual(['2026-10-17 01:00', shortVisitor(early), '-', '-', '-', '(direct)', '/early-arrival', '2', '0s']);
+    expect(entries.slice(0, -1)).toEqual(Array.from({ length: RECENT_VISITORS_LIMIT - 1 }, (_, k) => `/p-${others - 1 - k}`));
+    // The five least recently active are the ones left out.
+    for (let i = 0; i < 5; i++) expect(entries).not.toContain(`/p-${i}`);
+    expect($('.summary').text()).toBe(`${others + 2} views · ${others + 1} visitors · ${others + 2} pages`);
   });
 });
 
