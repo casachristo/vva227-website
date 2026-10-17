@@ -112,8 +112,15 @@ different Cloudflare account, include that account too.
 *Zone Resources:* include the specific zone **vva227.org**.
 
 **3. Hand the token to the script.** Save it in a file named `.cf-api-token`
-at the top of this repository (it is gitignored), or set `CF_API_TOKEN`. The
-script never prints it.
+at the top of this repository (it is gitignored), then make the file readable
+by you alone:
+
+```sh
+chmod 600 .cf-api-token
+```
+
+The script refuses the file while other accounts on the computer can read it.
+Or set `CF_API_TOKEN` instead. The script never prints the token.
 
 **4. Run the setup.** Repeat `--email` for each person who may open `/stats`.
 The list is the whole list every time: running again with a shorter list

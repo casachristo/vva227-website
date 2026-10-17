@@ -71,7 +71,8 @@ export const USAGE = `Usage: npm run setup:analytics -- --email you@example.com 
   --dry-run  Look, print what would change, and change nothing.
 
 The Cloudflare API token is read from the CF_API_TOKEN environment variable,
-or from a file named ${TOKEN_FILE} at the top of this repository.`;
+or from a file named ${TOKEN_FILE} at the top of this repository that only you
+can read (chmod 600 ${TOKEN_FILE}).`;
 
 /** A stop the script makes on purpose, with a message written for the person running it. */
 export class StopError extends Error {
@@ -139,7 +140,27 @@ export function noTokenMessage() {
     `Account resources: the "Ch 227" account (and, if vva227.org is in a different Cloudflare account, that one too).`,
     `Zone resources: vva227.org.`,
     '',
-    `Then save it in a file named ${TOKEN_FILE} at the top of this repository (it is gitignored), or set CF_API_TOKEN.`,
+    `Then save it in a file named ${TOKEN_FILE} at the top of this repository (it is gitignored), and make`,
+    `that file readable by you alone:  chmod 600 ${TOKEN_FILE}`,
+    'Or set CF_API_TOKEN instead.',
+  ].join('\n');
+}
+
+/**
+ * Can an account other than the file's owner read (or reach) it? The token
+ * can deploy the live site and change who may read its visitors, so a file
+ * readable by the group or by everyone is refused. Mode bits only; Windows,
+ * which has none, is not checked by the caller.
+ */
+export function tokenFileOpenToOthers(mode) {
+  return (mode & 0o077) !== 0;
+}
+
+export function tokenFileOpenMessage() {
+  return [
+    `${TOKEN_FILE} can be read by other accounts on this computer, so this script will not use it.`,
+    `Make it readable by you alone, then run this again:  chmod 600 ${TOKEN_FILE}`,
+    'Nothing was changed.',
   ].join('\n');
 }
 

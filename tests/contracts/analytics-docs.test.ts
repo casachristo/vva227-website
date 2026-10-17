@@ -3,7 +3,7 @@ import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { ACCESS_REFUSAL_REASONS } from '../../src/lib/access';
 import { BEACON_ENDPOINT, RETENTION_DAYS, RETENTION_MONTHS } from '../../src/data/analytics';
-import { TOKEN_PERMISSIONS } from '../../tools/lib/setup-analytics-plan.mjs';
+import { TOKEN_FILE, TOKEN_PERMISSIONS } from '../../tools/lib/setup-analytics-plan.mjs';
 import { VIEW_COLUMNS } from '../helpers/analytics';
 
 /**
@@ -27,6 +27,14 @@ const doc = read('docs/analytics.md');
 
 /** The heading of the optional rate-limiting step in docs/analytics.md. */
 const RATE_RULE = '**7. Optional: a rate-limiting rule for the collector.**';
+
+/** One numbered step of the setup, from its bold heading to the next one. Empty if it is missing. */
+function setupStep(text: string, n: number): string {
+  const start = text.indexOf(`\n**${n}. `);
+  if (start === -1) return '';
+  const end = text.indexOf(`\n**${n + 1}. `, start);
+  return text.slice(start, end === -1 ? text.indexOf('\n---', start) : end);
+}
 
 /** First-column cells of every markdown table row in a text. */
 function tableKeys(text: string): string[] {
@@ -107,6 +115,15 @@ describe('docs/analytics.md', () => {
   it('lists exactly the token permissions the setup script asks for', () => {
     const rows = TOKEN_PERMISSIONS.map((p: string) => `| ${p.split(' › ').join(' | ')} |`);
     for (const row of rows) expect(doc).toContain(row);
+  });
+
+  it('has the owner make the token file private, which the setup script requires', () => {
+    expect(setupStep(doc, 3)).toContain(`chmod 600 ${TOKEN_FILE}`);
+  });
+
+  it('can actually fail: a step that is not there reads as empty', () => {
+    expect(setupStep(doc, 99)).toBe('');
+    expect(setupStep(doc, 3)).not.toContain('**4. ');
   });
 
   it('describes every column of the visit log', () => {

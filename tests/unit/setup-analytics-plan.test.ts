@@ -99,6 +99,23 @@ describe('resolveToken', () => {
   });
 });
 
+describe('tokenFileOpenToOthers', () => {
+  it.each([[0o600], [0o400], [0o700], [0o100600]])('accepts a file only its owner can reach: %o', (mode) => {
+    expect(plan.tokenFileOpenToOthers(mode)).toBe(false);
+  });
+
+  it.each([[0o644], [0o640], [0o604], [0o660], [0o610], [0o601], [0o777], [0o100644]])('refuses one any other account can reach: %o', (mode) => {
+    expect(plan.tokenFileOpenToOthers(mode)).toBe(true);
+  });
+
+  it('says how to close it, and that nothing was changed', () => {
+    const text = plan.tokenFileOpenMessage();
+    expect(text).toContain('.cf-api-token can be read by other accounts on this computer');
+    expect(text).toContain('chmod 600 .cf-api-token');
+    expect(text).toContain('Nothing was changed.');
+  });
+});
+
 describe('redact', () => {
   it('removes every occurrence', () => {
     expect(plan.redact('tok and tok again', 'tok')).toBe('[token] and [token] again');
@@ -517,6 +534,8 @@ describe('what the script tells the person', () => {
     const text = plan.noTokenMessage();
     for (const p of plan.TOKEN_PERMISSIONS) expect(text).toContain(p);
     expect(text).toContain('.cf-api-token');
+    // The script refuses a file others can read; the instructions say so first.
+    expect(text).toContain('chmod 600 .cf-api-token');
   });
 
   it('ends a successful run with the deploy that is not its to make', () => {

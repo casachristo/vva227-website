@@ -21,7 +21,8 @@
  * Nothing it sets reaches the live site until the next production deploy.
  *
  * The API token comes from CF_API_TOKEN or from .cf-api-token at the repo
- * root (gitignored). docs/analytics.md lists the permissions it needs.
+ * root (gitignored, and refused unless only its owner can read it).
+ * docs/analytics.md lists the permissions it needs.
  *
  * --dry-run looks without changing anything.
  */

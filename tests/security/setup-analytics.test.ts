@@ -1,6 +1,7 @@
 import { describe, it, expect, afterEach } from 'vitest';
 import { spawnSync } from 'node:child_process';
-import { readdirSync, readFileSync } from 'node:fs';
+import { chmodSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { normalizeEmail, parseArgs, policyBody, policyMatches } from '../../tools/lib/setup-analytics-plan.mjs';
 import { CH227, FakeCloudflare, OTHER_ACCOUNT } from '../helpers/fake-cloudflare';
@@ -15,7 +16,8 @@ import { runSetupAgainst } from '../helpers/setup-run';
  *   - the salt it creates is never printed;
  *   - the Access policy admits exactly the addresses given, never a wider rule;
  *   - an address cannot smuggle anything into a request;
- *   - the token file can never be committed.
+ *   - the token file can never be committed, and is not used while other
+ *     accounts on the computer can read it.
  *
  * TIER JUSTIFICATION: the feature tier proves the setup works. Only here is
  * each of these checked against the worst case: a Cloudflare error that
@@ -28,7 +30,21 @@ const SALT = '9e'.repeat(32);
 const EMAIL = 'owner@example.org';
 
 const fakes: FakeCloudflare[] = [];
-afterEach(() => fakes.splice(0).forEach((f) => f.close()));
+const dirs: string[] = [];
+afterEach(() => {
+  fakes.splice(0).forEach((f) => f.close());
+  dirs.splice(0).forEach((d) => rmSync(d, { recursive: true, force: true }));
+});
+
+/** A .cf-api-token holding TOKEN, with exactly these permissions whatever the umask. */
+function tokenFileAt(mode: number): string {
+  const dir = mkdtempSync(join(tmpdir(), 'vva227-token-'));
+  dirs.push(dir);
+  const file = join(dir, '.cf-api-token');
+  writeFileSync(file, `${TOKEN}\n`);
+  chmodSync(file, mode);
+  return file;
+}
 
 const run = (fake: FakeCloudflare, argv: string[] = ['--email', EMAIL]) => runSetupAgainst(fake, argv, { randomHex: () => SALT });
 
@@ -75,6 +91,34 @@ describe('the token', () => {
     const res = spawnSync('git', ['check-ignore', '--no-index', '.cf-api-token'], { cwd: process.cwd(), encoding: 'utf8' });
     expect(res.status, 'the token file is not gitignored').toBe(0);
     expect(res.stdout.trim()).toBe('.cf-api-token');
+  });
+
+  // Windows has no owner/group/other permission bits to check, so neither
+  // does the script there.
+  describe.skipIf(process.platform === 'win32')('in a file other accounts on this computer could read', () => {
+    it('is refused before any request, with the command that fixes it, and is not echoed', async () => {
+      const fake = cloudflare();
+      const { code, output, requests } = await runSetupAgainst(fake, ['--email', EMAIL], { env: {}, tokenFile: tokenFileAt(0o644) });
+      expect(code).toBe(1);
+      expect(requests).toEqual([]);
+      expect(output).toContain('can be read by other accounts on this computer');
+      expect(output).toContain('chmod 600 .cf-api-token');
+      expect(output).not.toContain(TOKEN);
+    });
+
+    it('is used once only its owner can read it', async () => {
+      const fake = cloudflare();
+      const { code, output, requests } = await runSetupAgainst(fake, ['--email', EMAIL], { env: {}, tokenFile: tokenFileAt(0o600) });
+      expect(code, output).toBe(0);
+      expect(`${requests[0].method} ${requests[0].path}`).toBe(`GET /accounts/${CH227}/pages/projects/vva227-refresh`);
+      expect(requests[0].authorization).toBe(`Bearer ${TOKEN}`);
+    });
+
+    it('does not stop a run that takes its token from CF_API_TOKEN', async () => {
+      const fake = cloudflare();
+      const { code } = await runSetupAgainst(fake, ['--email', EMAIL], { env: { CF_API_TOKEN: TOKEN }, tokenFile: tokenFileAt(0o644) });
+      expect(code).toBe(0);
+    });
   });
 });
 

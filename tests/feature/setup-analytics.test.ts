@@ -1,5 +1,5 @@
 import { describe, it, expect, afterEach } from 'vitest';
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { chmodSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { runSetup } from '../../tools/lib/setup-analytics.mjs';
@@ -490,7 +490,9 @@ describe('arguments and the token', () => {
     const dir = mkdtempSync(join(tmpdir(), 'vva227-token-'));
     dirs.push(dir);
     const tokenFile = join(dir, '.cf-api-token');
+    // Private, as docs/analytics.md step 3 has the owner make it.
     writeFileSync(tokenFile, `${fake.token}\n`);
+    chmodSync(tokenFile, 0o600);
     const { code, requests } = await run(fake, ['--email', EMAIL], { env: {}, tokenFile });
     expect(code).toBe(0);
     expect(new Set(requests.map((r) => r.authorization))).toEqual(new Set([`Bearer ${fake.token}`]));

@@ -17,7 +17,7 @@
  * or a run after a stop, only does what is still missing.
  */
 import { randomBytes } from 'node:crypto';
-import { existsSync, readdirSync, readFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import * as plan from './setup-analytics-plan.mjs';
@@ -63,7 +63,17 @@ export async function runSetup({
     return 0;
   }
 
-  const token = plan.resolveToken(env.CF_API_TOKEN, existsSync(tokenFile) ? readFileSync(tokenFile, 'utf8') : undefined);
+  // The file is read only when CF_API_TOKEN is not set, and only once no
+  // other account on this computer can read it.
+  let fileText;
+  if (!plan.resolveToken(env.CF_API_TOKEN) && existsSync(tokenFile)) {
+    if (process.platform !== 'win32' && plan.tokenFileOpenToOthers(statSync(tokenFile).mode)) {
+      print(plan.tokenFileOpenMessage());
+      return 1;
+    }
+    fileText = readFileSync(tokenFile, 'utf8');
+  }
+  const token = plan.resolveToken(env.CF_API_TOKEN, fileText);
   if (!token) {
     print(plan.noTokenMessage());
     return 1;
