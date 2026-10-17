@@ -63,7 +63,9 @@ without a sentence there, so the page cannot quietly fall behind the code.
 
 Cloudflare Access asks for your email address and sends a one-time code (if
 the sign-in page offers no way in, add the *One-time PIN* login method under
-Zero Trust → Settings → Authentication). A sign-in lasts 24 hours.
+Zero Trust → Settings → Authentication). A sign-in lasts 24 hours, unless
+someone changes that in the Zero Trust dashboard; the setup script keeps a
+change made there.
 
 The page shows the last 30 days by default; links switch to 7, 90 or 365.
 It lists recent visitors (one row per visitor per day: when, where, which
@@ -299,7 +301,8 @@ ran, not the answer it gave), so read the lines beneath it.
   Cloudflare account.** Access cannot cover `vva227-refresh-12g.pages.dev`
   then, so it cannot end a sign-in there either. Someone removed from the
   list who kept a copy of their sign-in can still open `/stats` at that
-  address until it runs out (at most 24 hours). The setup script says so when
+  address until it runs out (at most the sign-in length, 24 hours unless
+  changed). The setup script says so when
   it removes someone in that case.
 - **A flood of fake visits.** The collector must accept posts from anyone.
   Step 7 slows one sender down, but a patient or spread-out sender can still

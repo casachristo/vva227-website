@@ -2,8 +2,9 @@ import { describe, it, expect } from 'vitest';
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { ACCESS_REFUSAL_REASONS } from '../../src/lib/access';
-import { BEACON_ENDPOINT, RETENTION_DAYS, RETENTION_MONTHS } from '../../src/data/analytics';
-import { ACCOUNT, nextSteps, TOKEN_FILE, TOKEN_PERMISSIONS } from '../../tools/lib/setup-analytics-plan.mjs';
+import { BEACON_ENDPOINT, COLLECT_HOSTS, RETENTION_DAYS, RETENTION_MONTHS } from '../../src/data/analytics';
+import { DEFAULT_DAYS, WINDOWS } from '../../src/lib/stats';
+import { ACCOUNT, nextSteps, SESSION_DURATION, TOKEN_FILE, TOKEN_PERMISSIONS } from '../../tools/lib/setup-analytics-plan.mjs';
 import { VIEW_COLUMNS } from '../helpers/analytics';
 
 /**
@@ -198,6 +199,26 @@ describe('docs/analytics.md', () => {
 
   it('states the retention period the collector enforces', () => {
     expect(doc).toContain(`Kept for ${RETENTION_DAYS} days** (${RETENTION_MONTHS} months)`);
+  });
+
+  it('names the windows /stats offers, its default, and the sign-in length the setup script sets', () => {
+    const others = WINDOWS.filter((d) => d !== DEFAULT_DAYS);
+    expect(doc).toContain(`The page shows the last ${DEFAULT_DAYS} days by default; links switch to ${others.slice(0, -1).join(', ')} or ${others.at(-1)}.`);
+    const hours = /^(\d+)h$/.exec(SESSION_DURATION)?.[1];
+    expect(hours, `SESSION_DURATION is ${SESSION_DURATION}; say it in hours`).toBeDefined();
+    expect(doc).toContain(`A sign-in lasts ${hours} hours`);
+  });
+
+  it('names exactly the hostnames the collector writes for', () => {
+    const start = doc.indexOf('**Only on vva227.org:**');
+    expect(start).toBeGreaterThan(-1);
+    const paragraph = doc.slice(start, doc.indexOf('\n\n', start));
+    const named = [...paragraph.matchAll(/`([a-z0-9.-]+\.[a-z]+)`/g)].map((m) => m[1]);
+    const recorded = COLLECT_HOSTS.filter((h) => h !== 'localhost' && !/^\d/.test(h));
+    expect(named.filter((h) => recorded.includes(h))).toEqual(recorded);
+    // Every other name it gives is one where nothing is recorded.
+    expect(named.filter((h) => !recorded.includes(h)).every((h) => h.endsWith('.pages.dev'))).toBe(true);
+    expect(paragraph).toContain('records nothing');
   });
 
   it('says a stranger meets the Access sign-in page where Access stands, and the plain Not found only elsewhere', () => {
