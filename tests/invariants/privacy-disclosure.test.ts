@@ -5,8 +5,8 @@ import { DatabaseSync } from 'node:sqlite';
 import { loadPages, readPublicFile } from '../helpers/dist';
 import { schemaSql } from '../helpers/d1';
 import { runTracker } from '../helpers/tracker-harness';
-import { RETENTION_DAYS, RETENTION_MONTHS, SALT_PERIOD_DAYS } from '../../src/data/analytics';
-import { pruneCutoff } from '../../src/lib/beacon';
+import { EVENT_VIEW, RETENTION_DAYS, RETENTION_MONTHS, SALT_PERIOD_DAYS } from '../../src/data/analytics';
+import { pruneCutoff, validateEvent } from '../../src/lib/beacon';
 
 /**
  * INVARIANT — the privacy page describes what the visit log actually keeps.
@@ -42,7 +42,7 @@ const DISCLOSURES: Record<string, string> = {
   'views.site': 'Which page you looked at on this website',
   'views.visitor': 'A visitor code that changes every day',
   'views.path': 'Which page you looked at',
-  'views.referrer': 'If you came from another page of this website, the record shows which page that was',
+  'views.referrer': 'The address of the page that sent you here',
   'views.country': 'Your approximate location: city, state and country',
   'views.city': 'Your approximate location: city, state and country',
   'views.region': 'Your approximate location: city, state and country',
@@ -183,6 +183,20 @@ describe('the privacy page', () => {
     // And no other period anywhere on the page.
     const periods = [...text.matchAll(/(\d+)\s+(months?|years?|days?)/g)].map((m) => `${m[1]} ${m[2]}`);
     expect(new Set(periods)).toEqual(new Set([`${RETENTION_MONTHS} months`]));
+  });
+
+  it('says the record keeps the address of the page that sent a visitor, as the collector stores it', () => {
+    // The collector cuts only the ?… and #… from a referrer and keeps the
+    // whole path. Most sites share only their own name, but one that shares
+    // its full addresses puts the very page the visitor was reading (a forum
+    // thread, a Facebook group) in the record, and this site's own pages
+    // always do. "The website that sent you here" said less than that.
+    const sent = validateEvent({ k: EVENT_VIEW, v: '0123456789abcdef', p: '/get-help', r: 'https://www.facebook.com/groups/vets/posts/42?ref=share' });
+    expect(sent.ok && sent.event.referrer).toBe('https://www.facebook.com/groups/vets/posts/42');
+    expect(text).not.toContain('The website that sent you here');
+    expect(text).toContain('The address of the page that sent you here');
+    expect(text).toContain('some share the full address of the page you came from');
+    expect(text).toContain('If you came from another page of this website, the record shows which page that was');
   });
 
   it('says the visitor code changes every day only while it does', () => {
