@@ -168,13 +168,14 @@ describe('body size', () => {
     expect(d1.rows()).toHaveLength(0);
   });
 
-  it('refuses a body one byte over the cap and accepts one exactly at it', async () => {
+  it('refuses a body one byte over the cap and accepts one exactly at it, its length declared or not', async () => {
     const at = (n: number) => {
       const base = JSON.stringify(view({ pad: '' }));
       return JSON.stringify(view({ pad: 'a'.repeat(n - base.length) }));
     };
     expect(new TextEncoder().encode(at(MAX_BODY_BYTES)).length).toBe(MAX_BODY_BYTES);
     await expectAccepted(await post(at(MAX_BODY_BYTES)));
+    await expectAccepted(await post(at(MAX_BODY_BYTES), { headers: { 'Content-Length': String(MAX_BODY_BYTES) } }));
     await expectRefused(await post(at(MAX_BODY_BYTES + 1), { headers: { 'Content-Length': '0' } }), 413, 'body too large');
   });
 

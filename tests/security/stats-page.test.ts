@@ -150,6 +150,19 @@ describe('every refusal is indistinguishable', () => {
   ])('treats a gate answering %s as a refusal', async (_label, verdict) => {
     const odd = createStatsHandler((async () => verdict) as never);
     await expectStatsNotFound(await odd({ request: request(), env: createEnv(d1.binding) }));
+    expect(warn.mock.calls).toEqual([['stats denied:', 'no verdict']]);
+  });
+
+  it('logs the reason a gate gives, and a gate that throws as a gate error', async () => {
+    const env = createEnv(d1.binding);
+    await createStatsHandler(async () => ({ ok: false, reason: 'expired' }))({ request: request(), env });
+    await createStatsHandler(async () => {
+      throw new Error('certs fetch failed');
+    })({ request: request(), env });
+    expect(warn.mock.calls).toEqual([
+      ['stats denied:', 'expired'],
+      ['stats denied:', 'gate error: certs fetch failed'],
+    ]);
   });
 
   it('never says 401 or asks for credentials', async () => {

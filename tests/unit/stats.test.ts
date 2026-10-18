@@ -635,4 +635,15 @@ describe('authorizeStats — the Cloudflare Access gate', () => {
     const hostile = { headers: { get: () => { throw new Error('boom'); } } } as unknown as Request;
     await expect(authorize(hostile, accessEnv())).resolves.toEqual({ ok: false, reason: 'gate error: boom' });
   });
+
+  it('settles "not configured" before reading the request, and with no environment at all', async () => {
+    // The same request that throws above: unconfigured, it is never read.
+    const { authorize, certs } = gate();
+    const hostile = { headers: { get: () => { throw new Error('boom'); } } } as unknown as Request;
+    for (const env of [{}, { ACCESS_TEAM_DOMAIN: TEAM }, { ACCESS_AUD: AUD }]) {
+      await expect(authorize(hostile, env)).resolves.toEqual({ ok: false, reason: 'access not configured' });
+    }
+    await expect(authorize(new Request(URL_), undefined as never)).resolves.toEqual({ ok: false, reason: 'access not configured' });
+    expect(certs.calls).toEqual([]);
+  });
 });

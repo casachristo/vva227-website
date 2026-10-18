@@ -294,11 +294,24 @@ describe('sad path', () => {
     expect(res.status).toBe(405);
     expect(res.headers.get('Allow')).toBe('GET, HEAD');
     expect(res.headers.get('Cache-Control')).toBe('no-store');
+    await expect(res.text()).resolves.toBe('Method not allowed');
   });
 
-  it('answers the same 404 as a refusal when the D1 binding is missing, as on a preview', async () => {
-    vi.spyOn(console, 'error').mockImplementation(() => {});
+  it('answers the same 404 as a refusal when the D1 binding is missing, as on a preview, and logs which', async () => {
+    const errors = vi.spyOn(console, 'error').mockImplementation(() => {});
     await expectStatsNotFound(await get('', { env: ownerEnv(undefined) }));
+    expect(errors.mock.calls).toEqual([['stats: BEACON binding missing']]);
+  });
+
+  it('shows an empty window when the database answers a query with no rows at all', async () => {
+    // D1 can answer a statement with no `results`; that is no rows, not a crash.
+    const bare = { ...d1.binding, batch: async (statements: unknown[]) => statements.map(() => ({ success: true })) } as unknown as D1Like;
+    const res = await get('', { env: ownerEnv(bare) });
+    expect(res.status).toBe(200);
+    const $ = cheerio.load(await res.text());
+    expect($('.summary').text()).toBe('0 views · 0 visitors · 0 pages');
+    expect($('table')).toHaveLength(0);
+    expect($('.empty')).toHaveLength(5);
   });
 
   it('answers 500 without describing the schema when a query fails', async () => {

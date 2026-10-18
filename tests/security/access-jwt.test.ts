@@ -72,6 +72,21 @@ describe('a legitimate token', () => {
     const token = await signer.sign(claimsFor(NOW, { nbf: undefined, iat: undefined }));
     expect((await verifyAccessJwt(token, opts)).ok).toBe(true);
   });
+
+  it('reads nbf and iat only as numbers: text there is no time, and counts as absent', async () => {
+    const token = await signer.sign(claimsFor(NOW, { nbf: String(NOW + 3600), iat: String(NOW + 3600) }));
+    expect((await verifyAccessJwt(token, opts)).ok).toBe(true);
+  });
+
+  it('reads the clock itself when it is given none', async () => {
+    // The gate always passes its own clock; called bare, the verifier must
+    // still judge expiry against the real time, not against nothing.
+    const { nowSeconds: _, ...noClock } = opts;
+    const now = Math.floor(Date.now() / 1000);
+    expect((await verifyAccessJwt(await signer.sign(claimsFor(now)), noClock)).ok).toBe(true);
+    const expired = await signer.sign(claimsFor(now - 7200, { exp: now - 3600 }));
+    expect(await verifyAccessJwt(expired, noClock)).toEqual({ ok: false, reason: 'expired' });
+  });
 });
 
 describe('signature forgery', () => {
@@ -221,6 +236,16 @@ describe('malformed and missing input', () => {
     expect(await verifyAccessJwt(token, opts)).toEqual({ ok: false, reason: 'no key id' });
   });
 
+  it('rejects a genuine token with a segment added or one taken away', async () => {
+    // A real header, payload and signature, rearranged. Counting the dots is
+    // what refuses these: with a segment added, the signature still verifies.
+    const genuine = await signer.sign(claimsFor(NOW));
+    const [header, payload, signature] = genuine.split('.');
+    for (const token of [`${genuine}.x`, `${genuine}.${signature}`, `${header}.${payload}`]) {
+      expect(await verifyAccessJwt(token, opts), token).toEqual({ ok: false, reason: 'malformed token' });
+    }
+  });
+
   it('never throws, and only ever answers with a listed reason, on generated garbage', async () => {
     // A property over inputs nobody would write by hand: random lengths, random
     // segment counts, random characters in each segment, base64url and not,
@@ -310,6 +335,12 @@ describe('issuer and certs URLs', () => {
     expect(issuerFor(`http://${TEAM}`)).toBe(`https://${TEAM}`);
   });
 
+  it('removes a scheme only from the front and slashes only from the end, and keeps the rest as typed', () => {
+    expect(issuerFor(`${TEAM}//`)).toBe(`https://${TEAM}`);
+    expect(issuerFor(`${TEAM}/x/`)).toBe(`https://${TEAM}/x`);
+    expect(issuerFor(`${TEAM}/https://x`)).toBe(`https://${TEAM}/https://x`);
+  });
+
   it.each([
     ['a trailing newline', `${TEAM}\n`],
     ['a trailing CRLF', `${TEAM}\r\n`],
@@ -366,6 +397,14 @@ describe('the JWKS cache', () => {
     expect(calls).toBe(1);
   });
 
+  it('caches by the real clock when it is given none, as the production gate gives none', async () => {
+    let calls = 0;
+    const getJwks = createJwksCache(TEAM, { fetchImpl: async () => { calls++; return jwksResponse([{ kid: 'k' }]); } });
+    await getJwks();
+    await getJwks();
+    expect(calls).toBe(1);
+  });
+
   it('refetches once the TTL has passed, so key rotation is picked up', async () => {
     let calls = 0;
     let clock = 1000;
@@ -377,7 +416,8 @@ describe('the JWKS cache', () => {
     await getJwks();
     clock += 599_999;
     expect((await getJwks()).keys[0].kid).toBe('k1');
-    clock += 2;
+    // At exactly the TTL, the keys are old enough to fetch again.
+    clock += 1;
     const second = await getJwks();
     expect(calls).toBe(2);
     expect(second.keys[0].kid).toBe('k2');
