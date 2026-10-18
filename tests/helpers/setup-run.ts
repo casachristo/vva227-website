@@ -16,6 +16,8 @@ export interface SetupRunOptions {
   tokenFile?: string;
   /** The salt generator; defaults to the script's own (real randomness). */
   randomHex?: () => string;
+  /** Defaults to the repo's migrations/. */
+  migrationsDir?: string;
 }
 
 export interface SetupRun {
@@ -39,6 +41,7 @@ export async function runSetupAgainst(fake: FakeCloudflare, argv: string[], opti
     print: (line: string) => lines.push(line),
     tokenFile: options.tokenFile ?? NO_TOKEN_FILE,
     ...(options.randomHex ? { randomHex: options.randomHex } : {}),
+    ...(options.migrationsDir ? { migrationsDir: options.migrationsDir } : {}),
   });
   const requests = fake.requests.slice(from);
   const writes = fake.writes();

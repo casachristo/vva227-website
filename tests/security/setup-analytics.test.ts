@@ -122,6 +122,20 @@ describe('the token', () => {
       expect(code).toBe(0);
     });
   });
+
+  it('is not checked for other readers on Windows, which has no such permission bits', async () => {
+    const fake = cloudflare();
+    const file = tokenFileAt(0o644);
+    const platform = Object.getOwnPropertyDescriptor(process, 'platform')!;
+    Object.defineProperty(process, 'platform', { ...platform, value: 'win32' });
+    try {
+      const { code, output, requests } = await runSetupAgainst(fake, ['--email', EMAIL], { env: {}, tokenFile: file });
+      expect(code, output).toBe(0);
+      expect(requests[0].authorization).toBe(`Bearer ${TOKEN}`);
+    } finally {
+      Object.defineProperty(process, 'platform', platform);
+    }
+  });
 });
 
 describe('the salt', () => {

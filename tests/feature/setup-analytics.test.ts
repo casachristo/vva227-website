@@ -1,13 +1,14 @@
-import { describe, it, expect, afterEach } from 'vitest';
+import { describe, it, expect, afterEach, vi } from 'vitest';
 import { spawnSync } from 'node:child_process';
-import { chmodSync, cpSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { DatabaseSync } from 'node:sqlite';
+import { chmodSync, copyFileSync, cpSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { runSetup } from '../../tools/lib/setup-analytics.mjs';
-import { USAGE } from '../../tools/lib/setup-analytics-plan.mjs';
+import { nextSteps, projectNotFoundMessage, USAGE, zeroTrustInstructions } from '../../tools/lib/setup-analytics-plan.mjs';
 import { VIEW_COLUMNS } from '../helpers/analytics';
-import { runSetupAgainst, type SetupRunOptions } from '../helpers/setup-run';
+import { NO_TOKEN_FILE, runSetupAgainst, type SetupRunOptions } from '../helpers/setup-run';
 import {
   CH227,
   emptyMaps,
@@ -949,5 +950,438 @@ describe('when Cloudflare says no', () => {
     expect(code).toBe(1);
     expect(lines.join('\n')).toContain('Stopped: fetch failed');
     expect(lines.join('\n')).toContain('Cloudflare could not be reached');
+  });
+});
+
+describe('what the owner reads, word for word', () => {
+  // The person running the script reads its output and nothing else, so
+  // whole runs are checked line for line: a step heading lost, a list run
+  // together or a line from the wrong branch fails here, where a test of
+  // single phrases would pass. NEXT STEP's own words are checked whole in
+  // tests/unit/setup-analytics-plan.test.ts.
+  const SECOND = 'second@example.org';
+  const THIRD = 'third@example.org';
+  const COVERS = `vva227.org/stats, www.vva227.org/stats, ${PAGES_SUBDOMAIN}/stats, *.${PAGES_SUBDOMAIN}/stats`;
+
+  /** The repo's migration plus a second, so every list of them has two entries. */
+  function twoMigrations(): string {
+    const dir = mkdtempSync(join(tmpdir(), 'vva227-migrations-'));
+    dirs.push(dir);
+    copyFileSync(join(process.cwd(), 'migrations', '0001_views.sql'), join(dir, '0001_views.sql'));
+    writeFileSync(join(dir, '0002_extra.sql'), 'CREATE INDEX IF NOT EXISTS views_ts ON views(ts);\n');
+    return dir;
+  }
+
+  const STEP_1 = [
+    '1. The Pages project "vva227-refresh" in the "Ch 227" account',
+    '   serves vva227.org: yes',
+    '   production branch: main',
+    '   production compatibility date: 2025-09-01',
+    '   (the local runtime tests guess a date in tests/helpers/pages-runtime.ts; make RUNTIME_COMPATIBILITY_DATE match this)',
+  ];
+  const STEP_4 = ['', '4. Cloudflare Access for vva227.org/stats', '   vva227.org is in the "Ch 227" account', `   Zero Trust team: ${TEAM_DOMAIN}`];
+  const SETTINGS = (aud: string) => `  - set ACCESS_TEAM_DOMAIN (${TEAM_DOMAIN}) and ACCESS_AUD (${aud}), encrypted`;
+
+  it('on a fresh account', async () => {
+    const fake = cloudflare();
+    const { code, output } = await run(fake, ['--email', EMAIL, '--email', SECOND], { migrationsDir: twoMigrations() });
+    expect(code).toBe(0);
+    expect(output).toBe(
+      [
+        ...STEP_1,
+        '',
+        '2. The D1 database "vva227-beacon"',
+        '',
+        '3. Production settings for the visit collector',
+        ...STEP_4,
+        '',
+        '5. Production settings for the /stats lock',
+        '',
+        'Done. What changed in this run:',
+        `  - created the D1 database vva227-beacon (${fake.database()!.uuid})`,
+        '  - applied migration 0001_views.sql',
+        '  - applied migration 0002_extra.sql',
+        '  - BEACON bound to the vva227-beacon database',
+        '  - BEACON_SALT created: a new random secret, encrypted',
+        `  - created the Access policy "vva227 stats owners" admitting ${EMAIL}, ${SECOND}`,
+        `  - created the Access application "vva227 stats" covering ${COVERS}`,
+        SETTINGS(fake.apps.get(CH227)![0].aud),
+        '',
+        `Who can open /stats: ${EMAIL}, ${SECOND}`,
+        '',
+        nextSteps(),
+      ].join('\n'),
+    );
+  });
+
+  it('on a dry run on a fresh account', async () => {
+    const { code, output } = await run(cloudflare(), ['--email', EMAIL, '--email', SECOND, '--dry-run'], { migrationsDir: twoMigrations() });
+    expect(code).toBe(0);
+    expect(output).toBe(
+      [
+        'DRY RUN: looking only. Nothing will be changed.',
+        '',
+        ...STEP_1,
+        '',
+        '2. The D1 database "vva227-beacon"',
+        '',
+        '3. Production settings for the visit collector',
+        ...STEP_4,
+        '',
+        '5. Production settings for the /stats lock',
+        '',
+        'DRY RUN. Nothing was changed. A real run would:',
+        '  - create the D1 database vva227-beacon',
+        '  - apply whichever of 0001_views.sql, 0002_extra.sql the database has not recorded (a dry run cannot query it)',
+        '  - BEACON bound to the vva227-beacon database',
+        '  - BEACON_SALT created: a new random secret, encrypted',
+        `  - create the Access policy "vva227 stats owners" admitting ${EMAIL}, ${SECOND}`,
+        `  - create the Access application "vva227 stats" covering ${COVERS}`,
+        `  - set ACCESS_TEAM_DOMAIN to ${TEAM_DOMAIN} and ACCESS_AUD to the application's AUD tag`,
+        '',
+        'Run the same command without --dry-run to do it.',
+      ].join('\n'),
+    );
+  });
+
+  it('on a rerun with nothing left to do', async () => {
+    const fake = cloudflare();
+    const migrationsDir = twoMigrations();
+    await run(fake, ['--email', EMAIL, '--email', SECOND], { migrationsDir });
+    const { code, output } = await run(fake, ['--email', EMAIL, '--email', SECOND], { migrationsDir });
+    expect(code).toBe(0);
+    expect(output).toBe(
+      [
+        ...STEP_1,
+        '',
+        '2. The D1 database "vva227-beacon"',
+        `   exists (${fake.database()!.uuid})`,
+        '   migrations already applied: 0001_views.sql, 0002_extra.sql',
+        '',
+        '3. Production settings for the visit collector',
+        '   BEACON is already bound to vva227-beacon.',
+        '   BEACON_SALT already exists, encrypted; it is kept as it is.',
+        ...STEP_4,
+        `   policy "vva227 stats owners" already admits exactly ${EMAIL}, ${SECOND}`,
+        `   application "vva227 stats" already covers ${COVERS}, with "vva227 stats owners" as its only policy`,
+        '',
+        '5. Production settings for the /stats lock',
+        '',
+        'Done. What changed in this run:',
+        SETTINGS(fake.apps.get(CH227)![0].aud),
+        '',
+        `Who can open /stats: ${EMAIL}, ${SECOND}`,
+        '',
+        nextSteps(),
+      ].join('\n'),
+    );
+  });
+
+  /** A configured account whose list loses SECOND and gains THIRD, and whose application lost a destination. */
+  async function changed() {
+    const fake = cloudflare();
+    await run(fake, ['--email', EMAIL, '--email', SECOND]);
+    fake.apps.get(CH227)![0].destinations.pop();
+    return fake;
+  }
+
+  it('on a dry run that would take someone off and repair the application', async () => {
+    const fake = await changed();
+    const { code, output } = await run(fake, ['--email', EMAIL, '--email', THIRD, '--dry-run']);
+    expect(code).toBe(0);
+    expect(output).toBe(
+      [
+        'DRY RUN: looking only. Nothing will be changed.',
+        '',
+        ...STEP_1,
+        '',
+        '2. The D1 database "vva227-beacon"',
+        `   exists (${fake.database()!.uuid})`,
+        '',
+        '3. Production settings for the visit collector',
+        '   BEACON is already bound to vva227-beacon.',
+        '   BEACON_SALT already exists, encrypted; it is kept as it is.',
+        ...STEP_4,
+        '   would end existing sign-ins to /stats, because this run takes access away from someone',
+        '',
+        '5. Production settings for the /stats lock',
+        '',
+        'DRY RUN. Nothing was changed. A real run would:',
+        '  - apply whichever of 0001_views.sql the database has not recorded (a dry run cannot query it)',
+        `  - change the Access policy "vva227 stats owners" to admit exactly ${EMAIL}, ${THIRD}`,
+        `  - update the Access application "vva227 stats" to cover ${COVERS}, with "vva227 stats owners" as its only policy`,
+        '  - end every existing sign-in to /stats (the people still on the list sign in again)',
+        `  - set ACCESS_TEAM_DOMAIN to ${TEAM_DOMAIN} and ACCESS_AUD to the application's AUD tag`,
+        '',
+        'Run the same command without --dry-run to do it.',
+      ].join('\n'),
+    );
+  });
+
+  it('on a run that takes someone off and repairs the application', async () => {
+    const fake = await changed();
+    const { code, output } = await run(fake, ['--email', EMAIL, '--email', THIRD]);
+    expect(code).toBe(0);
+    expect(output).toBe(
+      [
+        ...STEP_1,
+        '',
+        '2. The D1 database "vva227-beacon"',
+        `   exists (${fake.database()!.uuid})`,
+        '   migrations already applied: 0001_views.sql',
+        '',
+        '3. Production settings for the visit collector',
+        '   BEACON is already bound to vva227-beacon.',
+        '   BEACON_SALT already exists, encrypted; it is kept as it is.',
+        ...STEP_4,
+        '',
+        '5. Production settings for the /stats lock',
+        '',
+        'Done. What changed in this run:',
+        `  - changed the Access policy "vva227 stats owners" to admit exactly ${EMAIL}, ${THIRD}`,
+        `  - updated the Access application "vva227 stats" to cover ${COVERS}`,
+        '  - ended every existing sign-in to /stats, because this run took access away from someone; the people still on the list sign in again',
+        SETTINGS(fake.apps.get(CH227)![0].aud),
+        '',
+        `Who can open /stats: ${EMAIL}, ${THIRD}`,
+        '',
+        nextSteps(),
+      ].join('\n'),
+    );
+  });
+
+  it('when it stops at the first step: the reason and nothing else', async () => {
+    const { code, output } = await run(cloudflare({ project: null }));
+    expect(code).toBe(1);
+    expect(output).toBe([STEP_1[0], '', projectNotFoundMessage()].join('\n'));
+  });
+
+  it('when the project has no production branch or date', async () => {
+    const { output } = await run(cloudflare({ project: freshProject({ production_branch: '', deployment_configs: { production: {}, preview: {} } }) }));
+    expect(output).toContain('   production branch: (not set)\n   production compatibility date: (not set)\n');
+  });
+
+  it('when vva227.org is in another account and no sign-in was ended, with no word about ending one', async () => {
+    const fake = cloudflare({ zoneAccount: OTHER_ACCOUNT, tokenAccounts: [CH227, OTHER_ACCOUNT], teams: { [OTHER_ACCOUNT]: TEAM_DOMAIN } });
+    const { code, output } = await run(fake);
+    expect(code, output).toBe(0);
+    expect(output).toMatch(/\nWho can open \/stats: owner@example\.org\n\nNEXT STEP/);
+  });
+});
+
+describe('answers from Cloudflare the script does not take on trust', () => {
+  const NOT_ENDED = 'Sign-ins already open to /stats were NOT ended';
+  const done = (body: unknown) => ({ status: 200, body: { success: true, errors: [], messages: [], result: body } });
+
+  it.each([
+    ['two D1 databases', 'There are 2 D1 databases named "vva227-beacon".', (fake: FakeCloudflare) => {
+      for (const uuid of ['db-1', 'db-2']) fake.databases.push({ uuid, name: 'vva227-beacon', db: new DatabaseSync(':memory:') });
+    }],
+    ['two Access policies', 'There are 2 Access policies named "vva227 stats owners".', (fake: FakeCloudflare) => {
+      fake.policies.set(CH227, ['p-1', 'p-2'].map((id) => ({ id, name: 'vva227 stats owners', decision: 'allow', include: [] })));
+    }],
+  ])('stops, naming them, when it finds %s of its name', async (_label, said, arrange) => {
+    const fake = cloudflare();
+    arrange(fake);
+    const { code, output } = await run(fake);
+    expect(code).toBe(1);
+    expect(output).toContain(said);
+    expect(output).not.toContain('Stopped:');
+  });
+
+  it('stops, naming them, when it finds two Access applications of its name', async () => {
+    const fake = cloudflare();
+    await run(fake);
+    fake.apps.get(CH227)!.push({ ...fake.apps.get(CH227)![0], id: 'a-copy' });
+    const { code, output } = await run(fake);
+    expect(code).toBe(1);
+    expect(output).toContain('There are 2 Access applications named "vva227 stats".');
+  });
+
+  it.each([
+    ['a database with no id', 'POST', /d1\/database$/, null, 'Cloudflare created the database but did not say its id. Run this again; it will find it by name.'],
+    ['a database whose id is not text', 'POST', /d1\/database$/, { uuid: 123 }, 'Cloudflare created the database but did not say its id.'],
+    ['a policy with no id', 'POST', /access\/policies$/, null, 'Cloudflare created the policy but did not say its id. Run this again; it will find it by name.'],
+    ['an application with no AUD tag', 'POST', /access\/apps$/, null, 'Cloudflare did not return the AUD tag of "vva227 stats". Run this again.'],
+    ['an application with an empty AUD tag', 'POST', /access\/apps$/, { aud: '' }, 'Cloudflare did not return the AUD tag of "vva227 stats". Run this again.'],
+    ['an application whose AUD tag is not text', 'POST', /access\/apps$/, { aud: 123 }, 'Cloudflare did not return the AUD tag of "vva227 stats". Run this again.'],
+  ])('stops with its own words when Cloudflare creates %s', async (_label, method, path, result, said) => {
+    const fake = cloudflare();
+    fake.failNext({ method, path, ...done(result) });
+    const { code, output } = await run(fake);
+    expect(code).toBe(1);
+    expect(output).toContain(said);
+    expect(output).not.toContain('Stopped:');
+  });
+
+  it('keeps the AUD tag it has when an update of the application answers without one', async () => {
+    const fake = cloudflare();
+    await run(fake);
+    const { aud } = fake.apps.get(CH227)![0];
+    fake.apps.get(CH227)![0].destinations.pop();
+    fake.failNext({ method: 'PUT', path: /access\/apps\/[^/]+$/, ...done(null) });
+    const { code, output } = await run(fake);
+    expect(code, output).toBe(0);
+    expect(prod(fake).env_vars!.ACCESS_AUD).toEqual({ type: 'secret_text', value: aud });
+  });
+
+  it.each([['no project at all', null], ['a project with no settings', {}]])('stops, naming everything missing, when the read-back is %s', async (_label, readBack) => {
+    const fake = cloudflare();
+    fake.failNext({ method: 'GET', path: /pages\/projects/, ...done(fake.publicProject()) });
+    fake.failNext({ method: 'GET', path: /pages\/projects/, ...done(readBack) });
+    const { code, output } = await run(fake);
+    expect(code).toBe(1);
+    expect(output).toMatch(/reading the project back shows: BEACON is not bound to vva227-beacon \([0-9a-f-]{36}\); BEACON_SALT is missing\./);
+  });
+
+  it('checks the Access settings themselves read back', async () => {
+    const fake = cloudflare();
+    await run(fake);
+    const lost = fake.publicProject();
+    delete lost.deployment_configs.production.env_vars!.ACCESS_TEAM_DOMAIN;
+    delete lost.deployment_configs.production.env_vars!.ACCESS_AUD;
+    fake.failNext({ method: 'GET', path: /pages\/projects/, ...done(fake.publicProject()) });
+    fake.failNext({ method: 'GET', path: /pages\/projects/, ...done(lost) });
+    const { code, output } = await run(fake);
+    expect(code).toBe(1);
+    expect(output).toContain('reading the project back shows: ACCESS_TEAM_DOMAIN is missing; ACCESS_AUD is missing.');
+  });
+
+  it('treats an organisation with no team domain as Zero Trust not turned on', async () => {
+    const fake = cloudflare();
+    fake.failNext({ method: 'GET', path: /access\/organizations$/, ...done({ name: 'team' }) });
+    const { code, output, writes } = await run(fake);
+    expect(code).toBe(1);
+    expect(output).toContain(`\n${zeroTrustInstructions({ id: CH227, name: 'Ch 227' })}\n`);
+    expect(writes.filter((w) => w.path.includes('/access/'))).toEqual([]);
+  });
+
+  it('gives the dashboard steps, then what Cloudflare said, when the organisation lookup fails', async () => {
+    const fake = cloudflare();
+    fake.failNext({ method: 'GET', path: /access\/organizations$/, status: 500, body: { success: false, errors: [{ code: 12000, message: 'internal error' }] } });
+    const { output } = await run(fake);
+    expect(output).toContain(
+      `${zeroTrustInstructions({ id: CH227, name: 'Ch 227' })}\n(Cloudflare said: Cloudflare refused GET /accounts/${CH227}/access/organizations (HTTP 500): 12000: internal error)`,
+    );
+  });
+
+  it.each([
+    ['a body that is not JSON', { status: 200, text: 'OK' }, `Cloudflare refused GET ${PROJECT_PATH} (HTTP 200): the response was not JSON: OK`],
+    ['success: false', { status: 200, body: { success: false, errors: [{ code: 1000, message: 'nope' }], result: null } }, `Cloudflare refused GET ${PROJECT_PATH} (HTTP 200): 1000: nope`],
+  ])('treats a 200 carrying %s as a refusal', async (_label, answer, said) => {
+    const fake = cloudflare();
+    fake.failNext({ method: 'GET', path: /pages\/projects/, ...answer });
+    const { code, output } = await run(fake);
+    expect(code).toBe(1);
+    expect(output).toContain(said);
+  });
+
+  it('reads a list as far as its hundredth page', async () => {
+    const fake = cloudflare();
+    const junk = Array.from({ length: 199 }, (_, i) => ({ id: `p-${i}`, name: `someone else's ${i}`, decision: 'allow', include: [] }));
+    fake.policies.set(CH227, [...junk, { id: 'p-ours', name: 'vva227 stats owners', decision: 'allow', include: [{ email: { email: EMAIL } }], session_duration: '24h' }]);
+    const { code, output, writes, requests } = await run(fake);
+    expect(code, output).toBe(0);
+    expect(requests.filter((r) => r.query.page).length).toBe(100);
+    expect(writes.filter((w) => w.path.endsWith('/access/policies'))).toEqual([]);
+  });
+
+  it('pages a list that does not say how many pages it has until a page comes back short', async () => {
+    const fake = cloudflare();
+    fake.policies.set(CH227, [{ id: 'p-ours', name: 'vva227 stats owners', decision: 'allow', include: [{ email: { email: EMAIL } }], session_duration: '24h' }]);
+    const full = Array.from({ length: 50 }, (_, i) => ({ id: `p-${i}`, name: `someone else's ${i}`, decision: 'allow' }));
+    fake.failNext({ method: 'GET', path: /access\/policies$/, ...done(full) });
+    fake.failNext({ method: 'GET', path: /access\/policies$/, ...done([{ id: 'p-ours', name: 'vva227 stats owners', decision: 'allow' }]) });
+    const { code, output, writes, requests } = await run(fake);
+    expect(code, output).toBe(0);
+    expect(requests.map((r) => r.query.page).filter(Boolean)).toEqual(['1', '2']);
+    expect(writes.filter((w) => w.path.endsWith('/access/policies'))).toEqual([]);
+  });
+
+  it('applies only a new migration on a later run, without making the bookkeeping table again', async () => {
+    const fake = cloudflare();
+    const dir = mkdtempSync(join(tmpdir(), 'vva227-migrations-'));
+    dirs.push(dir);
+    copyFileSync(join(process.cwd(), 'migrations', '0001_views.sql'), join(dir, '0001_views.sql'));
+    await run(fake, ['--email', EMAIL], { migrationsDir: dir });
+    writeFileSync(join(dir, '0002_extra.sql'), 'CREATE INDEX IF NOT EXISTS views_ts ON views(ts);\n');
+    const { code, requests } = await run(fake, ['--email', EMAIL], { migrationsDir: dir });
+    expect(code).toBe(0);
+    const sql = requests.filter((r) => r.path.endsWith('/query')).map((r) => String((r.body as { sql: string }).sql));
+    expect(sql).toHaveLength(3);
+    expect(sql.join('\n')).not.toContain('CREATE TABLE IF NOT EXISTS d1_migrations');
+    expect(sql[2]).toContain("values ('0002_extra.sql')");
+  });
+
+  it('names the database a dry run would create where a binding points elsewhere', async () => {
+    const project = freshProject();
+    project.deployment_configs.production.d1_databases = { BEACON: { id: 'their-database' } };
+    const { code, output } = await run(cloudflare({ project }), ['--email', EMAIL, '--dry-run']);
+    expect(code).toBe(1);
+    expect(output).toContain('not vva227-beacon ((the new database))');
+  });
+
+  it.each([
+    ['a rerun that only adds someone stops after the policy change', async (fake: FakeCloudflare) => {
+      await run(fake);
+      fake.failNext({ method: 'GET', path: /access\/apps$/, status: 500, body: { success: false, errors: [{ code: 12000, message: 'internal error' }] } });
+      return run(fake, ['--email', EMAIL, '--email', 'second@example.org']);
+    }],
+    ['--end-sign-ins on a fresh account stops creating the application', async (fake: FakeCloudflare) => {
+      fake.failNext({ method: 'POST', path: /access\/apps$/, status: 500, body: { success: false, errors: [{ code: 12000, message: 'internal error' }] } });
+      return run(fake, ['--email', EMAIL, '--end-sign-ins']);
+    }],
+    ['a rerun that only repairs the application stops after it', async (fake: FakeCloudflare) => {
+      await run(fake);
+      fake.apps.get(CH227)![0].destinations.pop();
+      fake.failNext({ method: 'PATCH', path: /pages\/projects/, status: 500, body: { success: false, errors: [{ code: 8000000, message: 'internal error' }] } });
+      return run(fake);
+    }],
+  ])('says nothing about open sign-ins when %s, having taken no one\'s access away', async (_label, act) => {
+    const { code, output } = await act(cloudflare());
+    expect(code).toBe(1);
+    expect(output).not.toContain(NOT_ENDED);
+  });
+});
+
+describe('the script as a library', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+  });
+
+  it('prints the usage for --help and succeeds, in the process as from the command line', async () => {
+    const lines: string[] = [];
+    expect(await runSetup({ argv: ['--help'], print: (l: string) => lines.push(l) })).toBe(0);
+    expect(lines).toEqual([USAGE]);
+  });
+
+  it('with no arguments at all, asks for an address and prints the usage', async () => {
+    const lines: string[] = [];
+    expect(await runSetup({ print: (l: string) => lines.push(l) })).toBe(2);
+    expect(lines).toEqual([`Say who may open /stats with --email (repeat it for each person). Nobody is added by default.\n\n${USAGE}`]);
+  });
+
+  it('prints to the console and asks the runtime\'s fetch when given neither', async () => {
+    const log = vi.spyOn(console, 'log').mockImplementation(() => {});
+    expect(await runSetup({ argv: ['--help'] })).toBe(0);
+    expect(log).toHaveBeenCalledWith(USAGE);
+
+    const fake = cloudflare();
+    vi.stubGlobal('fetch', fake.fetch);
+    expect(await runSetup({ argv: ['--email', EMAIL], env: { CF_API_TOKEN: fake.token }, tokenFile: NO_TOKEN_FILE, randomHex: () => SALT })).toBe(0);
+    expect(fake.apps.get(CH227)).toHaveLength(1);
+  });
+
+  it('sends every request as JSON', async () => {
+    const fake = cloudflare();
+    const types: Array<string | null> = [];
+    const fetchImpl = ((input: string, init: RequestInit) => {
+      types.push(new Headers(init.headers).get('Content-Type'));
+      return fake.fetch(input, init);
+    }) as unknown as typeof fetch;
+    expect(await runSetup({ argv: ['--email', EMAIL], env: { CF_API_TOKEN: fake.token }, fetchImpl, print: () => {}, tokenFile: NO_TOKEN_FILE, randomHex: () => SALT })).toBe(0);
+    expect(types.length).toBeGreaterThan(10);
+    expect(new Set(types)).toEqual(new Set(['application/json']));
   });
 });
