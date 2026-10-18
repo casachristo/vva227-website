@@ -81,7 +81,7 @@ export async function runSetup({
   // Every line goes through here, so the token cannot reach the terminal even
   // if an error message were ever to carry it.
   const say = (text = '') => print(plan.redact(text, token));
-  const { emails, dryRun } = args;
+  const { emails, dryRun, endSignIns } = args;
 
   async function api(method, path, body) {
     // Belt and braces: the sequence below never writes in a dry run, and this
@@ -134,6 +134,14 @@ export async function runSetup({
   // The account that owns the zone, once step (d) has asked; it names that
   // account in an error.
   let accessAccount = null;
+  // The policy as step (d) found it; a stop names how long its sign-ins last.
+  let existingPolicy = null;
+  // Whether the sign-ins already open to /stats are owed an end: once this
+  // run has taken access away from anyone, or when --end-sign-ins asks. A
+  // rerun after a stop finds nothing left to change and ends nothing, so a
+  // stop before they are ended has to say so.
+  let signInsToEnd = endSignIns;
+  let endedSignIns = false;
 
   try {
     if (dryRun) say('DRY RUN: looking only. Nothing will be changed.\n');
@@ -231,7 +239,7 @@ export async function runSetup({
     const listedPolicies = await listAll(policiesPath);
     const found = plan.findByName(listedPolicies, plan.POLICY, 'Access policy');
     // The list may abbreviate a policy; its own GET has the rules.
-    const existingPolicy = found ? (await api('GET', `${policiesPath}/${found.id}`)).result : null;
+    existingPolicy = found ? (await api('GET', `${policiesPath}/${found.id}`)).result : null;
     let policyId = existingPolicy?.id ?? null;
     if (!existingPolicy) {
       if (dryRun) act(`create the Access policy "${plan.POLICY}"${there} admitting ${emails.join(', ')}`);
@@ -244,6 +252,7 @@ export async function runSetup({
       if (dryRun) act(`change the Access policy "${plan.POLICY}"${there} to admit exactly ${emails.join(', ')}`);
       else {
         await api('PUT', `${policiesPath}/${policyId}`, plan.policyBody(emails, existingPolicy));
+        if (plan.policyNarrows(existingPolicy, emails)) signInsToEnd = true;
         act(`changed the Access policy "${plan.POLICY}"${there} to admit exactly ${emails.join(', ')}`);
       }
     } else say(`   policy "${plan.POLICY}" already admits exactly ${emails.join(', ')}`);
@@ -257,6 +266,8 @@ export async function runSetup({
       'Access application',
     );
     const existingApp = foundApp ? (await api('GET', `${appsPath}/${foundApp.id}`)).result : null;
+    // A new application has no sign-ins to end.
+    if (!existingApp) signInsToEnd = false;
     // Any other policy on it comes off: this script's alone decides who opens /stats.
     const removed = existingApp ? plan.otherPolicies(existingApp, policyId, listedPolicies) : [];
     const covers = destinations.map((d) => d.uri).join(', ');
@@ -274,6 +285,7 @@ export async function runSetup({
         for (const p of removed) act(`remove the policy ${plan.policyLabel(p)} from the Access application "${plan.APP}"`);
       } else {
         aud = (await api('PUT', `${appsPath}/${existingApp.id}`, plan.appBody({ policyId, destinations, existing: existingApp }))).result?.aud ?? aud;
+        if (removed.length) signInsToEnd = true;
         act(`updated the Access application "${plan.APP}"${there} to cover ${covers}`);
         for (const p of removed) act(`removed the policy ${plan.policyLabel(p)} from the Access application "${plan.APP}"`);
       }
@@ -282,16 +294,19 @@ export async function runSetup({
     // Access checks a changed policy only at each person's next sign-in. So
     // when this run takes access away from anyone (an address left out, a
     // wider rule put back, another policy taken off), the sign-ins already
-    // open are ended as well, after those changes. Adding someone ends none.
-    let endedSignIns = false;
-    if (existingApp && (plan.policyNarrows(existingPolicy, emails) || removed.length)) {
+    // open are ended as well, after those changes; --end-sign-ins ends them
+    // on any run. Adding someone ends none.
+    const takesAway = plan.policyNarrows(existingPolicy, emails) || removed.length > 0;
+    if (existingApp && (takesAway || endSignIns)) {
       if (dryRun) {
-        say(`   would end existing sign-ins to ${plan.STATS_PATH}, because this run takes access away from someone`);
+        say(`   would end existing sign-ins to ${plan.STATS_PATH}, ${takesAway ? 'because this run takes access away from someone' : 'as --end-sign-ins asks'}`);
         act(`end every existing sign-in to ${plan.STATS_PATH} (the people still on the list sign in again)`);
       } else {
         await api('POST', `${appsPath}/${existingApp.id}/revoke_tokens`);
         endedSignIns = true;
-        act(`ended every existing sign-in to ${plan.STATS_PATH}, because this run took access away from someone; the people still on the list sign in again`);
+        act(
+          `ended every existing sign-in to ${plan.STATS_PATH}, ${takesAway ? 'because this run took access away from someone' : 'as --end-sign-ins asked'}; the people still on the list sign in again`,
+        );
       }
     }
 
@@ -329,6 +344,7 @@ export async function runSetup({
       say('\nAlready done in this run, and kept:');
       for (const line of done) say(`  - ${line}`);
     }
+    if (signInsToEnd && !endedSignIns && !dryRun) say(`\n${plan.signInsNotEndedMessage(existingPolicy)}`);
     return 1;
   }
 }

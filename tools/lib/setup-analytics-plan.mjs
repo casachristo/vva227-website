@@ -64,12 +64,15 @@ export const TOKEN_PERMISSIONS = [
   'Zone › Zone › Read',
 ];
 
-export const USAGE = `Usage: npm run setup:analytics -- --email you@example.com [--email someone@example.com] [--dry-run]
+export const USAGE = `Usage: npm run setup:analytics -- --email you@example.com [--email someone@example.com] [--dry-run] [--end-sign-ins]
 
-  --email    Who may open /stats. Repeat it for each person. Required: this
-             list is the whole list, so include everyone every time. Leaving
-             someone out ends every open /stats sign-in.
-  --dry-run  Look, print what would change, and change nothing.
+  --email         Who may open /stats. Repeat it for each person. Required:
+                  this list is the whole list, so include everyone every time.
+                  Leaving someone out ends every open /stats sign-in.
+  --dry-run       Look, print what would change, and change nothing.
+  --end-sign-ins  End every open /stats sign-in even when this run takes
+                  nobody's access away: for finishing a run that stopped
+                  before it could end them.
 
 The Cloudflare API token is read from the CF_API_TOKEN environment variable,
 or from a file named ${TOKEN_FILE} at the top of this repository that only you
@@ -100,15 +103,17 @@ export function normalizeEmail(raw) {
 }
 
 /**
- * @returns {{ emails: string[], dryRun: boolean, help: boolean } | { error: string }}
+ * @returns {{ emails: string[], dryRun: boolean, endSignIns: boolean, help: boolean } | { error: string }}
  */
 export function parseArgs(argv) {
   const emails = [];
   let dryRun = false;
+  let endSignIns = false;
   let help = false;
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i];
     if (arg === '--dry-run') dryRun = true;
+    else if (arg === '--end-sign-ins') endSignIns = true;
     else if (arg === '--help' || arg === '-h') help = true;
     else if (arg === '--email' || arg.startsWith('--email=')) {
       const value = arg === '--email' ? argv[++i] : arg.slice('--email='.length);
@@ -118,11 +123,11 @@ export function parseArgs(argv) {
       if (!emails.includes(email)) emails.push(email);
     } else return { error: `Unknown option "${arg}".` };
   }
-  if (help) return { emails, dryRun, help };
+  if (help) return { emails, dryRun, endSignIns, help };
   if (!emails.length) {
     return { error: 'Say who may open /stats with --email (repeat it for each person). Nobody is added by default.' };
   }
-  return { emails, dryRun, help };
+  return { emails, dryRun, endSignIns, help };
 }
 
 /** The token from the environment, else from the file's text, trimmed; '' when there is none. */
@@ -610,6 +615,11 @@ export function policyLabel({ id, name, decision }) {
   return `${name ? `"${name}"` : id} (decision: ${decision ?? 'not given'})`;
 }
 
+/** How long the policy's sign-ins last: its own session length, else the one a new policy gets. */
+function sessionLength(policy) {
+  return typeof policy?.session_duration === 'string' && policy.session_duration ? policy.session_duration : SESSION_DURATION;
+}
+
 /**
  * What a run says last about who can open /stats. It is the --email list,
  * because the application carries this one policy, the policy admits exactly
@@ -626,12 +636,30 @@ export function whoCanOpen(emails, existing = null, { endedWherePagesDevUncovere
   const kept = ['require', 'exclude'].filter((key) => Array.isArray(existing?.[key]) && existing[key].length);
   if (kept.length) lines.push(`(only while they also meet the policy's ${kept.join(' and ')} rules, which were set in the dashboard and are kept)`);
   if (endedWherePagesDevUncovered) {
-    const lasts = typeof existing?.session_duration === 'string' && existing.session_duration ? existing.session_duration : SESSION_DURATION;
     lines.push(
-      `(Access cannot end a sign-in at the pages.dev address, which it does not cover here: someone just removed who kept a copy of theirs can use it there until it runs out, at most ${lasts}.)`,
+      `(Access cannot end a sign-in at the pages.dev address, which it does not cover here: someone just removed who kept a copy of theirs can use it there until it runs out, at most ${sessionLength(existing)}.)`,
     );
   }
   return lines;
+}
+
+/**
+ * What a run says when it stops after taking access away from someone (or
+ * after --end-sign-ins asked) and before the sign-ins already open were
+ * ended. Cloudflare keeps no record that an end is owed, so a rerun of the
+ * same command finds the policy already right and ends nothing: the owner
+ * has to ask for it.
+ *
+ * @param {object | null} [existing] the policy as the run found it, for how long its sign-ins last
+ */
+export function signInsNotEndedMessage(existing = null) {
+  return [
+    `Sign-ins already open to ${STATS_PATH} were NOT ended. Anyone taken off the list can still open it`,
+    `until their sign-in runs out, at most ${sessionLength(existing)}.`,
+    'Running the same command again will not end them: it finds nothing left to change. To end them,',
+    'once the problem above is fixed, run the same command with --end-sign-ins added, or',
+    `open the application "${APP}" in the Zero Trust dashboard and revoke its existing tokens.`,
+  ].join('\n');
 }
 
 // ---------------------------------------------------------------------------

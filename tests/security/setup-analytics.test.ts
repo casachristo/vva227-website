@@ -183,6 +183,20 @@ describe('who the policy admits', () => {
     expect(revoke).toBeGreaterThan(narrowed);
   });
 
+  it('never reports a removal as done when the open sign-in of someone removed is still good', async () => {
+    const fake = cloudflare();
+    await run(fake, ['--email', EMAIL, '--email', 'departed@example.org']);
+    fake.failNext({ method: 'POST', path: /revoke_tokens$/, status: 403, body: { success: false, errors: [{ code: 10000, message: 'Authentication error' }] } });
+    const stopped = await run(fake);
+    expect(stopped.code).toBe(1);
+    expect(stopped.output).not.toContain('Who can open /stats');
+    expect(stopped.output).toContain('were NOT ended');
+    // The rerun it points to ends them.
+    const { code, writes } = await run(fake, ['--email', EMAIL, '--end-sign-ins']);
+    expect(code).toBe(0);
+    expect(writes.some((w) => w.method === 'POST' && w.path.endsWith('/revoke_tokens'))).toBe(true);
+  });
+
   it('is never a deny-by-default policy turned into an allow by accident, nor the reverse', () => {
     expect(policyMatches({ decision: 'deny', include: [{ email: { email: EMAIL } }] }, [EMAIL])).toBe(false);
     expect(policyBody([EMAIL]).decision).toBe('allow');

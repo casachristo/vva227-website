@@ -48,16 +48,23 @@ describe('parseArgs', () => {
     expect(plan.parseArgs(['--email', 'a@example.org', '--email=B@example.org', '--email', 'A@example.org'])).toEqual({
       emails: ['a@example.org', 'b@example.org'],
       dryRun: false,
+      endSignIns: false,
       help: false,
     });
   });
 
   it('reads --dry-run anywhere', () => {
-    expect(plan.parseArgs(['--dry-run', '--email', 'a@example.org'])).toEqual({ emails: ['a@example.org'], dryRun: true, help: false });
+    expect(plan.parseArgs(['--dry-run', '--email', 'a@example.org'])).toEqual({ emails: ['a@example.org'], dryRun: true, endSignIns: false, help: false });
+  });
+
+  it('reads --end-sign-ins anywhere, and still requires an address with it', () => {
+    expect(plan.parseArgs(['--end-sign-ins', '--email', 'a@example.org'])).toEqual({ emails: ['a@example.org'], dryRun: false, endSignIns: true, help: false });
+    expect(plan.parseArgs(['--end-sign-ins'])).toEqual({ error: expect.stringMatching(/--email/) });
+    expect(plan.USAGE).toContain('--end-sign-ins');
   });
 
   it('answers --help without requiring an address', () => {
-    expect(plan.parseArgs(['--help'])).toEqual({ emails: [], dryRun: false, help: true });
+    expect(plan.parseArgs(['--help'])).toEqual({ emails: [], dryRun: false, endSignIns: false, help: true });
     expect(plan.parseArgs(['-h'])).toMatchObject({ help: true });
   });
 
@@ -661,6 +668,23 @@ describe('what the run says about who can open /stats', () => {
     const lines = plan.whoCanOpen(['a@example.org'], { require: [{ geo: { country_code: 'US' } }], exclude: [{ email: { email: 'a@example.org' } }] });
     expect(lines[0]).toBe('Who can open /stats: a@example.org');
     expect(lines[1]).toContain("the policy's require and exclude rules");
+  });
+});
+
+describe('what a stop says when the open sign-ins were not ended', () => {
+  it('says they were not, that a plain rerun will not end them, and both ways to end them', () => {
+    const text = plan.signInsNotEndedMessage();
+    expect(text).toContain('Sign-ins already open to /stats were NOT ended');
+    expect(text).toContain('at most 24h');
+    expect(text).toContain('Running the same command again will not end them');
+    expect(text).toContain('--end-sign-ins');
+    expect(text).toContain('open the application "vva227 stats" in the Zero Trust dashboard');
+  });
+
+  it('gives the sign-in length the policy has, as the closing line does', () => {
+    expect(plan.signInsNotEndedMessage({ session_duration: '2h' })).toContain('at most 2h');
+    expect(plan.signInsNotEndedMessage({ session_duration: '' })).toContain('at most 24h');
+    expect(plan.signInsNotEndedMessage(null)).toContain('at most 24h');
   });
 });
 

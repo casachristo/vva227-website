@@ -293,10 +293,12 @@ errors.
   had you delete it), then rerun step 4 with the full new `--email` list. No
   deploy is needed. Someone added can open `/stats` from their next sign-in.
   Removing someone also ends every sign-in already open on the addresses
-  Access covers, so the people still on the list sign in again. Editing the
-  policy *vva227 stats owners* in the Zero Trust dashboard works too, but it
-  ends nobody's sign-in, and the next run of the script puts its own list
-  back.
+  Access covers, so the people still on the list sign in again. If a run
+  stops after taking someone off but before ending those sign-ins, it says
+  so; run the same command again with `--end-sign-ins` added to end them.
+  Editing the policy *vva227 stats owners* in the Zero Trust dashboard works
+  too, but it ends nobody's sign-in, and the next run of the script puts its
+  own list back.
 - **Add a column:** add a migration, describe the column on `/privacy`, add it
   to the map in `tests/invariants/privacy-disclosure.test.ts`, rerun the setup
   script (it applies new migrations), then deploy.
@@ -373,8 +375,8 @@ Checked against Cloudflare's documentation and wrangler's source, October 2026.
 - `POST /accounts/{account}/access/apps/{id}/revoke_tokens`, with no body,
   ends every sign-in to the application. Access checks a changed policy only
   at each person's next sign-in, so the script sends this, after its changes,
-  whenever a run takes access away from anyone. *Access: Apps and Policies*
-  Edit covers it.
+  whenever a run takes access away from anyone, and on any run given
+  `--end-sign-ins`. *Access: Apps and Policies* Edit covers it.
 - An application or policy is updated with a `PUT`, and the reference does not
   say whether a `PUT` merges. So an update sends back everything the `GET`
   returned, minus what Cloudflare keeps itself (`id`, `aud`, the timestamps,

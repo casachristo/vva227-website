@@ -216,6 +216,8 @@ describe('docs/analytics.md', () => {
     expect(bullet).toContain('next sign-in');
     expect(bullet).toContain('steps 2');
     expect(bullet).not.toMatch(/apply immediately/);
+    // A run that stops before ending them says so, and a plain rerun cannot.
+    expect(bullet).toContain('`--end-sign-ins`');
   });
 
   it('can actually fail: a bullet that is not there reads as empty, and one ends at the next', () => {

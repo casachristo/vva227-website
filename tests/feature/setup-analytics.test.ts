@@ -445,6 +445,112 @@ describe('ending sign-ins when someone is taken off the list', () => {
     expect(output).not.toContain('Who can open /stats');
     expect(fake.policies.get(CH227)![0].include).toEqual([{ email: { email: EMAIL } }]);
   });
+
+  // A stop between taking access away and ending the open sign-ins leaves
+  // nothing a rerun can see: the policy already matches, so a plain rerun
+  // changes nothing and ends nothing. The stopped run has to say so, and
+  // --end-sign-ins is how the owner finishes it.
+  const revokes = (writes: RecordedRequest[]) => writes.filter((w) => w.method === 'POST' && w.path.endsWith('/revoke_tokens'));
+  const NOT_ENDED = 'Sign-ins already open to /stats were NOT ended';
+
+  it('says the open sign-ins were not ended, and how to end them, when ending them fails after the policy change', async () => {
+    const fake = cloudflare();
+    await run(fake, ['--email', EMAIL, '--email', SECOND]);
+    fake.failNext({ method: 'POST', path: /revoke_tokens$/, status: 503, body: { success: false, errors: [{ code: 7010, message: 'service unavailable' }] } });
+    const stopped = await run(fake, ['--email', EMAIL]);
+    expect(stopped.code).toBe(1);
+    expect(stopped.output).toContain(NOT_ENDED);
+    expect(stopped.output).toContain('--end-sign-ins');
+    expect(stopped.output).toContain('application "vva227 stats" in the Zero Trust dashboard');
+    expect(stopped.output).not.toContain('Who can open /stats');
+
+    // What the message warns of: the rerun it would otherwise ask for ends nothing.
+    const plain = await run(fake, ['--email', EMAIL]);
+    expect(plain.code, plain.output).toBe(0);
+    expect(revokes(plain.writes)).toEqual([]);
+
+    const finished = await run(fake, ['--email', EMAIL, '--end-sign-ins']);
+    expect(finished.code, finished.output).toBe(0);
+    expect(revokes(finished.writes).map(line)).toEqual([`POST /accounts/${CH227}/access/apps/${fake.apps.get(CH227)![0].id}/revoke_tokens`]);
+    expect(finished.output).toContain('ended every existing sign-in to /stats, as --end-sign-ins asked');
+    expect(finished.output).toContain(`Who can open /stats: ${EMAIL}`);
+  });
+
+  it('says the same when the stop comes after the policy change and before the application is updated', async () => {
+    const fake = cloudflare();
+    await run(fake, ['--email', EMAIL, '--email', SECOND]);
+    // The application needs an update too: someone trimmed its destinations.
+    fake.apps.get(CH227)![0].destinations = [{ type: 'public', uri: 'vva227.org/stats' }];
+    fake.failNext({ method: 'PUT', path: /access\/apps\/[^/]+$/, status: 500, body: { success: false, errors: [{ code: 12000, message: 'internal error' }] } });
+    const stopped = await run(fake, ['--email', EMAIL]);
+    expect(stopped.code).toBe(1);
+    expect(fake.policies.get(CH227)![0].include).toEqual([{ email: { email: EMAIL } }]);
+    expect(stopped.output).toContain(NOT_ENDED);
+
+    const finished = await run(fake, ['--email', EMAIL, '--end-sign-ins']);
+    expect(finished.code, finished.output).toBe(0);
+    const app = fake.apps.get(CH227)![0];
+    expect(finished.writes.map(line)).toEqual([
+      `PUT /accounts/${CH227}/access/apps/${app.id}`,
+      `POST /accounts/${CH227}/access/apps/${app.id}/revoke_tokens`,
+      `PATCH ${PROJECT_PATH}`,
+    ]);
+  });
+
+  it('says the same when it took another policy off the application and Cloudflare could then not be reached', async () => {
+    const fake = cloudflare();
+    await run(fake);
+    fake.policies.get(CH227)!.push({ id: 'theirs', name: 'their policy', decision: 'allow', include: [{ everyone: {} }] });
+    fake.apps.get(CH227)![0].policies.push({ id: 'theirs', precedence: 2 });
+    const failing = ((input: string | URL | Request, init?: RequestInit) =>
+      String(input).endsWith('/revoke_tokens') ? Promise.reject(new TypeError('fetch failed')) : fake.fetch(input, init)) as typeof fetch;
+    const lines: string[] = [];
+    const code = await runSetup({ argv: ['--email', EMAIL], env: { CF_API_TOKEN: fake.token }, fetchImpl: failing, print: (l: string) => lines.push(l), randomHex: () => SALT });
+    const output = lines.join('\n');
+    expect(code).toBe(1);
+    expect(output).toContain('Cloudflare could not be reached');
+    expect(fake.admits(CH227)).toEqual([EMAIL]);
+    expect(output).toContain(NOT_ENDED);
+  });
+
+  it('says nothing about sign-ins when it stops before taking anyone\'s access away', async () => {
+    const fake = cloudflare();
+    await run(fake, ['--email', EMAIL, '--email', SECOND]);
+    fake.failNext({ method: 'PUT', path: /access\/policies\//, status: 500, body: { success: false, errors: [{ code: 12000, message: 'internal error' }] } });
+    const stopped = await run(fake, ['--email', EMAIL]);
+    expect(stopped.code).toBe(1);
+    expect(stopped.output).not.toContain(NOT_ENDED);
+    expect(fake.admits(CH227)).toEqual([EMAIL, SECOND].sort());
+  });
+
+  it('with --end-sign-ins, ends them even when nothing else changes, and a dry run only says it would', async () => {
+    const fake = cloudflare();
+    await run(fake);
+    const looked = await run(fake, ['--email', EMAIL, '--end-sign-ins', '--dry-run']);
+    expect(looked.code, looked.output).toBe(0);
+    expect(looked.requests.filter((r) => r.method !== 'GET')).toEqual([]);
+    expect(looked.output).toContain('   would end existing sign-ins to /stats, as --end-sign-ins asks');
+    const { code, writes, output } = await run(fake, ['--email', EMAIL, '--end-sign-ins']);
+    expect(code, output).toBe(0);
+    expect(writes.map(line)).toEqual([`POST /accounts/${CH227}/access/apps/${fake.apps.get(CH227)![0].id}/revoke_tokens`, `PATCH ${PROJECT_PATH}`]);
+  });
+
+  it('with --end-sign-ins on a fresh account, has nothing to end and ends nothing', async () => {
+    const fake = cloudflare();
+    const { code, writes, output } = await run(fake, ['--email', EMAIL, '--end-sign-ins']);
+    expect(code, output).toBe(0);
+    expect(revokes(writes)).toEqual([]);
+    expect(output).not.toContain('sign-in to /stats');
+  });
+
+  it('with --end-sign-ins, still says the open sign-ins were not ended if ending them fails', async () => {
+    const fake = cloudflare();
+    await run(fake);
+    fake.failNext({ method: 'POST', path: /revoke_tokens$/, status: 503, body: { success: false, errors: [{ code: 7010, message: 'service unavailable' }] } });
+    const { code, output } = await run(fake, ['--email', EMAIL, '--end-sign-ins']);
+    expect(code).toBe(1);
+    expect(output).toContain(NOT_ENDED);
+  });
 });
 
 describe('refusing to touch the wrong project', () => {
