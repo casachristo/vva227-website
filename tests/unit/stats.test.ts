@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeAll, vi } from 'vitest';
 import { createHash } from 'node:crypto';
+import * as cheerio from 'cheerio';
 import {
   classifyReferrer,
   DEFAULT_DAYS,
@@ -220,6 +221,7 @@ describe('deviceOf, formatPlace, formatNetwork, shortVisitor', () => {
     ['neither', {}, '-'],
     ['ASN zero', { asn: 0 }, '-'],
     ['a non-numeric ASN', { asn: 'seven' }, '-'],
+    ['an infinite ASN', { asn: Infinity }, '-'],
   ])('formats a network with %s', (_label, net, expected) => {
     expect(formatNetwork(net)).toBe(expected);
   });
@@ -274,6 +276,8 @@ describe('isSiteHost and classifyReferrer', () => {
     ['this site', 'https://vva227.org/about', { kind: 'internal', host: 'vva227.org' }],
     ['a preview deployment', 'https://abc.vva227-refresh-12g.pages.dev/', { kind: 'internal', host: 'abc.vva227-refresh-12g.pages.dev' }],
     ['a local run, with its port', 'http://localhost:4321/give', { kind: 'internal', host: 'localhost:4321' }],
+    ['an unparseable value with space around it', '  not a url  ', { kind: 'external', host: 'not a url' }],
+    ['a URL with no host', ' mailto:someone@example.org?subject=hi ', { kind: 'external', host: 'mailto:someone@example.org' }],
   ])('classifies %s', (_label, referrer, expected) => {
     expect(classifyReferrer(referrer)).toEqual(expected);
   });
@@ -281,6 +285,7 @@ describe('isSiteHost and classifyReferrer', () => {
   it('shows an unparseable referrer as a cut-down external label rather than hiding it', () => {
     expect(classifyReferrer('not a url?token=secret')).toEqual({ kind: 'external', host: 'not a url' });
     expect((classifyReferrer('x'.repeat(500)) as { host: string }).host).toHaveLength(64);
+    expect((classifyReferrer(`mailto:${'x'.repeat(500)}@example.org`) as { host: string }).host).toHaveLength(64);
   });
 });
 
@@ -320,6 +325,15 @@ describe('groupVisitorDays', () => {
     expect(day.entry).toBe('/about');
     expect(day.firstSeen).toBe(t(13));
     expect(day.lastSeen).toBe(t(15));
+  });
+
+  it('orders a day by time before view id, and views at the same moment by view id, one with none first', () => {
+    // Either order of arrival gives the same entry page, so the table does
+    // not change between two loads of the page.
+    const entry = (rows: VisitRow[]) => [groupVisitorDays(rows)[0].entry, groupVisitorDays([...rows].reverse())[0].entry];
+    expect(entry([row({ view: 'ff', visitor: A, ts: t(13), path: '/first' }), row({ view: '01', visitor: A, ts: t(14), path: '/second' })])).toEqual(['/first', '/first']);
+    expect(entry([row({ view: '01', visitor: A, ts: t(13), path: '/z' }), row({ view: '02', visitor: A, ts: t(13), path: '/a' })])).toEqual(['/z', '/z']);
+    expect(entry([row({ view: undefined, visitor: A, ts: t(13), path: '/z' }), row({ view: '02', visitor: A, ts: t(13), path: '/a' })])).toEqual(['/z', '/z']);
   });
 
   it('names the FIRST external referrer as the source, skipping internal ones', () => {
@@ -387,6 +401,19 @@ describe('groupVisitorDays', () => {
       2,
     );
     expect(days.map((d) => d.visitor)).toEqual([A, C]);
+  });
+
+  it('breaks ties the same way whatever order the rows arrive in', () => {
+    const C = 'c'.repeat(32);
+    const both = (rows: VisitRow[], limit?: number) => [rows, [...rows].reverse()].map((r) => groupVisitorDays(r, limit).map((d) => d.visitor));
+    // Two visitors seen at the same moment: by visitor code.
+    expect(both([row({ view: '01', visitor: B, ts: t(13) }), row({ view: '02', visitor: A, ts: t(13) })])).toEqual([[A, B], [A, B]]);
+    // Last seen at the same moment, one cut: the later arrival is kept.
+    const sameLast = [row({ view: '01', visitor: A, ts: t(12) }), row({ view: '02', visitor: A, ts: t(15) }), row({ view: '03', visitor: C, ts: t(15) })];
+    expect(both(sameLast, 1)).toEqual([[C], [C]]);
+    // Arrived at the same moment: the one active later is listed first.
+    const sameFirst = [row({ view: '01', visitor: A, ts: t(12) }), row({ view: '02', visitor: A, ts: t(13) }), row({ view: '03', visitor: C, ts: t(12) }), row({ view: '04', visitor: C, ts: t(15) })];
+    expect(both(sameFirst)).toEqual([[C, A], [C, A]]);
   });
 
   it.each([
@@ -486,6 +513,43 @@ describe('renderStatsPage', () => {
     expect(html).toContain('<title>Visits | VVA Chapter 227</title>');
   });
 
+  /** One row in every table. */
+  const fullPage = () =>
+    emptyPage({
+      summary: { views: 3, visitors: 2, pages: 2 },
+      visitors: groupVisitorDays([row({ visitor: 'a'.repeat(32), city: 'Fairfax', asn: 701, viewport_w: 390, engaged_ms: 61_000 })]),
+      pages: [{ path: '/about', views: 2, avg_engaged: 30_000 }],
+      sources: [{ host: 'www.google.com', views: 1 }],
+      locations: [{ country: 'US', region: 'VA', city: 'Fairfax', visitors: 1, views: 2 }],
+      networks: [{ asn: 701, as_org: 'Verizon Business', visitors: 1, views: 2 }],
+    });
+
+  it('puts nothing between the cells of a table, or between the window links', () => {
+    const $ = cheerio.load(renderStatsPage(fullPage()));
+    expect($('table')).toHaveLength(5);
+    const stray = $('.scroll, table, thead, tbody, tr, .windows')
+      .contents()
+      .toArray()
+      .filter((n) => n.type === 'text')
+      .map((n) => (n as unknown as { data: string }).data);
+    expect(stray).toEqual([]);
+  });
+
+  it('right-aligns every count and duration, and nothing else', () => {
+    const $ = cheerio.load(renderStatsPage(fullPage()));
+    const aligned = $('table')
+      .toArray()
+      .map((table) => [$(table).closest('section').find('h2').text(), $(table).find('tr').toArray().map((tr) => $(tr).children().toArray().flatMap((c, i) => ($(c).hasClass('n') ? [i] : [])))]);
+    expect(aligned).toEqual([
+      ['Recent visitors', [[7, 8], [7, 8]]],
+      ['Pages', [[1, 2], [1, 2]]],
+      ['Sources', [[1], [1]]],
+      ['Locations', [[1, 2], [1, 2]]],
+      ['Networks', [[1, 2], [1, 2]]],
+    ]);
+    expect(STATS_STYLE).toContain('td.n,th.n{text-align:right}');
+  });
+
   it('has exactly one <style> block, and it is STATS_STYLE', () => {
     const html = renderStatsPage(emptyPage());
     const blocks = [...html.matchAll(/<style>([\s\S]*?)<\/style>/g)];
@@ -504,6 +568,16 @@ describe('the CSP hash', () => {
 
   it('changes when the text changes, so a stale hash cannot hide', async () => {
     expect(await sha256Base64(`${STATS_STYLE} `)).not.toBe(await sha256Base64(STATS_STYLE));
+  });
+
+  it('does not keep a failed hash, so the next request tries again', async () => {
+    vi.resetModules();
+    const fresh = await import('../../src/lib/stats');
+    const digest = vi.spyOn(crypto.subtle, 'digest').mockRejectedValueOnce(new Error('digest unavailable'));
+    await expect(fresh.pageCsp()).rejects.toThrow('digest unavailable');
+    await expect(fresh.pageCsp()).resolves.toBe(statsCsp(createHash('sha256').update(STATS_STYLE, 'utf8').digest('base64')));
+    expect(digest).toHaveBeenCalledTimes(2);
+    digest.mockRestore();
   });
 
   it('builds the whole policy with no inline or script allowance', () => {
