@@ -89,12 +89,11 @@ const overview = [
   <section class="section overview">
     <div class="container container--wide overview__grid">
       {
-        overview.map((item, i) => (
+        overview.map((item) => (
           <div class="overview__item">
             <div class="overview__figure">
               <img src={item.image} width={item.width} height={item.height} alt={item.alt} loading="lazy" decoding="async" />
             </div>
-            <span class="overview__number" aria-hidden="true">{i + 1}</span>
             <p class="overview__heading">{item.heading}</p>
             <p class="overview__description">{item.description}</p>
           </div>
@@ -127,7 +126,6 @@ const overview = [
           </p>
         </div>
         <div class="combo__col reach">
-          <p class="eyebrow">Our Reach</p>
           <h2>Serving Northern Virginia Together</h2>
           <p>
             Chapter 227&rsquo;s work extends across a broad Northern Virginia region encompassing 21 counties and
@@ -347,26 +345,15 @@ const overview = [
     object-fit: cover;
   }
 
-  .overview__number {
-    display: grid;
-    place-items: center;
-    inline-size: 2rem;
-    block-size: 2rem;
-    margin-block: -1rem var(--s-3);
-    margin-inline: auto;
-    border-radius: 50%;
-    background: var(--c-primary);
-    color: #fff;
-    font-weight: 700;
-    font-size: var(--t-sm);
-    box-shadow: 0 0 0 3px var(--c-surface);
-  }
-
   .overview__heading {
     max-width: none;
     font-size: 1.0625rem;
     font-weight: 700;
-    margin-block-end: var(--s-1);
+    /* Replaces the space the numbered badge used to reserve between the
+       image and the heading (a small negative-margin circle overlapping
+       the figure's bottom edge) now that the five items are categories,
+       not steps, and the badge is gone. */
+    margin-block: var(--s-3) var(--s-1);
   }
 
   .overview__description {
