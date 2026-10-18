@@ -29,8 +29,14 @@ export const RUNTIME_DB = 'vva227-beacon-system-test';
 /** The salt bound as BEACON_SALT for the run. Never a real one. */
 export const RUNTIME_SALT = 'system-test-salt-not-the-real-one';
 
-/** Workers compatibility date for the local runtime. */
-export const RUNTIME_COMPATIBILITY_DATE = '2025-09-01';
+/**
+ * Workers compatibility date for the local runtime. Production runs on
+ * 2026-09-01 (`npm run setup:analytics` reported it on 2026-10-18), but the
+ * workerd that wrangler 4.120.1 installs refuses any date after 2026-08-11, so
+ * this is the nearest date it can run. Move it to production's date when
+ * wrangler is upgraded.
+ */
+export const RUNTIME_COMPATIBILITY_DATE = '2026-08-11';
 
 /**
  * Added to the environment of every wrangler call the server makes, so the
