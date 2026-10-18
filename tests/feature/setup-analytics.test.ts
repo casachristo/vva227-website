@@ -65,6 +65,20 @@ const run = (fake: FakeCloudflare, argv: string[] = ['--email', EMAIL], options:
   runSetupAgainst(fake, argv, { randomHex: () => SALT, ...options });
 
 const line = (r: RecordedRequest) => `${r.method} ${r.path}`;
+
+/** What a stop says when sign-ins it owed an end were left open. */
+const NOT_ENDED = 'Sign-ins already open to /stats were NOT ended';
+
+/** A migrations directory holding the repo's migration, for a test to add to. */
+function migrationsCopy(): string {
+  const dir = mkdtempSync(join(tmpdir(), 'vva227-migrations-'));
+  dirs.push(dir);
+  copyFileSync(join(process.cwd(), 'migrations', '0001_views.sql'), join(dir, '0001_views.sql'));
+  return dir;
+}
+
+/** A second migration, so a list of them has two entries. */
+const addMigration = (dir: string) => writeFileSync(join(dir, '0002_extra.sql'), 'CREATE INDEX IF NOT EXISTS views_ts ON views(ts);\n');
 const prod = (fake: FakeCloudflare) => fake.project!.deployment_configs.production;
 
 /** Production, checked whole: exactly the binding and the three variables, each encrypted, plus what was there. */
@@ -452,7 +466,6 @@ describe('ending sign-ins when someone is taken off the list', () => {
   // changes nothing and ends nothing. The stopped run has to say so, and
   // --end-sign-ins is how the owner finishes it.
   const revokes = (writes: RecordedRequest[]) => writes.filter((w) => w.method === 'POST' && w.path.endsWith('/revoke_tokens'));
-  const NOT_ENDED = 'Sign-ins already open to /stats were NOT ended';
 
   it('says the open sign-ins were not ended, and how to end them, when ending them fails after the policy change', async () => {
     const fake = cloudflare();
@@ -965,10 +978,8 @@ describe('what the owner reads, word for word', () => {
 
   /** The repo's migration plus a second, so every list of them has two entries. */
   function twoMigrations(): string {
-    const dir = mkdtempSync(join(tmpdir(), 'vva227-migrations-'));
-    dirs.push(dir);
-    copyFileSync(join(process.cwd(), 'migrations', '0001_views.sql'), join(dir, '0001_views.sql'));
-    writeFileSync(join(dir, '0002_extra.sql'), 'CREATE INDEX IF NOT EXISTS views_ts ON views(ts);\n');
+    const dir = migrationsCopy();
+    addMigration(dir);
     return dir;
   }
 
@@ -1170,7 +1181,6 @@ describe('what the owner reads, word for word', () => {
 });
 
 describe('answers from Cloudflare the script does not take on trust', () => {
-  const NOT_ENDED = 'Sign-ins already open to /stats were NOT ended';
   const done = (body: unknown) => ({ status: 200, body: { success: true, errors: [], messages: [], result: body } });
 
   it.each([
@@ -1300,11 +1310,9 @@ describe('answers from Cloudflare the script does not take on trust', () => {
 
   it('applies only a new migration on a later run, without making the bookkeeping table again', async () => {
     const fake = cloudflare();
-    const dir = mkdtempSync(join(tmpdir(), 'vva227-migrations-'));
-    dirs.push(dir);
-    copyFileSync(join(process.cwd(), 'migrations', '0001_views.sql'), join(dir, '0001_views.sql'));
+    const dir = migrationsCopy();
     await run(fake, ['--email', EMAIL], { migrationsDir: dir });
-    writeFileSync(join(dir, '0002_extra.sql'), 'CREATE INDEX IF NOT EXISTS views_ts ON views(ts);\n');
+    addMigration(dir);
     const { code, requests } = await run(fake, ['--email', EMAIL], { migrationsDir: dir });
     expect(code).toBe(0);
     const sql = requests.filter((r) => r.path.endsWith('/query')).map((r) => String((r.body as { sql: string }).sql));
