@@ -789,3 +789,275 @@ describe('what the script tells the person', () => {
     );
   });
 });
+
+describe('what Cloudflare sends back, read loosely', () => {
+  // Every answer arrives over the network. A shape the documentation does not
+  // promise has to be read as "not there", never crash the run or pass as valid.
+
+  it('refuses a project that is not an object at all', () => {
+    expect(() => plan.checkProject('vva227-refresh')).toThrow(/returned no project/);
+  });
+
+  it('reads a production branch that is not text as no branch, and a production config without a date as no date', () => {
+    const checked = plan.checkProject({ domains: ['vva227.org'], production_branch: null, deployment_configs: {} });
+    expect(checked.productionBranch).toBe('');
+    expect(checked.compatibilityDate).toBeNull();
+  });
+
+  it.each([
+    ['a subdomain of a pages.dev name', `x.${SUBDOMAIN}`],
+    ['a pages.dev name with more after it', `${SUBDOMAIN}.evil.example`],
+    ['a list holding a pages.dev name', [SUBDOMAIN]],
+  ])('takes no pages.dev address from %s', (_label, subdomain) => {
+    // It becomes an Access destination: only the project's own name will do.
+    expect(plan.checkProject({ domains: ['vva227.org'], subdomain }).subdomain).toBeNull();
+  });
+
+  it('names what is missing from a read-back that has the maps but not the entries', () => {
+    expect(plan.verifyProduction({ d1_databases: {}, env_vars: {} }, { databaseId: 'db', access: true })).toEqual([
+      'BEACON is not bound to vva227-beacon (db)',
+      'BEACON_SALT is missing',
+      'ACCESS_TEAM_DOMAIN is missing',
+      'ACCESS_AUD is missing',
+    ]);
+  });
+
+  it('reads the zone only from an account id that is text, and refuses two zones of the name', () => {
+    expect(plan.zoneAccount([{ name: 'vva227.org', account: { id: 42, name: 'Numbered' } }])).toBeNull();
+    const zone = { name: 'vva227.org', account: { id: OTHER } };
+    expect(() => plan.zoneAccount([zone, zone])).toThrow('There are 2 zones named "vva227.org".');
+  });
+
+  it('prints a run of control characters in a name as one space', () => {
+    expect(plan.zoneAccount([{ name: 'vva227.org', account: { id: OTHER, name: 'Other\r\nOrg' } }])).toEqual({ id: OTHER, name: 'Other Org' });
+  });
+
+  it('reads an include rule that is not an object as a wider rule, and a padded address as the address', () => {
+    expect(plan.policyMatches({ decision: 'allow', include: [null] }, ['a@example.org'])).toBe(false);
+    expect(plan.policyNarrows({ decision: 'allow', include: [null] }, ['a@example.org'])).toBe(true);
+    expect(plan.policyMatches({ decision: 'allow', include: [{ email: { email: ' A@example.org ' } }] }, ['a@example.org'])).toBe(true);
+  });
+
+  it('matches the addresses whatever order they are given in', () => {
+    const policy = { decision: 'allow', include: [{ email: { email: 'a@example.org' } }, { email: { email: 'b@example.org' } }] };
+    expect(plan.policyMatches(policy, ['b@example.org', 'a@example.org'])).toBe(true);
+  });
+
+  it('leaves out an empty exclude list as it does an empty require list', () => {
+    expect(plan.policyBody(['a@example.org'], { exclude: [], include: [] })).not.toHaveProperty('exclude');
+  });
+
+  it('skips a destination or a listed policy that is not an object, and a policy whose id is not text', () => {
+    const destinations = plan.destinationsFor({ accessAccount: { id: ACCOUNT, name: 'Ch 227' }, subdomain: SUBDOMAIN }).destinations;
+    const app = { destinations: [null, ...destinations], policies: [{ id: 'p1' }, { id: 7 }] };
+    expect(plan.appMatches(app, { policyId: 'p1', destinations })).toBe(true);
+    expect(plan.appMatches(null, { policyId: 'p1', destinations })).toBe(false);
+    expect(plan.appBody({ policyId: 'p1', destinations, existing: app }).destinations).toEqual(destinations);
+    expect(plan.otherPolicies({ policies: [{ id: 'p1' }, { id: 'wide' }] }, 'p1', [null, { id: 'wide', name: 'Allow everyone', decision: 'allow' }])).toEqual([
+      { id: 'wide', name: 'Allow everyone', decision: 'allow' },
+    ]);
+  });
+
+  it.each([
+    ['a domain of its own', 'www.vva227.org/stats', 'www.vva227.org/stats'],
+    ['an empty domain', '', 'vva227.org/stats'],
+    ['no domain', undefined, 'vva227.org/stats'],
+    ['a domain that is not text', 7, 'vva227.org/stats'],
+  ])('on update, keeps an application\'s main domain when it has %s, and otherwise uses the first destination', (_label, domain, expected) => {
+    const destinations = plan.destinationsFor({ accessAccount: { id: ACCOUNT, name: 'Ch 227' }, subdomain: SUBDOMAIN }).destinations;
+    expect(plan.appBody({ policyId: 'p1', destinations, existing: { domain, destinations } }).domain).toBe(expected);
+  });
+
+  it('reads an error list with holes in it without crashing', () => {
+    expect(plan.isProjectMissing({ status: 400, body: { errors: [null] } })).toBe(false);
+    expect(plan.isAuthRefusal({ status: 400, body: { errors: [null] } })).toBe(false);
+    expect(plan.describeApiError({ method: 'GET', path: '/zones', status: 400, body: { errors: [null, {}] } }).split('\n')[0]).toBe(
+      'Cloudflare refused GET /zones (HTTP 400): ?: no message; ?: no message',
+    );
+  });
+
+  it('counts a token refusal by any one of its errors, and nothing as one when there are none', () => {
+    expect(plan.isAuthRefusal({ status: 400, body: { errors: [{ code: 7003 }, { code: 10000 }] } })).toBe(true);
+    expect(plan.isAuthRefusal({ status: 404, body: { errors: [] } })).toBe(false);
+  });
+
+  it('names the permission for the zone lookup as the script sends it, with its query', () => {
+    const text = plan.describeApiError({ method: 'GET', path: '/zones?name=vva227.org', status: 403, body: { errors: [] } });
+    expect(text.split('\n')).toEqual([
+      'Cloudflare refused GET /zones?name=vva227.org (HTTP 403): no error detail in the response',
+      'The token was not allowed to do this. It needs "Zone › Zone › Read".',
+      'Everything this run reported as done above stays done; run the command again after fixing this.',
+    ]);
+  });
+
+  it('says only that the token was refused for a path it has no permission name for', () => {
+    expect(plan.describeApiError({ method: 'GET', path: '/user/tokens/verify', status: 401, body: { errors: [] } }).split('\n')[1]).toBe('The token was not allowed to do this.');
+  });
+
+  it('quotes a response with no text as empty, and markup as the words between it', () => {
+    expect(plan.describeApiError({ method: 'GET', path: '/zones', status: 502, body: null })).toContain('the response was not JSON: (empty)');
+    expect(plan.describeApiError({ method: 'GET', path: '/zones', status: 502, body: null, text: '<p>Bad</p><p>gateway</p>' })).toContain('the response was not JSON: Bad gateway\n');
+  });
+});
+
+describe('migration file names', () => {
+  it.each([['x0001_views.sql'], ['0001_views.sql.sql']])('refuses %j, which only contains a migration name', (name) => {
+    expect(() => plan.migrationOrder([name])).toThrow(`Unexpected migration file name "${name}". Nothing was applied.`);
+  });
+
+  it('refuses a name that would break out of the bookkeeping row', () => {
+    const name = "0001_views.sql'); DROP TABLE views; --";
+    expect(() => plan.migrationRequestSql(name, 'SELECT 1;')).toThrow(`Unexpected migration file name "${name}".`);
+    expect(() => plan.migrationRequestSql('x0001_views.sql', 'SELECT 1;')).toThrow('Unexpected migration file name "x0001_views.sql".');
+  });
+
+  it('orders two files with one number by name, whichever order the directory lists them in', () => {
+    const names = ['0002_b.sql', '0002_a.sql', '0001_z.sql'];
+    expect(plan.migrationOrder([...names])).toEqual(['0001_z.sql', '0002_a.sql', '0002_b.sql']);
+    expect(plan.migrationOrder([...names].reverse())).toEqual(['0001_z.sql', '0002_a.sql', '0002_b.sql']);
+  });
+});
+
+describe('the words the owner reads, whole', () => {
+  // The person running this reads these and nothing else, so each is checked
+  // whole: a line lost, emptied or run into the next fails here.
+
+  it('when there is no token', () => {
+    expect(plan.noTokenMessage()).toBe(
+      [
+        'No Cloudflare API token found.',
+        '',
+        'Create one at https://dash.cloudflare.com/profile/api-tokens -> Create Token -> Custom token, with:',
+        '  - Account › Cloudflare Pages › Edit',
+        '  - Account › D1 › Edit',
+        '  - Account › Access: Apps and Policies › Edit',
+        '  - Account › Access: Organizations, Identity Providers, and Groups › Read',
+        '  - Zone › Zone › Read',
+        'Account resources: the "Ch 227" account (and, if vva227.org is in a different Cloudflare account, that one too).',
+        'Zone resources: vva227.org.',
+        '',
+        'Then save it in a file named .cf-api-token at the top of this repository (it is gitignored), and make',
+        'that file readable by you alone:  chmod 600 .cf-api-token',
+        'Or set CF_API_TOKEN instead.',
+      ].join('\n'),
+    );
+  });
+
+  it('when the token file is open to other accounts', () => {
+    expect(plan.tokenFileOpenMessage()).toBe(
+      [
+        '.cf-api-token can be read by other accounts on this computer, so this script will not use it.',
+        'Make it readable by you alone, then run this again:  chmod 600 .cf-api-token',
+        'Or set CF_API_TOKEN instead, for example where chmod has no effect, such as a Windows drive opened under WSL.',
+        'Nothing was changed.',
+      ].join('\n'),
+    );
+  });
+
+  it('when the project does not serve vva227.org, naming every domain it does serve', () => {
+    expect(() => plan.checkProject({ domains: [SUBDOMAIN, 'old.example.org'] })).toThrow(
+      [
+        `The Pages project "vva227-refresh" in account ${ACCOUNT} does not serve vva227.org`,
+        `(its domains: ${SUBDOMAIN}, old.example.org).`,
+        'That is not the live site, so nothing was changed. Check that the token is for the "Ch 227" account.',
+      ].join('\n'),
+    );
+    expect(() => plan.checkProject({})).toThrow('(its domains: none).');
+  });
+
+  it('when production is not the branch `npm run deploy` publishes to', () => {
+    expect(plan.checkProject({ domains: ['vva227.org'], production_branch: 'production' }).warnings).toEqual([
+      [
+        'WARNING: the project\'s production branch is "production", not "main".',
+        '`npm run deploy` publishes to "main", so with this setting its deploys are PREVIEWS:',
+        'they get none of the settings below, and visits would not be counted.',
+        'Ask whoever deploys the site which branch they publish to before deploying this. The settings',
+        'below are still written to production, so they are ready whichever way that is resolved.',
+      ].join('\n'),
+    ]);
+  });
+
+  it('when BEACON points at another database', () => {
+    expect(() => plan.planBindings({ d1_databases: { BEACON: { id: 'old-db' } } }, { databaseId: 'db', newSalt: () => 's' })).toThrow(
+      [
+        'BEACON is already bound to a different D1 database (old-db), not vva227-beacon (db).',
+        'This script will not move it: the visits recorded so far live in that database.',
+        'If it should be replaced, remove the BEACON binding in the dashboard (Workers & Pages -> vva227-refresh -> Settings -> Bindings) and run this again.',
+        'Nothing else was changed in the project.',
+      ].join('\n'),
+    );
+  });
+
+  it('when the salt is a plain-text variable', () => {
+    expect(plan.planBindings({ env_vars: { BEACON_SALT: { type: 'plain_text', value: 'x' } } }, { databaseId: 'db', newSalt: () => 's' }).notes).toEqual([
+      [
+        'BEACON_SALT exists as a plain-text variable. It is left alone, because replacing it would reset every visitor id.',
+        'It works as it is, but anyone with dashboard access can read it. To make it secret, delete it in the dashboard and run this again.',
+      ].join('\n'),
+    ]);
+  });
+
+  it('when the token cannot see the zone', () => {
+    expect(plan.zoneNotVisibleMessage()).toBe(
+      [
+        'The token cannot see the vva227.org zone, so this script cannot tell which Cloudflare account Access belongs in.',
+        'Give the token "Zone › Zone › Read" for vva227.org. If vva227.org lives in a different Cloudflare account from "Ch 227",',
+        'the token must include that account too. Then run this again; what is already done will be skipped.',
+        'If you cannot select vva227.org in the token form, the zone is in an account your login is not a member of:',
+        "ask that account's administrator to add you, or to run this script, before /stats can be opened.",
+      ].join('\n'),
+    );
+  });
+
+  it('when Zero Trust is not turned on', () => {
+    expect(plan.zeroTrustInstructions({ id: ACCOUNT, name: 'Ch 227' })).toBe(
+      [
+        `Cloudflare Zero Trust is not turned on for the account "Ch 227" (${ACCOUNT}), which owns vva227.org.`,
+        'This has to be done once, by hand, in the dashboard:',
+        '  1. Open https://one.dash.cloudflare.com and pick that account.',
+        '  2. Choose a team name (it becomes <team>.cloudflareaccess.com; anything short works).',
+        '  3. Choose the Free plan. Cloudflare asks for card details even on the Free plan; it does not charge them.',
+        'Then run this command again. Everything already done above will be skipped.',
+        'Nothing after this point was changed.',
+      ].join('\n'),
+    );
+  });
+
+  it('when a stop leaves open sign-ins that should have been ended', () => {
+    expect(plan.signInsNotEndedMessage()).toBe(
+      [
+        'Sign-ins already open to /stats were NOT ended. Anyone taken off the list can still open it',
+        'until their sign-in runs out, at most 24h.',
+        'Running the same command again will not end them: it finds nothing left to change. To end them,',
+        'once the problem above is fixed, run the same command with --end-sign-ins added, or',
+        'open the application "vva227 stats" in the Zero Trust dashboard and revoke its existing tokens.',
+      ].join('\n'),
+    );
+  });
+
+  it('at the end of a run', () => {
+    expect(plan.nextSteps()).toBe(
+      [
+        'NEXT STEP. Nothing has been deployed, and nothing on the live site has changed yet.',
+        'These settings take effect on the NEXT production deploy of the site. That deploy must be made',
+        "from a copy of the code that has BOTH the chapter volunteer's latest changes AND this analytics",
+        'branch merged together: deploying either one on its own undoes the other.',
+        'From that merged copy, run:',
+        `  CLOUDFLARE_ACCOUNT_ID=${ACCOUNT} npm run deploy`,
+        '(it publishes to the main branch, which is production). The account id makes wrangler use the',
+        '"Ch 227" account even if it remembers another one, which it otherwise prefers to your login.',
+        'Your login must include "Ch 227" (npx wrangler whoami lists its accounts). On Windows, set the',
+        'variable first. In PowerShell:',
+        `  $env:CLOUDFLARE_ACCOUNT_ID='${ACCOUNT}'; npm run deploy`,
+        'In the Command Prompt, as two commands:',
+        `  set CLOUDFLARE_ACCOUNT_ID=${ACCOUNT}`,
+        '  npm run deploy',
+        'The folder you deploy from must contain no wrangler.toml, wrangler.json or wrangler.jsonc.',
+        'Then open https://vva227.org/stats and sign in with one of the allowed email addresses.',
+        'Signing in shows only that the lock works. To check that visits are being recorded: in a normal',
+        'browser window without Global Privacy Control, open https://vva227.org/ and one other page, then',
+        'reload https://vva227.org/stats. Your visit and your city should be at the top of Recent visitors.',
+      ].join('\n'),
+    );
+  });
+});
