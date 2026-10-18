@@ -97,7 +97,8 @@ export interface VerifyOptions {
   nowSeconds?: number;
 }
 
-function base64UrlToBytes(input: string): Uint8Array {
+/** Declared over a plain ArrayBuffer, which is what crypto.subtle.verify takes. */
+function base64UrlToBytes(input: string): Uint8Array<ArrayBuffer> {
   const padded = input.replace(/-/g, '+').replace(/_/g, '/');
   const binary = atob(padded + '='.repeat((4 - (padded.length % 4)) % 4));
   const bytes = new Uint8Array(binary.length);

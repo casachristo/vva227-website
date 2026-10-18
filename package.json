@@ -32,6 +32,7 @@
   "devDependencies": {
     "@playwright/test": "^1.55.0",
     "cheerio": "^1.1.2",
+    "typescript": "^5.9.3",
     "vitest": "^3.2.4",
     "wrangler": "^4.33.1"
   }
