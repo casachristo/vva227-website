@@ -329,6 +329,12 @@ describe('the view event', () => {
     expect(t.sent[0].body.v).toMatch(/^[0-9a-f]{16}$/);
   });
 
+  it('still gives every page its own view id without crypto', () => {
+    // Two pages with one id would be one row: the second would land on the first.
+    const ids = new Set(Array.from({ length: 5 }, () => run({ crypto: null }).sent[0].body.v));
+    expect(ids.size).toBe(5);
+  });
+
   it('draws its view id from crypto.getRandomValues once, and keeps it for every end', () => {
     const t = run();
     t.at(T0 + 60_000);
@@ -369,6 +375,21 @@ describe('reading time and the end event', () => {
     expect(last.transport).toBe('beacon');
     expect(last.url).toBe(BEACON_ENDPOINT);
     expect(last.blobType).toBe('application/json');
+  });
+
+  it('goes by sendBeacon when the page is hidden too, the last moment a phone may give it', () => {
+    const t = run();
+    t.at(T0 + 2_000);
+    t.setVisibility('hidden');
+    t.fire('document', 'visibilitychange');
+    expect(t.sent.at(-1)).toMatchObject({ transport: 'beacon', body: { k: EVENT_END, e: 2_000 } });
+  });
+
+  it('reports the first total whatever it is, even a single millisecond', () => {
+    const t = run();
+    t.at(T0 + 1);
+    t.fire('window', 'pagehide');
+    expect(t.bodies().map((b) => [b.k, b.e])).toEqual([[EVENT_VIEW, undefined], [EVENT_END, 1]]);
   });
 
   it('starts at zero for a page opened in a background tab', () => {
