@@ -249,8 +249,9 @@ export function checkProject(project) {
  * is never compared, read or overwritten.
  *
  * @param {DeploymentConfig} production the current production config, from GET
- * @param {{ databaseId: string, newSalt: () => string }} want
- * @returns {{ body: object | null, changes: string[], notes: string[] }}
+ * @param {{ databaseId: string | null, newSalt: () => string }} want  null only on a dry run, before the database exists
+ * @returns {{ body: object | null, changes: { did: string, would: string }[], notes: string[] }}
+ *   each change worded for a real run (`did`) and for a dry run's "A real run would:" (`would`)
  */
 export function planBindings(production, { databaseId, newSalt }) {
   const prod = production ?? {};
@@ -263,7 +264,7 @@ export function planBindings(production, { databaseId, newSalt }) {
   if (bound && bound !== databaseId) {
     throw new StopError(
       [
-        `${BINDING} is already bound to a different D1 database (${bound}), not ${DATABASE} (${databaseId}).`,
+        `${BINDING} is already bound to a different D1 database (${bound}), not ${DATABASE}${databaseId ? ` (${databaseId})` : ', which a real run would create'}.`,
         'This script will not move it: the visits recorded so far live in that database.',
         `If it should be replaced, remove the ${BINDING} binding in the dashboard (Workers & Pages -> ${PROJECT} -> Settings -> Bindings) and run this again.`,
         'Nothing else was changed in the project.',
@@ -273,7 +274,7 @@ export function planBindings(production, { databaseId, newSalt }) {
   if (bound === databaseId) notes.push(`${BINDING} is already bound to ${DATABASE}.`);
   else {
     d1[BINDING] = { id: databaseId };
-    changes.push(`${BINDING} bound to the ${DATABASE} database`);
+    changes.push({ did: `bound ${BINDING} to the ${DATABASE} database`, would: `bind ${BINDING} to the ${DATABASE} database` });
   }
 
   const salt = prod.env_vars?.[SALT_VAR];
@@ -287,7 +288,7 @@ export function planBindings(production, { databaseId, newSalt }) {
     );
   } else {
     vars[SALT_VAR] = { type: 'secret_text', value: newSalt() };
-    changes.push(`${SALT_VAR} created: a new random secret, encrypted`);
+    changes.push({ did: `created ${SALT_VAR}, a new random secret, encrypted`, would: `create ${SALT_VAR}, a new random secret, encrypted` });
   }
 
   const production_ = {};

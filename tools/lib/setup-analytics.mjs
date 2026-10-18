@@ -198,14 +198,14 @@ export async function runSetup({
 
     // (c) Production bindings: the database and the salt.
     say(`\n3. Production settings for the visit collector`);
-    const bindings = plan.planBindings(checked.production, { databaseId: databaseId ?? '(the new database)', newSalt: randomHex });
+    const bindings = plan.planBindings(checked.production, { databaseId, newSalt: randomHex });
     for (const note of bindings.notes) say(`   ${note}`);
     if (bindings.body) {
-      if (dryRun) bindings.changes.forEach(act);
+      if (dryRun) bindings.changes.forEach((change) => act(change.would));
       else {
         await api('PATCH', projectPath, bindings.body);
         await verify(databaseId, false);
-        bindings.changes.forEach(act);
+        bindings.changes.forEach((change) => act(change.did));
       }
     }
 

@@ -156,8 +156,8 @@ describe('a fresh account', () => {
     for (const said of [
       `created the D1 database vva227-beacon (${db.uuid})`,
       'applied migration 0001_views.sql',
-      'BEACON bound to the vva227-beacon database',
-      'BEACON_SALT created: a new random secret, encrypted',
+      'bound BEACON to the vva227-beacon database',
+      'created BEACON_SALT, a new random secret, encrypted',
       `created the Access policy "vva227 stats owners" admitting ${EMAIL}`,
       `created the Access application "vva227 stats" covering vva227.org/stats, www.vva227.org/stats, ${PAGES_SUBDOMAIN}/stats, *.${PAGES_SUBDOMAIN}/stats`,
       `set ACCESS_TEAM_DOMAIN (${TEAM_DOMAIN}) and ACCESS_AUD (${app.aud}), encrypted`,
@@ -773,8 +773,8 @@ describe('--dry-run', () => {
     for (const said of [
       'create the D1 database vva227-beacon',
       'apply whichever of 0001_views.sql the database has not recorded',
-      'BEACON bound to the vva227-beacon database',
-      'BEACON_SALT created',
+      'bind BEACON to the vva227-beacon database',
+      'create BEACON_SALT',
       `create the Access policy "vva227 stats owners" admitting ${EMAIL}`,
       'create the Access application "vva227 stats" covering vva227.org/stats',
       `set ACCESS_TEAM_DOMAIN to ${TEAM_DOMAIN}`,
@@ -1012,8 +1012,8 @@ describe('what the owner reads, word for word', () => {
         `  - created the D1 database vva227-beacon (${fake.database()!.uuid})`,
         '  - applied migration 0001_views.sql',
         '  - applied migration 0002_extra.sql',
-        '  - BEACON bound to the vva227-beacon database',
-        '  - BEACON_SALT created: a new random secret, encrypted',
+        '  - bound BEACON to the vva227-beacon database',
+        '  - created BEACON_SALT, a new random secret, encrypted',
         `  - created the Access policy "vva227 stats owners" admitting ${EMAIL}, ${SECOND}`,
         `  - created the Access application "vva227 stats" covering ${COVERS}`,
         SETTINGS(fake.apps.get(CH227)![0].aud),
@@ -1044,8 +1044,8 @@ describe('what the owner reads, word for word', () => {
         'DRY RUN. Nothing was changed. A real run would:',
         '  - create the D1 database vva227-beacon',
         '  - apply whichever of 0001_views.sql, 0002_extra.sql the database has not recorded (a dry run cannot query it)',
-        '  - BEACON bound to the vva227-beacon database',
-        '  - BEACON_SALT created: a new random secret, encrypted',
+        '  - bind BEACON to the vva227-beacon database',
+        '  - create BEACON_SALT, a new random secret, encrypted',
         `  - create the Access policy "vva227 stats owners" admitting ${EMAIL}, ${SECOND}`,
         `  - create the Access application "vva227 stats" covering ${COVERS}`,
         `  - set ACCESS_TEAM_DOMAIN to ${TEAM_DOMAIN} and ACCESS_AUD to the application's AUD tag`,
@@ -1326,7 +1326,8 @@ describe('answers from Cloudflare the script does not take on trust', () => {
     project.deployment_configs.production.d1_databases = { BEACON: { id: 'their-database' } };
     const { code, output } = await run(cloudflare({ project }), ['--email', EMAIL, '--dry-run']);
     expect(code).toBe(1);
-    expect(output).toContain('not vva227-beacon ((the new database))');
+    expect(output).toContain('not vva227-beacon, which a real run would create.');
+    expect(output).not.toContain('((');
   });
 
   it.each([

@@ -197,7 +197,10 @@ describe('planBindings', () => {
     const newSalt = vi.fn(() => 'salt');
     expect(plan.planBindings({}, { databaseId: DB, newSalt })).toEqual({
       body: { deployment_configs: { production: { d1_databases: { BEACON: { id: DB } }, env_vars: { BEACON_SALT: { type: 'secret_text', value: 'salt' } } } } },
-      changes: ['BEACON bound to the vva227-beacon database', 'BEACON_SALT created: a new random secret, encrypted'],
+      changes: [
+        { did: 'bound BEACON to the vva227-beacon database', would: 'bind BEACON to the vva227-beacon database' },
+        { did: 'created BEACON_SALT, a new random secret, encrypted', would: 'create BEACON_SALT, a new random secret, encrypted' },
+      ],
       notes: [],
     });
     expect(newSalt).toHaveBeenCalledTimes(1);
@@ -233,6 +236,17 @@ describe('planBindings', () => {
     expect(() => plan.planBindings({ d1_databases: { BEACON: { id: 'theirs' } } }, { databaseId: DB, newSalt: () => 's' })).toThrow(
       /BEACON is already bound to a different D1 database \(theirs\)/,
     );
+  });
+
+  it('names the database a dry run has not created yet in plain words', () => {
+    let message = '';
+    try {
+      plan.planBindings({ d1_databases: { BEACON: { id: 'theirs' } } }, { databaseId: null, newSalt: () => 's' });
+    } catch (e) {
+      message = (e as Error).message;
+    }
+    expect(message).toContain('(theirs), not vva227-beacon, which a real run would create.');
+    expect(message).not.toMatch(/\(\(|null|undefined/);
   });
 
   it('tolerates a missing config', () => {
