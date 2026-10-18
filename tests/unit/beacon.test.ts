@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import { createHash } from 'node:crypto';
 import {
   cleanText,
   geoFromCf,
@@ -85,6 +86,12 @@ describe('validateEvent — happy path', () => {
 
   it('ignores a client-supplied site, which the server assigns', () => {
     expect(accepted(viewEvent({ site: 'someone-else', s: 'x' }))).not.toHaveProperty('site');
+  });
+
+  it('records no reading time on a view, whatever it claims', () => {
+    // Reading time arrives only on an end; a view claiming hours would
+    // otherwise stand as the row's total, since the upsert keeps the larger.
+    expect(accepted(viewEvent({ e: 3_600_000 })).engagedMs).toBe(0);
   });
 });
 
@@ -179,6 +186,12 @@ describe('validateEvent — edge cases', () => {
     expect(accepted(viewEvent({ p: '/give?email=a@b.example#x' })).path).toBe('/give');
   });
 
+  it('trims the space a cut query string leaves behind', () => {
+    const event = accepted(viewEvent({ p: '/give ?email=a@b.example', r: 'https://www.google.com/ #top' }));
+    expect(event.path).toBe('/give');
+    expect(event.referrer).toBe('https://www.google.com/');
+  });
+
   it('removes control characters from stored strings', () => {
     // 0x1F is the hash separator, and a newline would let a stored value forge
     // extra lines in anything printed from this table.
@@ -271,6 +284,9 @@ describe('geoFromCf', () => {
 
   it.each([
     ['a numeric string', '13335', 13335],
+    ['a numeric string with space around it', ' 7922 ', 7922],
+    ['a number in exponent notation', '1e3', null],
+    ['a number in hex', '0x10', null],
     ['zero', 0, null],
     ['negative', -1, null],
     ['fractional', 1.5, null],
@@ -460,7 +476,15 @@ describe('visitorHash', () => {
   });
 
   it('treats a missing IP or user agent as empty rather than throwing', async () => {
-    await expect(visitorHash({ ...base, ip: null, ua: undefined })).resolves.toMatch(/^[0-9a-f]{32}$/);
+    await expect(visitorHash({ ...base, ip: null, ua: undefined })).resolves.toBe(await visitorHash({ ...base, ip: '', ua: '' }));
+  });
+
+  it('is the first 32 hex characters of SHA-256 over the secret, window, site, IP and user agent, in that order', async () => {
+    // Worked out here with Node's own hash, independently of the WebCrypto
+    // code under test: what docs/analytics.md and /privacy describe is what runs.
+    const expected = (fields: string[]) => createHash('sha256').update(fields.join(US)).digest('hex').slice(0, 32);
+    expect(await visitorHash(base)).toBe(expected(['s3cret', '20743', SITE_KEY, '203.0.113.7', 'Mozilla/5.0']));
+    expect(await visitorHash({ ...base, ip: null, ua: null })).toBe(expected(['s3cret', '20743', SITE_KEY, '', '']));
   });
 
   it('can be worked back to an IPv4 address, and linked across days, by whoever holds the secret (a known gap)', async () => {
