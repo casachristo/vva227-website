@@ -61,11 +61,10 @@ without a sentence there, so the page cannot quietly fall behind the code.
 
 **https://vva227.org/stats**, after the one-time setup below.
 
-Cloudflare Access asks for your email address and sends a one-time code (if
-the sign-in page offers no way in, add the *One-time PIN* login method under
-Zero Trust → Settings → Authentication). A sign-in lasts 24 hours, unless
-someone changes that in the Zero Trust dashboard; the setup script keeps a
-change made there.
+Cloudflare Access asks for your email address and sends a one-time code;
+that needs the *One-time PIN* login method, which step 1 turns on.
+A sign-in lasts 24 hours, unless someone changes that in the Zero Trust
+dashboard; the setup script keeps a change made there.
 
 The page shows the last 30 days by default; links switch to 7, 90 or 365.
 It lists recent visitors (one row per visitor per day: when, where, which
@@ -104,6 +103,15 @@ and id (a `--dry-run` in step 4 shows it without changing anything). Choose a
 team name (it becomes `<team>.cloudflareaccess.com`) and the **Free** plan.
 Cloudflare asks for card details even on the Free plan; it does not charge
 them. If you skip this, the script stops and says so.
+
+Then turn on the **One-time PIN** login method, so the people on the list
+sign in with a code emailed to their address: Zero Trust → Integrations →
+Identity providers → Add new identity provider → One-time PIN (in older
+dashboards: Settings → Authentication → Login methods → Add new). Without
+it, the sign-in page offers only other methods, which sign people in as
+someone not on the list, and Access answers *That account does not have
+access*. The setup script reads the team's login methods and warns when
+One-time PIN is missing; it cannot turn it on.
 
 **2. Create an API token**, signed in to Cloudflare with a login that belongs
 to the chapter's **Ch 227** account, not a personal one: a token reaches only
@@ -290,6 +298,7 @@ errors.
 | `beacon write failed` (an error, when a page is visited) | The database refused the visit: the migration was never applied, or the day's free writes are used up (see step 7). | Rerun the setup script; it applies missing migrations. If the message mentions a limit, counting resumes at midnight UTC. |
 | `beacon prune failed` (an error) | Deleting rows past the retention period failed. The visit itself was recorded. | Nothing at once; the next visit tries again. If it keeps happening, note the message and report it. |
 | *Recent visitors* stays empty, nothing logged | No visit is recorded, and the collector logs only the three errors above. Your browser sends Global Privacy Control or Do Not Track, which this site honours; or you browsed `vva227-refresh-12g.pages.dev` or a preview, where nothing is recorded; or the pages do not load `/b.js`, usually because a merge kept the old `script-src 'none'` in `public/_headers` or lost the script tag from `src/layouts/BaseLayout.astro`; or a merge changed what the script sends, and the collector refuses it. | Step 6, in a browser without either setting, on https://vva227.org. Then, in the browser's developer tools, *Network* should show `b.js` and a `POST` to `/api/e` answered `204`. If `b.js` is missing or blocked, fix the merge and deploy. If the `POST` is answered with anything else, its answer names the reason, such as `{"error":"wrong host"}`. |
+| Cloudflare's own page *That account does not have access*, nothing logged | You signed in with a login method whose email address is not on the list. Usually the team has no One-time PIN, so the sign-in page offered another method (the setup script warns about this), or you signed in with another address. The Function never ran. | Turn on One-time PIN (step 1). Then sign out at `https://<team>.cloudflareaccess.com/cdn-cgi/access/logout`, or use a private window, and sign in with an address on the list. |
 | nothing logged at all | The request is not reaching the Function: Access is showing its sign-in page, or the deployment does not include `functions/`, or it went to another Cloudflare account. | Sign in; check you deployed with step 5's command, from the repo root. |
 
 ---

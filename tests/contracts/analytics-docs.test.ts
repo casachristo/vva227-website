@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import { ACCESS_REFUSAL_REASONS } from '../../src/lib/access';
 import { BEACON_ENDPOINT, COLLECT_HOSTS, RETENTION_DAYS, RETENTION_MONTHS } from '../../src/data/analytics';
 import { DEFAULT_DAYS, WINDOWS } from '../../src/lib/stats';
+import * as plan from '../../tools/lib/setup-analytics-plan.mjs';
 import { ACCOUNT, nextSteps, SESSION_DURATION, TOKEN_FILE, TOKEN_PERMISSIONS } from '../../tools/lib/setup-analytics-plan.mjs';
 import { VIEW_COLUMNS } from '../helpers/analytics';
 
@@ -221,6 +222,29 @@ describe('docs/analytics.md', () => {
       .filter((l) => l.includes('npx wrangler pages deployment'));
     expect(commands.length).toBeGreaterThanOrEqual(2);
     expect(commands.filter((l) => !l.startsWith(`CLOUDFLARE_API_TOKEN="$(cat ${TOKEN_FILE})" CLOUDFLARE_ACCOUNT_ID=${ACCOUNT} npx wrangler pages deployment`))).toEqual([]);
+  });
+
+  it('makes turning on One-time PIN part of step 1, with the dashboard path the setup script prints', () => {
+    // Without One-time PIN the people on the list cannot sign in with their
+    // own address, and Access answers "That account does not have access":
+    // the first live run met it. Not an afterthought for when the sign-in
+    // page "offers no way in"; it offered a way, as the wrong person.
+    const step1 = setupStep(doc, 1).replace(/\s+/g, ' ');
+    expect(step1).toContain('**One-time PIN**');
+    expect(step1).toContain('Zero Trust → Integrations → Identity providers → Add new identity provider → One-time PIN');
+    expect(step1).toContain('That account does not have access');
+    expect(doc).not.toContain('if the sign-in page offers no way in');
+    // The same path, as the script prints it with ASCII arrows.
+    expect(plan.loginMethodWarning([])).toContain('Zero Trust -> Integrations -> Identity providers -> Add new identity provider');
+  });
+
+  it('has a troubleshooting row for the Access page that says the account does not have access', () => {
+    const row = doc.split('\n').find((l) => l.startsWith('| ') && l.includes('That account does not have access')) ?? '';
+    expect(row).not.toBe('');
+    expect(row).toContain('One-time PIN');
+    expect(row).toContain('/cdn-cgi/access/logout');
+    expect(row).toContain('private window');
+    expect(row).toContain('an address on the list');
   });
 
   it('says that removing a person ends the sign-ins already open, and that a rerun needs a token again', () => {

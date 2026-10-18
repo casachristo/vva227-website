@@ -6,7 +6,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { runSetup } from '../../tools/lib/setup-analytics.mjs';
-import { loginMethodWarning, nextSteps, projectNotFoundMessage, RUNTIME_DATE_NOTE, USAGE, zeroTrustInstructions } from '../../tools/lib/setup-analytics-plan.mjs';
+import { loginMethodWarning, nextSteps, projectNotFoundMessage, USAGE, zeroTrustInstructions } from '../../tools/lib/setup-analytics-plan.mjs';
 import { VIEW_COLUMNS } from '../helpers/analytics';
 import { NO_TOKEN_FILE, runSetupAgainst, type SetupRunOptions } from '../helpers/setup-run';
 import {
