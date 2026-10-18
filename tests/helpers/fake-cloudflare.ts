@@ -84,6 +84,13 @@ export interface FakeOptions {
   project?: ProjectState | null;
   /** Zero Trust team domain per account. An account missing here has not enabled Zero Trust. */
   teams?: Record<string, string>;
+  /**
+   * The login methods (identity providers) every team offers, as
+   * GET .../access/identity_providers lists them. Defaults to One-time PIN
+   * alone, which is what the setup expects; the live team once had only a
+   * method of type 'cloudflare'.
+   */
+  loginMethods?: unknown[];
 }
 
 export interface Failure {
@@ -131,6 +138,7 @@ export class FakeCloudflare {
   zoneVisible: boolean;
   project: ProjectState | null;
   teams: Record<string, string>;
+  loginMethods: unknown[];
   readonly requests: RecordedRequest[] = [];
   readonly databases: Array<{ uuid: string; name: string; db: DatabaseSync }> = [];
   readonly policies = new Map<string, Policy[]>();
@@ -145,6 +153,7 @@ export class FakeCloudflare {
     this.zoneVisible = options.zoneVisible ?? this.tokenAccounts.includes(this.zoneAccount);
     this.project = options.project === undefined ? freshProject() : options.project;
     this.teams = options.teams ?? { [CH227]: TEAM_DOMAIN };
+    this.loginMethods = options.loginMethods ?? [{ id: 'idp-otp', name: '', type: 'onetimepin' }];
   }
 
   /** The next request matching method and path gets this answer instead. */
@@ -284,6 +293,12 @@ export class FakeCloudflare {
       const team = this.teams[m[1]];
       if (!team) return json(404, fail(12106, 'access.api.error.not_found: organization not found'));
       return json(200, ok({ name: 'team', auth_domain: team }));
+    }
+
+    // Zero Trust login methods
+    if ((m = /^\/accounts\/([^/]+)\/access\/identity_providers$/.exec(path)) && method === 'GET') {
+      if (!this.teams[m[1]]) return json(404, fail(12106, 'access.api.error.not_found: organization not found'));
+      return json(200, ok(this.loginMethods));
     }
 
     // Access policies

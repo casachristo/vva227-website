@@ -110,4 +110,15 @@ describe('the script, the registry and the repo agree', () => {
   it('reads its token from the file .gitignore keeps out of the repo', () => {
     expect(readFileSync(join(ROOT, '.gitignore'), 'utf8').split(/\r?\n/)).toContain(plan.TOKEN_FILE);
   });
+
+  it('points step 1 at the file holding the date the runtime tests use, and that file says why it differs', () => {
+    // Step 1 prints production's compatibility date and this note under it.
+    // The note is true only while the file it names exists, holds the date,
+    // and explains that the installed wrangler caps it.
+    const file = /see (tests\/helpers\/[\w.-]+\.ts)\)$/.exec(plan.RUNTIME_DATE_NOTE)?.[1];
+    expect(file).toBe('tests/helpers/pages-runtime.ts');
+    const text = readFileSync(join(ROOT, file!), 'utf8');
+    expect(text).toMatch(/export const RUNTIME_COMPATIBILITY_DATE = '\d{4}-\d{2}-\d{2}';/);
+    expect(text).toContain('nearest date it can run');
+  });
 });

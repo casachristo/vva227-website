@@ -196,6 +196,14 @@ export function isProjectMissing({ status, body }) {
 }
 
 /**
+ * Said under the production compatibility date in step 1. The local runtime
+ * tests cannot always run on production's date: the workerd the installed
+ * wrangler brings refuses dates newer than itself, so
+ * RUNTIME_COMPATIBILITY_DATE is the nearest one it accepts.
+ */
+export const RUNTIME_DATE_NOTE = '(the local runtime tests run on the nearest date the installed wrangler supports; see tests/helpers/pages-runtime.ts)';
+
+/**
  * Is this the project that serves vva227.org, in the right account?
  *
  * The guard exists because the wrong-account accident already happened once:
@@ -424,6 +432,45 @@ export function teamDomainFrom(organization) {
   return domain || null;
 }
 
+/** The login method that signs a person in with a code emailed to their address, as the API types it. */
+export const ONE_TIME_PIN = 'onetimepin';
+
+/** Where One-time PIN is turned on, as Cloudflare's docs name the dashboard path (October 2026). */
+const ONE_TIME_PIN_PATH = 'Zero Trust -> Integrations -> Identity providers';
+
+/**
+ * What step 4 says about the team's login methods (GET
+ * /access/identity_providers), or null when One-time PIN is among them.
+ *
+ * Access's sign-in page offers only the methods the team has turned on.
+ * Without One-time PIN, the people on the list cannot sign in with their own
+ * address: the page signs them in some other way, as someone not on the
+ * list, and Access answers "That account does not have access". That is
+ * what the first live run met. The token can only read login methods, and
+ * another method might still sign the listed people in, so this is a
+ * warning and never a stop. Anything but a list counts as no methods.
+ */
+export function loginMethodWarning(methods) {
+  const list = Array.isArray(methods) ? methods : [];
+  if (list.some((m) => m?.type === ONE_TIME_PIN)) return null;
+  const types = list.map((m) => m?.type).filter((t) => typeof t === 'string' && t);
+  return [
+    'WARNING: One-time PIN is not turned on for this Zero Trust team.',
+    `Login methods turned on now: ${types.length ? types.join(', ') : 'none'}.`,
+    `Until it is on, the people on the list cannot sign in to ${STATS_PATH} with a code emailed to them, and`,
+    'anyone the sign-in page lets in with an address not on the list sees "That account does not have access".',
+    `Turn it on in the dashboard: ${ONE_TIME_PIN_PATH} -> Add new identity provider`,
+    '-> One-time PIN (in older dashboards: Settings -> Authentication -> Login methods -> Add new -> One-time PIN).',
+    'This script does not need to run again for it.',
+  ].join('\n');
+}
+
+/** One line, when the login methods could not be read; the run carries on. */
+export function loginMethodsUnreadableNote(detail) {
+  const first = String(detail ?? '').split('\n')[0];
+  return `Could not read the login methods (${first}); check that One-time PIN is turned on: ${ONE_TIME_PIN_PATH}.`;
+}
+
 /** @param {{ id: string, name: string | null }} account the account that owns the zone */
 export function zeroTrustInstructions(account) {
   return [
@@ -432,6 +479,8 @@ export function zeroTrustInstructions(account) {
     '  1. Open https://one.dash.cloudflare.com and pick that account.',
     '  2. Choose a team name (it becomes <team>.cloudflareaccess.com; anything short works).',
     '  3. Choose the Free plan. Cloudflare asks for card details even on the Free plan; it does not charge them.',
+    '  4. Turn on One-time PIN, so the people on the list sign in with a code emailed to them:',
+    `     ${ONE_TIME_PIN_PATH} -> Add new identity provider -> One-time PIN.`,
     'Then run this command again. Everything already done above will be skipped.',
     'Nothing after this point was changed.',
   ].join('\n');

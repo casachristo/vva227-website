@@ -6,7 +6,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { runSetup } from '../../tools/lib/setup-analytics.mjs';
-import { nextSteps, projectNotFoundMessage, USAGE, zeroTrustInstructions } from '../../tools/lib/setup-analytics-plan.mjs';
+import { loginMethodWarning, nextSteps, projectNotFoundMessage, RUNTIME_DATE_NOTE, USAGE, zeroTrustInstructions } from '../../tools/lib/setup-analytics-plan.mjs';
 import { VIEW_COLUMNS } from '../helpers/analytics';
 import { NO_TOKEN_FILE, runSetupAgainst, type SetupRunOptions } from '../helpers/setup-run';
 import {
@@ -114,6 +114,7 @@ describe('a fresh account', () => {
       `GET ${PROJECT_PATH}`,
       'GET /zones',
       `GET /accounts/${CH227}/access/organizations`,
+      `GET /accounts/${CH227}/access/identity_providers`, // read only: is One-time PIN on?
       `GET /accounts/${CH227}/access/policies`,
       `POST /accounts/${CH227}/access/policies`,
       `GET /accounts/${CH227}/access/apps`,
@@ -966,6 +967,93 @@ describe('when Cloudflare says no', () => {
   });
 });
 
+describe('the login methods the team offers', () => {
+  // Without One-time PIN, the people on the list cannot sign in with their
+  // address, and Access answers "That account does not have access": what
+  // the owner met on 2026-10-18, with only a method of type 'cloudflare' on.
+  // The script cannot turn it on (the token only reads login methods), and
+  // another method might still sign the listed people in, so it warns and
+  // carries on.
+  const ONLY_CLOUDFLARE = [{ id: '7ba3f272', name: '', type: 'cloudflare' }];
+  const WARNING = loginMethodWarning(ONLY_CLOUDFLARE)!;
+  const indented = (text: string) => text.split('\n').map((l) => `   ${l}`).join('\n');
+
+  it('reads them in the account that owns vva227.org, once its team is known', async () => {
+    const fake = cloudflare();
+    const { code, requests } = await run(fake);
+    expect(code).toBe(0);
+    const lines = requests.map(line);
+    const at = lines.indexOf(`GET /accounts/${CH227}/access/identity_providers`);
+    expect(at).toBeGreaterThan(lines.indexOf(`GET /accounts/${CH227}/access/organizations`));
+  });
+
+  it('reads them in the other account when vva227.org lives there', async () => {
+    const fake = cloudflare({ zoneAccount: OTHER_ACCOUNT, tokenAccounts: [CH227, OTHER_ACCOUNT], teams: { [OTHER_ACCOUNT]: 'other-team.cloudflareaccess.com' }, loginMethods: ONLY_CLOUDFLARE });
+    const { code, output, requests } = await run(fake);
+    expect(code, output).toBe(0);
+    expect(requests.map(line)).toContain(`GET /accounts/${OTHER_ACCOUNT}/access/identity_providers`);
+    expect(requests.map(line)).not.toContain(`GET /accounts/${CH227}/access/identity_providers`);
+    expect(output).toContain(WARNING);
+  });
+
+  it('says nothing about them when One-time PIN is on', async () => {
+    const { code, output } = await run(cloudflare());
+    expect(code).toBe(0);
+    expect(output).not.toContain('One-time PIN');
+    expect(output).not.toContain('login methods');
+  });
+
+  it('with only another method on, warns in step 4 and again before the next step, and still sets everything up', async () => {
+    const fake = cloudflare({ loginMethods: ONLY_CLOUDFLARE });
+    const { code, output } = await run(fake);
+    expect(code, output).toBe(0);
+    // In step 4, under the team it belongs to.
+    const step4 = output.indexOf('4. Cloudflare Access for vva227.org/stats');
+    const step5 = output.indexOf('5. Production settings for the /stats lock');
+    const inStep4 = output.indexOf(indented(WARNING));
+    expect(inStep4).toBeGreaterThan(step4);
+    expect(inStep4).toBeLessThan(step5);
+    // Again at the end, where it cannot scroll away: after who can open
+    // /stats, before the deploy.
+    const atEnd = output.indexOf(`\n${WARNING}\n`, output.indexOf('Who can open /stats:'));
+    expect(atEnd).toBeGreaterThan(-1);
+    expect(atEnd).toBeLessThan(output.indexOf('NEXT STEP.'));
+    // A warning, not a stop: the whole setup is done.
+    expect(fake.admits(CH227)).toEqual([EMAIL]);
+    expectProductionConfigured(fake, { aud: fake.apps.get(CH227)![0].aud });
+  });
+
+  it('on a dry run with only another method on, warns the same way and sends only GETs', async () => {
+    const fake = cloudflare({ loginMethods: ONLY_CLOUDFLARE });
+    const before = structuredClone(fake.project);
+    const { code, output, requests } = await run(fake, ['--email', EMAIL, '--dry-run']);
+    expect(code, output).toBe(0);
+    expect(requests.filter((r) => r.method !== 'GET')).toEqual([]);
+    expect(fake.project).toEqual(before);
+    expect(output).toContain(indented(WARNING));
+    const summary = output.indexOf('DRY RUN. Nothing was changed. A real run would:');
+    const atEnd = output.indexOf(`\n${WARNING}\n`, summary);
+    expect(atEnd).toBeGreaterThan(summary);
+    expect(atEnd).toBeLessThan(output.indexOf('Run the same command without --dry-run'));
+  });
+
+  it.each([
+    ['refused', { status: 403, body: { success: false, errors: [{ code: 10000, message: 'Authentication error' }] } }],
+    ['failed', { status: 500, body: { success: false, errors: [{ code: 12000, message: 'internal error' }] } }],
+    ['answered with something that is not JSON', { status: 502, text: '<html>Bad gateway</html>' }],
+  ])('when reading them is %s, notes it in one line and still sets everything up', async (_label, answer) => {
+    const fake = cloudflare();
+    fake.failNext({ method: 'GET', path: /\/access\/identity_providers$/, ...answer });
+    const { code, output } = await run(fake);
+    expect(code, output).toBe(0);
+    const note = output.split('\n').filter((l) => l.includes('Could not read the login methods'));
+    expect(note).toHaveLength(2);
+    expect(note[0]).toMatch(/^ {3}Could not read the login methods \(.+\); check that One-time PIN is turned on: Zero Trust -> Integrations -> Identity providers\.$/);
+    expect(fake.admits(CH227)).toEqual([EMAIL]);
+    expectProductionConfigured(fake, { aud: fake.apps.get(CH227)![0].aud });
+  });
+});
+
 describe('what the owner reads, word for word', () => {
   // The person running the script reads its output and nothing else, so
   // whole runs are checked line for line: a step heading lost, a list run
@@ -988,7 +1076,7 @@ describe('what the owner reads, word for word', () => {
     '   serves vva227.org: yes',
     '   production branch: main',
     '   production compatibility date: 2025-09-01',
-    '   (the local runtime tests guess a date in tests/helpers/pages-runtime.ts; make RUNTIME_COMPATIBILITY_DATE match this)',
+    '   (the local runtime tests run on the nearest date the installed wrangler supports; see tests/helpers/pages-runtime.ts)',
   ];
   const STEP_4 = ['', '4. Cloudflare Access for vva227.org/stats', '   vva227.org is in the "Ch 227" account', `   Zero Trust team: ${TEAM_DOMAIN}`];
   const SETTINGS = (aud: string) => `  - set ACCESS_TEAM_DOMAIN (${TEAM_DOMAIN}) and ACCESS_AUD (${aud}), encrypted`;
@@ -1049,6 +1137,52 @@ describe('what the owner reads, word for word', () => {
         `  - create the Access policy "vva227 stats owners" admitting ${EMAIL}, ${SECOND}`,
         `  - create the Access application "vva227 stats" covering ${COVERS}`,
         `  - set ACCESS_TEAM_DOMAIN to ${TEAM_DOMAIN} and ACCESS_AUD to the application's AUD tag`,
+        '',
+        'Run the same command without --dry-run to do it.',
+      ].join('\n'),
+    );
+  });
+
+  it('on a dry run where the team has no One-time PIN', async () => {
+    const methods = [{ id: '7ba3f272', name: '', type: 'cloudflare' }];
+    const { code, output } = await run(cloudflare({ loginMethods: methods }), ['--email', EMAIL, '--dry-run']);
+    expect(code).toBe(0);
+    expect(output).toBe(
+      [
+        'DRY RUN: looking only. Nothing will be changed.',
+        '',
+        ...STEP_1,
+        '',
+        '2. The D1 database "vva227-beacon"',
+        '',
+        '3. Production settings for the visit collector',
+        ...STEP_4,
+        '   WARNING: One-time PIN is not turned on for this Zero Trust team.',
+        '   Login methods turned on now: cloudflare.',
+        '   Until it is on, the people on the list cannot sign in to /stats with a code emailed to them, and',
+        '   anyone the sign-in page lets in with an address not on the list sees "That account does not have access".',
+        '   Turn it on in the dashboard: Zero Trust -> Integrations -> Identity providers -> Add new identity provider',
+        '   -> One-time PIN (in older dashboards: Settings -> Authentication -> Login methods -> Add new -> One-time PIN).',
+        '   This script does not need to run again for it.',
+        '',
+        '5. Production settings for the /stats lock',
+        '',
+        'DRY RUN. Nothing was changed. A real run would:',
+        '  - create the D1 database vva227-beacon',
+        '  - apply whichever of 0001_views.sql the database has not recorded (a dry run cannot query it)',
+        '  - bind BEACON to the vva227-beacon database',
+        '  - create BEACON_SALT, a new random secret, encrypted',
+        `  - create the Access policy "vva227 stats owners" admitting ${EMAIL}`,
+        `  - create the Access application "vva227 stats" covering ${COVERS}`,
+        `  - set ACCESS_TEAM_DOMAIN to ${TEAM_DOMAIN} and ACCESS_AUD to the application's AUD tag`,
+        '',
+        'WARNING: One-time PIN is not turned on for this Zero Trust team.',
+        'Login methods turned on now: cloudflare.',
+        'Until it is on, the people on the list cannot sign in to /stats with a code emailed to them, and',
+        'anyone the sign-in page lets in with an address not on the list sees "That account does not have access".',
+        'Turn it on in the dashboard: Zero Trust -> Integrations -> Identity providers -> Add new identity provider',
+        '-> One-time PIN (in older dashboards: Settings -> Authentication -> Login methods -> Add new -> One-time PIN).',
+        'This script does not need to run again for it.',
         '',
         'Run the same command without --dry-run to do it.',
       ].join('\n'),

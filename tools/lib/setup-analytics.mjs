@@ -142,6 +142,8 @@ export async function runSetup({
   // stop before they are ended has to say so.
   let signInsToEnd = endSignIns;
   let endedSignIns = false;
+  // What step 4 found about the team's login methods, said again at the end.
+  let loginNote = null;
 
   try {
     if (dryRun) say('DRY RUN: looking only. Nothing will be changed.\n');
@@ -161,7 +163,7 @@ export async function runSetup({
     say(`   serves ${plan.ZONE}: yes`);
     say(`   production branch: ${checked.productionBranch || '(not set)'}`);
     say(`   production compatibility date: ${checked.compatibilityDate ?? '(not set)'}`);
-    say('   (the local runtime tests guess a date in tests/helpers/pages-runtime.ts; make RUNTIME_COMPATIBILITY_DATE match this)');
+    say(`   ${plan.RUNTIME_DATE_NOTE}`);
     for (const warning of checked.warnings) say(`\n${warning}\n`);
 
     // (b) The database and its schema.
@@ -234,6 +236,16 @@ export async function runSetup({
     const teamDomain = plan.teamDomainFrom(organization);
     if (!teamDomain) throw new plan.StopError(plan.zeroTrustInstructions(accessAccount));
     say(`   Zero Trust team: ${teamDomain}`);
+
+    // The sign-in page offers only the login methods the team has turned on;
+    // without One-time PIN the people on the list cannot sign in with their
+    // own address. Read only, and never a reason to stop.
+    try {
+      loginNote = plan.loginMethodWarning((await api('GET', `/accounts/${accessAccount.id}/access/identity_providers`)).result);
+    } catch (err) {
+      loginNote = plan.loginMethodsUnreadableNote(err instanceof ApiError ? plan.describeApiError(err.failure) : err instanceof Error ? err.message : String(err));
+    }
+    if (loginNote) say(loginNote.split('\n').map((l) => `   ${l}`).join('\n'));
 
     const policiesPath = `/accounts/${accessAccount.id}/access/policies`;
     const listedPolicies = await listAll(policiesPath);
@@ -326,12 +338,14 @@ export async function runSetup({
     if (dryRun) {
       say('DRY RUN. Nothing was changed. A real run would:');
       for (const line of wouldDo) say(`  - ${line}`);
+      if (loginNote) say(`\n${loginNote}`);
       say('\nRun the same command without --dry-run to do it.');
     } else {
       say('Done. What changed in this run:');
       for (const line of done) say(`  - ${line}`);
       say('');
       for (const line of plan.whoCanOpen(emails, existingPolicy, { endedWherePagesDevUncovered: endedSignIns && skipped !== null })) say(line);
+      if (loginNote) say(`\n${loginNote}`);
       say(`\n${plan.nextSteps()}`);
     }
     return 0;

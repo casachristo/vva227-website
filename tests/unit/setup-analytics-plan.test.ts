@@ -932,6 +932,88 @@ describe('migration file names', () => {
   });
 });
 
+describe('the login methods the team offers', () => {
+  // Access shows its sign-in page with the login methods the Zero Trust team
+  // has turned on. With no One-time PIN, the people on the list have no way
+  // to sign in with their address: the sign-in page offers only methods that
+  // sign them in as someone else, and Access answers "That account does not
+  // have access". The live setup on 2026-10-18 met exactly this, with one
+  // method of type 'cloudflare' and no 'onetimepin'.
+  const WARNING = [
+    'WARNING: One-time PIN is not turned on for this Zero Trust team.',
+    'Login methods turned on now: cloudflare.',
+    'Until it is on, the people on the list cannot sign in to /stats with a code emailed to them, and',
+    'anyone the sign-in page lets in with an address not on the list sees "That account does not have access".',
+    'Turn it on in the dashboard: Zero Trust -> Integrations -> Identity providers -> Add new identity provider',
+    '-> One-time PIN (in older dashboards: Settings -> Authentication -> Login methods -> Add new -> One-time PIN).',
+    'This script does not need to run again for it.',
+  ].join('\n');
+
+  it('says nothing when One-time PIN is on, whatever else is on beside it', () => {
+    expect(plan.loginMethodWarning([{ id: 'a', name: '', type: 'onetimepin' }])).toBeNull();
+    expect(plan.loginMethodWarning([{ type: 'cloudflare' }, { type: 'github' }, { type: 'onetimepin' }])).toBeNull();
+  });
+
+  it('warns, word for word, when the team has only a method that is not One-time PIN', () => {
+    expect(plan.loginMethodWarning([{ id: '7ba3', name: '', type: 'cloudflare' }])).toBe(WARNING);
+  });
+
+  it('names every method that is on, in the order Cloudflare lists them', () => {
+    const text = plan.loginMethodWarning([{ type: 'github' }, { type: 'google' }]) ?? '';
+    expect(text).toContain('Login methods turned on now: github, google.');
+  });
+
+  it('warns, and says none is on, when the team has no login method at all', () => {
+    const text = plan.loginMethodWarning([]) ?? '';
+    expect(text).toContain('Login methods turned on now: none.');
+    expect(text.split('\n')[0]).toBe('WARNING: One-time PIN is not turned on for this Zero Trust team.');
+  });
+
+  it.each([
+    ['null', null],
+    ['undefined', undefined],
+    ['an object', { type: 'onetimepin' }],
+    ['a string', 'onetimepin'],
+    ['junk items', [null, 42, 'onetimepin', { type: 5 }, { type: '' }, {}]],
+  ])('warns on an answer that is not a list of methods (%s), and never throws', (_label, answer) => {
+    const text = plan.loginMethodWarning(answer as unknown);
+    expect(text).toContain('One-time PIN is not turned on');
+    expect(text).toContain('Login methods turned on now: none.');
+  });
+
+  it('still finds One-time PIN among junk items', () => {
+    expect(plan.loginMethodWarning([null, { type: 5 }, { type: 'onetimepin' }])).toBeNull();
+  });
+
+  it('matches the type exactly, as the API spells it', () => {
+    expect(plan.loginMethodWarning([{ type: 'OneTimePin' }])).toContain('One-time PIN is not turned on');
+    expect(plan.loginMethodWarning([{ type: ' onetimepin' }])).toContain('One-time PIN is not turned on');
+    expect(plan.loginMethodWarning([{ name: 'onetimepin' }])).toContain('One-time PIN is not turned on');
+  });
+
+  it('notes, in one line, a list it could not read, with the way to check by hand', () => {
+    const note = plan.loginMethodsUnreadableNote('403: Authentication error');
+    expect(note).toBe(
+      'Could not read the login methods (403: Authentication error); check that One-time PIN is turned on: Zero Trust -> Integrations -> Identity providers.',
+    );
+    expect(note).not.toContain('\n');
+  });
+
+  it('keeps that note to one line even when the detail has several', () => {
+    expect(plan.loginMethodsUnreadableNote('first line\nsecond line')).not.toContain('\n');
+    expect(plan.loginMethodsUnreadableNote('first line\nsecond line')).toContain('(first line)');
+  });
+});
+
+describe('what step 1 says about the date the runtime tests use', () => {
+  it('says the local runtime tests run on the nearest date the installed wrangler supports, not that they guess one', () => {
+    expect(plan.RUNTIME_DATE_NOTE).toBe(
+      '(the local runtime tests run on the nearest date the installed wrangler supports; see tests/helpers/pages-runtime.ts)',
+    );
+    expect(plan.RUNTIME_DATE_NOTE).not.toMatch(/guess/);
+  });
+});
+
 describe('the words the owner reads, whole', () => {
   // The person running this reads these and nothing else, so each is checked
   // whole: a line lost, emptied or run into the next fails here.
@@ -1032,6 +1114,8 @@ describe('the words the owner reads, whole', () => {
         '  1. Open https://one.dash.cloudflare.com and pick that account.',
         '  2. Choose a team name (it becomes <team>.cloudflareaccess.com; anything short works).',
         '  3. Choose the Free plan. Cloudflare asks for card details even on the Free plan; it does not charge them.',
+        '  4. Turn on One-time PIN, so the people on the list sign in with a code emailed to them:',
+        '     Zero Trust -> Integrations -> Identity providers -> Add new identity provider -> One-time PIN.',
         'Then run this command again. Everything already done above will be skipped.',
         'Nothing after this point was changed.',
       ].join('\n'),
