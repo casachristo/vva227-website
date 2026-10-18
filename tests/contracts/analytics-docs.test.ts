@@ -138,17 +138,25 @@ describe('docs/analytics.md', () => {
     expect(setupStep(doc, 3)).toContain(`chmod 600 ${TOKEN_FILE}`);
   });
 
-  it('gives the deploy command with the "Ch 227" account id, in step 5 and in the script\'s closing words', () => {
-    // wrangler prefers the account it cached in node_modules/.cache/wrangler
-    // over the login, and this clone's cache once named another account.
-    // CLOUDFLARE_ACCOUNT_ID outranks the cache for `pages deploy`.
-    const command = `CLOUDFLARE_ACCOUNT_ID=${ACCOUNT} npm run deploy`;
+  it('deploys with the setup token and the "Ch 227" account id, in step 5 and in the closing words of the script', () => {
+    // The live site is in the chapter's account. Deploying with the token the
+    // setup used, plus the account id, sends the deploy there whatever
+    // Cloudflare login the computer has (on the maintainer's, a personal
+    // account) and whatever account wrangler cached in
+    // node_modules/.cache/wrangler. CLOUDFLARE_API_TOKEN outranks the login;
+    // CLOUDFLARE_ACCOUNT_ID outranks the cache.
+    const command = `CLOUDFLARE_API_TOKEN="$(cat ${TOKEN_FILE})" CLOUDFLARE_ACCOUNT_ID=${ACCOUNT} npm run deploy`;
     const step5 = setupStep(doc, 5);
     expect(step5).toContain(command);
     expect(nextSteps()).toContain(command);
-    // The login must hold that account; this lists the accounts it holds.
-    expect(step5).toContain('npx wrangler whoami');
-    expect(nextSteps()).toContain('npx wrangler whoami');
+    // The token the script took from the environment works the same way.
+    expect(step5).toContain('CLOUDFLARE_API_TOKEN="$CF_API_TOKEN"');
+    expect(nextSteps()).toContain('CLOUDFLARE_API_TOKEN="$CF_API_TOKEN"');
+    // No step relies on the computer's own login any more.
+    for (const text of [step5, nextSteps(), logsSection(doc)]) {
+      expect(text).not.toContain('npx wrangler whoami');
+      expect(text).not.toMatch(/login must include|must be logged into/i);
+    }
     // A local wrangler config, committed or not, replaces the settings the setup wrote.
     for (const name of ['wrangler.toml', 'wrangler.json', 'wrangler.jsonc']) {
       expect(step5).toContain(name);
@@ -158,15 +166,22 @@ describe('docs/analytics.md', () => {
 
   it('gives that command for Windows too, in PowerShell and in the Command Prompt', () => {
     // A shell that cannot set a variable in front of a command still sets
-    // one first; nothing else overrides the account wrangler remembers.
-    // The Command Prompt's `set` keeps trailing spaces in the value, so the
-    // id must end its line, and the deploy is a command of its own.
-    const powershell = `$env:CLOUDFLARE_ACCOUNT_ID='${ACCOUNT}'; npm run deploy`;
-    const cmd = new RegExp(`^ *set CLOUDFLARE_ACCOUNT_ID=${ACCOUNT}\\n *npm run deploy$`, 'm');
+    // both first. The Command Prompt's `set` keeps trailing spaces in the
+    // value, so the id must end its line; `set /p` reads the token file's
+    // first line.
+    const powershell = `$env:CLOUDFLARE_API_TOKEN=(Get-Content ${TOKEN_FILE} -Raw).Trim(); $env:CLOUDFLARE_ACCOUNT_ID='${ACCOUNT}'; npm run deploy`;
+    const cmd = new RegExp(`^ *set /p CLOUDFLARE_API_TOKEN=<\\${TOKEN_FILE}\\n *set CLOUDFLARE_ACCOUNT_ID=${ACCOUNT}\\n *npm run deploy$`, 'm');
     for (const text of [setupStep(doc, 5), nextSteps()]) {
       expect(text).toContain(powershell);
       expect(text).toMatch(cmd);
     }
+  });
+
+  it('has the token created under a login that belongs to the "Ch 227" account', () => {
+    // A token belongs to the login that made it, and reaches only that
+    // login's accounts; one made under a personal login cannot see the
+    // chapter's project.
+    expect(setupStep(doc, 2).replace(/\s+/g, ' ')).toMatch(/signed in to Cloudflare with a login that belongs to the chapter's \*\*Ch 227\*\* account, not a personal one/);
   });
 
   it('never has the owner delete only pages.json, which leaves the remembered account in wrangler-account.json', () => {
@@ -200,12 +215,12 @@ describe('docs/analytics.md', () => {
     expect(row).toContain('answered with anything else, its answer names the reason');
   });
 
-  it('gives every log command the "Ch 227" account id, as step 5 does', () => {
+  it('gives every log command the setup token and the "Ch 227" account id, as step 5 does', () => {
     const commands = logsSection(doc)
       .split('\n')
       .filter((l) => l.includes('npx wrangler pages deployment'));
     expect(commands.length).toBeGreaterThanOrEqual(2);
-    expect(commands.filter((l) => !l.startsWith(`CLOUDFLARE_ACCOUNT_ID=${ACCOUNT} npx wrangler pages deployment`))).toEqual([]);
+    expect(commands.filter((l) => !l.startsWith(`CLOUDFLARE_API_TOKEN="$(cat ${TOKEN_FILE})" CLOUDFLARE_ACCOUNT_ID=${ACCOUNT} npx wrangler pages deployment`))).toEqual([]);
   });
 
   it('says that removing a person ends the sign-ins already open, and that a rerun needs a token again', () => {
@@ -316,13 +331,13 @@ describe('README.md', () => {
     expect(flat).toContain("Everyone else is stopped at Cloudflare's sign-in page, or gets a plain `Not found` on an address Access does not cover.");
   });
 
-  it('gives the deploy under Deploying with the "Ch 227" account id, as step 5 does', () => {
-    // A plain `npm run deploy` goes to whichever account wrangler remembers,
-    // which in one copy of this code was not the chapter's.
+  it('gives the deploy under Deploying with the setup token and the "Ch 227" account id, as step 5 does', () => {
+    // A plain `npm run deploy` goes to whichever account the computer's login
+    // and wrangler's memory pick, which on the maintainer's is not the chapter's.
     const start = readme.indexOf('## Deploying');
     expect(start).toBeGreaterThan(-1);
     const deploying = readme.slice(start, readme.indexOf('\n---', start));
-    expect(deploying).toContain(`CLOUDFLARE_ACCOUNT_ID=${ACCOUNT} npm run deploy`);
+    expect(deploying).toContain(`CLOUDFLARE_API_TOKEN="$(cat ${TOKEN_FILE})" CLOUDFLARE_ACCOUNT_ID=${ACCOUNT} npm run deploy`);
     expect(deploying).toContain('](./docs/analytics.md)');
   });
 });

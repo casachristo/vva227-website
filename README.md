@@ -168,8 +168,10 @@ create, the setup, how to read the logs, and what each refusal in them means.
 npm run deploy     # builds and pushes to Cloudflare Pages
 ```
 
-From a copy of the code where wrangler may remember another account, give the
-"Ch 227" account: `CLOUDFLARE_ACCOUNT_ID=d4afcdf7502fa80e6443dbb67ecd1d5f npm run deploy`
+That deploys to whatever account the computer's Cloudflare login (or
+wrangler's memory) picks. To deploy to the chapter's "Ch 227" account from any
+computer, use the analytics setup's API token:
+`CLOUDFLARE_API_TOKEN="$(cat .cf-api-token)" CLOUDFLARE_ACCOUNT_ID=d4afcdf7502fa80e6443dbb67ecd1d5f npm run deploy`
 (see step 5 of [docs/analytics.md](./docs/analytics.md), which also gives the
 Windows forms).
 

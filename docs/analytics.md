@@ -105,8 +105,11 @@ team name (it becomes `<team>.cloudflareaccess.com`) and the **Free** plan.
 Cloudflare asks for card details even on the Free plan; it does not charge
 them. If you skip this, the script stops and says so.
 
-**2. Create an API token.** https://dash.cloudflare.com/profile/api-tokens →
-*Create Token* → *Create Custom Token*, with exactly these permissions:
+**2. Create an API token**, signed in to Cloudflare with a login that belongs
+to the chapter's **Ch 227** account, not a personal one: a token reaches only
+the accounts of the login that made it.
+https://dash.cloudflare.com/profile/api-tokens → *Create Token* → *Create
+Custom Token*, with exactly these permissions:
 
 | Scope | Permission | Access |
 | --- | --- | --- |
@@ -160,29 +163,31 @@ production deploy**, and the script does not deploy. The live site is deployed
 by a chapter volunteer and is ahead of this repository, so that deploy must
 come from a copy of the code holding **both** the volunteer's latest commits
 **and** this analytics work. Deploying either one alone undoes the other.
-From that merged copy:
+From that merged copy, deploy with the same API token the setup used:
 
 ```sh
-CLOUDFLARE_ACCOUNT_ID=d4afcdf7502fa80e6443dbb67ecd1d5f npm run deploy   # builds, then publishes with --branch=main (production)
+CLOUDFLARE_API_TOKEN="$(cat .cf-api-token)" CLOUDFLARE_ACCOUNT_ID=d4afcdf7502fa80e6443dbb67ecd1d5f npm run deploy   # builds, then publishes with --branch=main (production)
 ```
 
-That id is the "Ch 227" account's. Wrangler remembers the account of the
-first `pages` command run in a copy of the code, in the folder
-`node_modules/.cache/wrangler`, and uses it ahead of your login, even when
-you are logged into several accounts. This once created a project in the
-wrong account. `CLOUDFLARE_ACCOUNT_ID` overrides what it remembers. Your
-login must include "Ch 227"; `npx wrangler whoami` lists the accounts it
-holds.
+The token and the id send the deploy to the chapter's "Ch 227" account,
+whatever Cloudflare login the computer has. Without them, wrangler uses the
+computer's own login, and before that the account it remembers from the
+first `pages` command run in this copy of the code (it keeps it in
+`node_modules/.cache/wrangler`); this once created a project in the wrong
+account. The token's *Cloudflare Pages: Edit* permission is all a deploy
+needs. If you gave the token as `CF_API_TOKEN` rather than the file, use
+`CLOUDFLARE_API_TOKEN="$CF_API_TOKEN"`.
 
-On Windows, set the variable first. In PowerShell:
+On Windows, set both variables first. In PowerShell:
 
 ```powershell
-$env:CLOUDFLARE_ACCOUNT_ID='d4afcdf7502fa80e6443dbb67ecd1d5f'; npm run deploy
+$env:CLOUDFLARE_API_TOKEN=(Get-Content .cf-api-token -Raw).Trim(); $env:CLOUDFLARE_ACCOUNT_ID='d4afcdf7502fa80e6443dbb67ecd1d5f'; npm run deploy
 ```
 
-In the Command Prompt, as two commands:
+In the Command Prompt, as three commands:
 
 ```bat
+set /p CLOUDFLARE_API_TOKEN=<.cf-api-token
 set CLOUDFLARE_ACCOUNT_ID=d4afcdf7502fa80e6443dbb67ecd1d5f
 npm run deploy
 ```
@@ -246,11 +251,12 @@ then no visit is recorded until midnight UTC. The site itself keeps working.
 collector logs only when it cannot record a visit (the three collector errors
 in the table below); its other refusals are named in its answer, which the
 browser's developer tools show, under *Network*, on the `POST` to `/api/e`.
-Wrangler must be logged into the account that holds the Pages project.
+These commands use the setup's token too; if you deleted it, make one again
+(steps 2 and 3).
 
 ```sh
-CLOUDFLARE_ACCOUNT_ID=d4afcdf7502fa80e6443dbb67ecd1d5f npx wrangler pages deployment list --project-name=vva227-refresh
-CLOUDFLARE_ACCOUNT_ID=d4afcdf7502fa80e6443dbb67ecd1d5f npx wrangler pages deployment tail <deployment-id> --project-name=vva227-refresh
+CLOUDFLARE_API_TOKEN="$(cat .cf-api-token)" CLOUDFLARE_ACCOUNT_ID=d4afcdf7502fa80e6443dbb67ecd1d5f npx wrangler pages deployment list --project-name=vva227-refresh
+CLOUDFLARE_API_TOKEN="$(cat .cf-api-token)" CLOUDFLARE_ACCOUNT_ID=d4afcdf7502fa80e6443dbb67ecd1d5f npx wrangler pages deployment tail <deployment-id> --project-name=vva227-refresh
 ```
 
 Then load `/stats` in another window and read the `stats denied:` line. The
@@ -259,9 +265,10 @@ code ran, not the answer it gave), so read the line beneath it. A visit to a
 page shows a line beneath its `POST /api/e` only for those three collector
 errors.
 
-> These commands need the same `CLOUDFLARE_ACCOUNT_ID` as step 5 (on
-> Windows, set it first, as step 5 shows). Without it they read the account
-> wrangler remembers, which may hold a stray copy of the project.
+> These commands need the same two variables as step 5 (on Windows, set
+> them first, as step 5 shows). Without them they read whatever account the
+> computer's login or wrangler's memory picks, which may hold a stray copy of
+> the project.
 
 ### Troubleshooting
 
