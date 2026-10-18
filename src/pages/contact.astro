@@ -95,13 +95,8 @@ const referralPartners = [
   },
   {
     org: 'Loudoun County Veterans Service Office',
-    person: 'Thomas Grant Jr.',
-    role: 'Loudoun Veterans Services Coordinator',
-    email: 'Thomas.Grant@loudoun.gov',
-    phones: [
-      { label: 'Office', number: '571-627-8893' },
-      { label: 'Cell', number: '703-989-9864' },
-    ],
+    person: 'Veterans Coordination Line',
+    phones: [{ label: null, number: '703-777-0420' }],
   },
   {
     org: 'Fairfax County Veterans Service Office',
@@ -129,12 +124,12 @@ const referralPartners = [
     lede="Whether you're a veteran seeking information, interested in membership, looking for ways to become involved, or simply have a question about Chapter 227, we're here to help you find the right connection."
     primary={{ label: 'Send Us a Message', href: '#general-questions' }}
     secondary={{ label: 'Find Other Resources', href: '#how-can-we-help' }}
-    minHeight="clamp(34rem, 56vw, 55rem)"
     image={{
       src: '/images/contact-conversation.jpg',
       alt: 'Two Chapter 227 members talking over coffee and a membership application at a table, with a "Service, Fellowship, Remembrance" sign and the American flag in the background, and mountains visible through a window.',
       width: 1050,
       height: 1027,
+      focus: 'center 70%',
     }}
   />
 
@@ -251,7 +246,7 @@ const referralPartners = [
               <p class="fa-partner__org">{partner.org}</p>
               {partner.subtitle && <p class="fa-partner__subtitle">{partner.subtitle}</p>}
               <p class="fa-partner__person">{partner.person}</p>
-              <p class="fa-partner__role">{partner.role}</p>
+              {partner.role && <p class="fa-partner__role">{partner.role}</p>}
               {partner.address && (
                 <address class="fa-partner__address">
                   {partner.address[0]}
@@ -259,7 +254,7 @@ const referralPartners = [
                   {partner.address[1]}
                 </address>
               )}
-              <p class="fa-partner__contact">{partner.email}</p>
+              {partner.email && <p class="fa-partner__contact">{partner.email}</p>}
               {partner.phones.map((phone) => (
                 <p class="fa-partner__contact">
                   {phone.label && <>{phone.label}: </>}

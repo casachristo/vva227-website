@@ -18,13 +18,19 @@ interface Props {
   credit?: string;
   /** Cap the rendered width; defaults to the image's natural size. */
   maxWidth?: string;
+  /** The source file's actual pixel dimensions — required so the browser can
+   * reserve the right space before the image loads (avoids layout shift) and
+   * so the figure never renders the image larger than its native resolution,
+   * regardless of `maxWidth`. */
+  width: number;
+  height: number;
 }
 
-const { src, alt, caption, credit, maxWidth = '46rem' } = Astro.props;
+const { src, alt, caption, credit, maxWidth = '46rem', width, height } = Astro.props;
 ---
 
-<figure class="figure" style={`--fig-max: ${maxWidth}`}>
-  <img src={src} alt={alt} loading="lazy" decoding="async" />
+<figure class="figure" style={`--fig-max: ${maxWidth}; --fig-native: ${width}px`}>
+  <img src={src} alt={alt} width={width} height={height} loading="lazy" decoding="async" />
   {
     (caption || credit) && (
       <figcaption>
@@ -38,11 +44,15 @@ const { src, alt, caption, credit, maxWidth = '46rem' } = Astro.props;
 <style>
   .figure {
     margin: 0;
-    max-inline-size: var(--fig-max);
+    /* Never render past the image's own native pixel width, whatever
+       `maxWidth` says — a `maxWidth` looser than the source's real
+       resolution would otherwise upscale it. */
+    max-inline-size: min(var(--fig-max), var(--fig-native));
   }
 
   .figure img {
     inline-size: 100%;
+    block-size: auto;
     border-radius: var(--r-md);
     background: var(--c-surface-sunken);
   }

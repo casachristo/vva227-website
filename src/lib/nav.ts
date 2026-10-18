@@ -29,7 +29,7 @@ export const NAV: NavItem[] = [
     blurb: 'Who we are and what we do.',
   },
   {
-    label: 'About Us',
+    label: 'About',
     href: '/about',
     blurb: 'Who we are, where we came from, and who we are named for.',
     children: [
@@ -56,7 +56,7 @@ export const NAV: NavItem[] = [
     blurb: 'A separate 501(c)(3) the chapter created in 2025 — and how the two organizations work together.',
   },
   {
-    label: 'Join Us',
+    label: 'Join',
     href: '/join',
     blurb: 'Membership is open to anyone who served during the Vietnam era. Life membership is $50.',
     children: [
@@ -70,7 +70,7 @@ export const NAV: NavItem[] = [
 ];
 
 export const CONTACT_ITEM: NavItem = {
-  label: 'Contact Us',
+  label: 'Contact',
   href: '/contact',
   blurb: 'Reach the chapter.',
 };

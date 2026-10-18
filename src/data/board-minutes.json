@@ -1,0 +1,18 @@
+{
+  "_doc": "Board meeting minutes archive, split out from the old newsletter.json (which also held The Journey issue archive, now removed).",
+  "minutes": {
+    "title": "Board meeting minutes",
+    "baseUrl": "https://vva227.org/upload/",
+    "files": [
+      {
+        "file": "board-minutes-BMM-2024-09.pdf",
+        "label": "September 2024"
+      },
+      {
+        "file": "board-minutes_2024-11.pdf",
+        "label": "November 2024"
+      }
+    ],
+    "note": "Older minutes are held by the chapter and are available on request. The legacy site's request link was broken."
+  }
+}

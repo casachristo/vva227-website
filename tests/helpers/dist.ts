@@ -19,11 +19,9 @@ export { SELF_ORIGINS } from '../../src/lib/links';
 /**
  * Documented exceptions, as a ratchet. Shrink it; never widen it.
  *
- * The one entry this ever held — "https://vva227.org/upload/", for board
- * minutes hosted on the legacy server — was removed 2026-09-01 along with the
- * Chapter Documents page that linked to them, its only user. Re-add an entry
- * here if a future page links back to the legacy host for a documented
- * reason (e.g. Journey back-issue PDFs not yet moved into public/docs).
+ * The board-minutes entry this held was removed 2026-09-17 along with the
+ * Board Meeting Minutes section on the About page, its only user (the
+ * underlying data file and component are untouched, just unused).
  */
 export const SELF_ORIGIN_ALLOWLIST: ReadonlyArray<{ prefix: string; why: string }> = [];
 

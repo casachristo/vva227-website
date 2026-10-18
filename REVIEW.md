@@ -339,21 +339,23 @@ ones?
 
 ## 5. Documents
 
-- **5.1 The by-laws text needs re-issuing — page removed, 2026-09-01.** The
-  published version has **ARTICLE IV twice**, **no ARTICLE V**, one clause
-  marked "[OBSOLETE]" in the body, and numerous typos. The rebuilt site
-  summarized the provisions rather than reproducing a defective governing
-  document, on a "Chapter Documents" page the chapter has since decided it no
-  longer needs published. The underlying question — a clean, current, signed
-  copy of the by-laws — is unchanged; it simply isn't summarized on the site
-  anymore.
-- **5.2 Board minutes — page removed, 2026-09-01.** Only two sets were ever
-  online (September and November 2024), with older minutes described as
-  "available upon request" behind a malformed link. This lived on the same
-  "Chapter Documents" page, now removed at the chapter's direction. Whether
-  minutes should be public, members-only, or off the website entirely is
-  still an open decision — there just isn't a page publishing them either way
-  right now.
+- **5.1 The by-laws text needs re-issuing — resolved, 2026-09-17.** The
+  legacy published version had **ARTICLE IV twice**, **no ARTICLE V**, one
+  clause marked "[OBSOLETE]" in the body, and numerous typos. The chapter
+  supplied a corrected PDF the same day (`/docs/vva227-bylaws.pdf`, linked
+  from `/about` beside the existing summary) — the duplicate-article and
+  typo defects are fixed in it. The "[OBSOLETE]" clause under Article X,
+  Section 1 is still present in the chapter's own corrected copy, so it's
+  presumably intentional rather than a leftover error; flagging here in case
+  it isn't.
+- **5.2 Board minutes — removed from the public site again, 2026-09-17
+  (same day).** Only two sets were ever online (September and November
+  2024), with older minutes described as "available upon request" behind a
+  malformed link. The chapter had this taken back off `/about`; the two PDFs,
+  the data file listing them and the archive component that rendered them
+  are untouched on disk, not deleted, in case they're wanted for a private
+  archive later. Whether minutes should be public, members-only, or off the
+  website entirely is still an open decision.
 - **5.3 Is the membership application still current?** The only one on the site
   is titled "revised 2018" and its filename carries a Windows duplicate suffix.
 - **5.4 Has *The Journey* stopped?** The archive has **no 2021 issues at all**,
