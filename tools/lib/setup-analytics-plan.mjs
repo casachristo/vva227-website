@@ -343,7 +343,8 @@ export function verifyProduction(production, { databaseId, access }) {
 export function findByName(items, name, what) {
   const matches = (Array.isArray(items) ? items : []).filter((item) => item && item.name === name);
   if (matches.length > 1) {
-    throw new StopError(`There are ${matches.length} ${what}s named "${name}". Delete the extra one in the dashboard and run this again. Nothing further was changed.`);
+    const plural = what.endsWith('y') ? `${what.slice(0, -1)}ies` : `${what}s`;
+    throw new StopError(`There are ${matches.length} ${plural} named "${name}". Delete the extra one in the dashboard and run this again. Nothing further was changed.`);
   }
   return matches[0] ?? null;
 }

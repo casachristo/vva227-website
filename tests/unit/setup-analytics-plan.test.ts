@@ -295,6 +295,12 @@ describe('findByName', () => {
   it('refuses to guess between two exact matches', () => {
     expect(() => plan.findByName([{ name: 'x', id: 1 }, { name: 'x', id: 2 }], 'x', 'Access application')).toThrow(/There are 2 Access applications named "x"/);
   });
+
+  it('names what it found two of in plain English, whatever it is', () => {
+    const two = [{ name: 'x' }, { name: 'x' }];
+    expect(() => plan.findByName(two, 'x', 'Access policy')).toThrow('There are 2 Access policies named "x". Delete the extra one in the dashboard and run this again. Nothing further was changed.');
+    expect(() => plan.findByName(two, 'x', 'D1 database')).toThrow('There are 2 D1 databases named "x".');
+  });
 });
 
 describe('migrations', () => {
