@@ -5,7 +5,19 @@ import { createStatsHandler } from '../../functions/stats';
 import { beaconRequest, createD1, createEnv, ORIGIN, type BeaconRequestOptions, type TestD1 } from '../helpers/d1';
 import { expectAccepted, expectStatsPageHeaders, expectViewRow } from '../helpers/analytics';
 import { CRAWLER_NETWORKS, EVENT_END, EVENT_VIEW, RETENTION_DAYS, SITE_KEY, STATS_PATH } from '../../src/data/analytics';
-import { buildStatsSql, groupVisitorDays, RECENT_VISITORS_LIMIT, shortVisitor, STATS_SQL, TABLE_LIMIT, type VisitRow } from '../../src/lib/stats';
+import {
+  AUTOMATED_LISTS,
+  buildStatsSql,
+  groupVisitorDays,
+  RECENT_VISITORS_LIMIT,
+  setAsideTotals,
+  shortVisitor,
+  STATS_SQL,
+  TABLE_LIMIT,
+  tallyPeople,
+  type AutomatedStat,
+  type VisitRow,
+} from '../../src/lib/stats';
 import type { CfProperties } from '../../src/lib/runtime';
 import { PRUNE_SQL } from '../../src/lib/beacon';
 
@@ -59,13 +71,26 @@ async function at(ts: number, ip: string, body: Record<string, unknown>, opts: B
 const view = (v: string, p: string, r?: string) => ({ k: EVENT_VIEW, v, p, r, w: 390, h: 844 });
 const end = (v: string, p: string, e: number) => ({ k: EVENT_END, v, p, e });
 
-/** The real visits query and grouping, as the handler runs them. */
+/** The real people query, as the handler runs it. */
+async function peopleRows(days = 30, now = NOW, sql = STATS_SQL.people) {
+  return (await d1.binding.prepare(sql).bind(SITE_KEY, now - days * DAY).all<VisitRow>()).results;
+}
+
+/** The real set-aside query, as the handler runs it. */
+async function setAsideRows(days = 30, now = NOW, sql = STATS_SQL.automated) {
+  return (await d1.binding.prepare(sql).bind(SITE_KEY, now - days * DAY).all<AutomatedStat>()).results;
+}
+
+/** The summary line the page shows: people's counts, then the set-aside totals. */
+async function summaryOf(days = 30, now = NOW) {
+  const people = tallyPeople(await peopleRows(days, now)).summary;
+  const setAside = setAsideTotals(await setAsideRows(days, now));
+  return { ...people, automated_visitors: setAside.visitors, automated_views: setAside.views };
+}
+
+/** Recent visitors, from the real people query and grouping. */
 async function visitorDays(days = 30, now = NOW) {
-  const { results } = await d1.binding
-    .prepare(STATS_SQL.visits)
-    .bind(SITE_KEY, now - days * DAY, RECENT_VISITORS_LIMIT)
-    .all<VisitRow>();
-  return groupVisitorDays(results);
+  return tallyPeople(await peopleRows(days, now)).visitors;
 }
 
 /** The highest ?N a statement uses. */
@@ -155,26 +180,26 @@ describe('a visit, collected and then reported', () => {
     expect(days).toHaveLength(1);
     expect(days[0]).toMatchObject({ day: '2026-10-14', source: 'www.google.com', entry: '/', views: 2 });
 
-    const summary = await d1.binding.prepare(STATS_SQL.summary).bind(SITE_KEY, NOW - 30 * DAY).first<Record<string, number>>();
-    expect(summary).toEqual({ views: 2, visitors: 1, pages: 2, automated_visitors: 0, automated_views: 0 });
+    expect(await summaryOf()).toEqual({ views: 2, visitors: 1, pages: 2, automated_visitors: 0, automated_views: 0 });
   });
 });
 
 describe('which visitors Recent visitors keeps, once there are more than it lists', () => {
-  // The SQL picks which hashes to fetch and groupVisitorDays makes the final
-  // cut; both must mean "the most recently active". Every visitor-day is a new
-  // hash, so the 90- and 365-day windows pass the limit even at this traffic.
+  // The people query returns every row in the window and groupVisitorDays
+  // makes the cut, which must mean "the most recently active". Every
+  // visitor-day is a new hash, so the 90- and 365-day windows pass the limit
+  // even at this traffic.
 
-  it('fetches only the most recently active, in the query as in the grouping', async () => {
+  it('keeps only the most recently active, from every row of people in the window', async () => {
     // C arrived first and is still reading; B left earliest; A came in between.
     await at(NOW - 5 * H, '198.51.100.41', view('a100000000000001', '/c-arrives'));
     await at(NOW - 4 * H, '198.51.100.42', view('a100000000000002', '/b-leaves-first'));
     await at(NOW - 3 * H, '198.51.100.43', view('a100000000000003', '/a-between'));
     await at(NOW - H, '198.51.100.41', view('a100000000000004', '/c-still-here'));
 
-    const { results } = await d1.binding.prepare(STATS_SQL.visits).bind(SITE_KEY, NOW - DAY, 2).all<VisitRow>();
-    expect(results.map((r) => r.path).sort()).toEqual(['/a-between', '/c-arrives', '/c-still-here']);
-    // Newest arrival first: A, then C, whose day began earliest.
+    const results = await peopleRows(1);
+    expect(results.map((r) => r.path).sort()).toEqual(['/a-between', '/b-leaves-first', '/c-arrives', '/c-still-here']);
+    // Newest arrival first: A, then C, whose day began earliest. B left first.
     expect(groupVisitorDays(results, 2).map((d) => d.entry)).toEqual(['/a-between', '/c-arrives']);
   });
 
@@ -245,21 +270,19 @@ describe('crawlers, set aside from the people', () => {
   }
 
   it('keeps a person on Recent visitors however many crawlers came after them', async () => {
-    // The live log on 2026-10-21: the one visitor who came from Google had
-    // been pushed to 144th of 186, past the 100 the table lists, by crawlers
-    // that arrived after them.
-    await at(NOW - 5 * H, HOME_IP, view('d000000000000001', '/about', 'https://www.google.com/'));
-    await at(NOW - 5 * H + 114_000, HOME_IP, end('d000000000000001', '/about', 114_000));
+    // Before crawlers were set aside, a reader who arrived early in the day
+    // was pushed past the 100 the table lists by crawlers that came later.
+    await at(NOW - 5 * H, HOME_IP, view('d000000000000001', '/events', 'https://www.bing.com/'));
+    await at(NOW - 5 * H + 47_000, HOME_IP, end('d000000000000001', '/events', 47_000));
     const crawlers = RECENT_VISITORS_LIMIT + 5;
     for (let i = 0; i < crawlers; i++) {
       await at(NOW - 4 * H + i * 60_000, `10.9.${Math.floor(i / 256)}.${i % 256}`, view(`d1${String(i).padStart(14, '0')}`, `/old-${i}`), { cf: TENCENT });
     }
 
     const days = await visitorDays();
-    expect(days.map((d) => [d.entry, d.source, d.engagedMs])).toEqual([['/about', 'www.google.com', 114_000]]);
+    expect(days.map((d) => [d.entry, d.source, d.engagedMs])).toEqual([['/events', 'www.bing.com', 47_000]]);
 
-    const summary = await d1.binding.prepare(STATS_SQL.summary).bind(SITE_KEY, NOW - 30 * DAY).first<Record<string, number>>();
-    expect(summary).toEqual({ views: 1, visitors: 1, pages: 1, automated_visitors: crawlers, automated_views: crawlers });
+    expect(await summaryOf()).toEqual({ views: 1, visitors: 1, pages: 1, automated_visitors: crawlers, automated_views: crawlers });
     expect(await setAside()).toEqual([['crawler-network', 132203, crawlers, crawlers]]);
   });
 
@@ -296,8 +319,7 @@ describe('crawlers, set aside from the people', () => {
     ]);
     expect((await visitorDays()).map((d) => d.entry).sort()).toEqual(['/', '/about', '/events', '/get-help', '/join']);
 
-    const summary = await d1.binding.prepare(STATS_SQL.summary).bind(SITE_KEY, NOW - 30 * DAY).first<Record<string, number>>();
-    expect(summary).toEqual({ views: 6, visitors: 5, pages: 6, automated_visitors: 4, automated_views: 5 });
+    expect(await summaryOf()).toEqual({ views: 6, visitors: 5, pages: 6, automated_visitors: 4, automated_views: 5 });
 
     // The other tables count only the people.
     const $ = await page();
@@ -315,21 +337,103 @@ describe('crawlers, set aside from the people', () => {
       'Google LLC',
     ]);
     expect(table('Set aside as likely automated').map((r) => r[1])).toEqual([
-      'China Unicom Jiangsu province network',
-      'China Mobile Communications Group Co., Ltd.',
-      'ACEVILLE PTE.LTD.',
-      'Google LLC',
+      'China Unicom Jiangsu province network (AS4837)',
+      'China Mobile Communications Group Co., Ltd. (AS56046)',
+      'ACEVILLE PTE.LTD. (AS132203)',
+      'Google LLC (AS15169)',
     ]);
+  });
+
+  it('lists every set-aside network, never cut short, so a one-visitor misjudgement shows', async () => {
+    // More set-aside groups than any other table keeps, each of two crawlers...
+    for (let g = 0; g < TABLE_LIMIT + 3; g++) {
+      for (let k = 0; k < 2; k++) {
+        await at(NOW - 3 * H + g * 100 + k, `10.8.${g}.${k}`, sized(`d2${String(g * 2 + k).padStart(14, '0')}`, '/', 1800, 1125), {
+          cf: net(64_512 + g, `Crawler host ${g}`, { country: 'CN' }),
+        });
+      }
+    }
+    // ...and one home reader whose window happened to be crawler-sized.
+    await at(NOW - H, '198.51.100.250', sized('d300000000000001', '/join', 1800, 1125));
+
+    const rows = await setAsideRows();
+    expect(rows).toHaveLength(TABLE_LIMIT + 4);
+    expect(rows.at(-1)).toMatchObject({ reason: 'crawler-window', asn: 7922, visitors: 1, views: 1 });
+    expect(setAsideTotals(rows)).toEqual({ visitors: 2 * (TABLE_LIMIT + 3) + 1, views: 2 * (TABLE_LIMIT + 3) + 1 });
+    const html = (await page()).html();
+    expect(html).toContain('Comcast Cable Communications, LLC (AS7922)');
+  });
+
+  it('names the strongest reason when a visitor matches several rules', async () => {
+    // Tencent, crawler-sized, in China, nothing read: the network wins.
+    await at(NOW - 2 * H, '198.51.100.231', sized('f200000000000001', '/', 1800, 1125), { cf: { ...TENCENT, country: 'CN' } });
+    // Crawler-sized on Google, nothing read: the window wins over the data centre.
+    await at(NOW - 2 * H + 1, '198.51.100.232', sized('f200000000000002', '/', 1024, 569), { cf: GOOGLE });
+    // Google's data centre in China, nothing read: the data centre wins over the country.
+    await at(NOW - 2 * H + 2, '198.51.100.233', view('f200000000000003', '/'), { cf: { ...GOOGLE, country: 'CN' } });
+    expect((await setAside()).map(([reason, asn]) => [reason, asn])).toEqual([
+      ['crawler-network', 132203],
+      ['crawler-window', 15169],
+      ['network-nothing-read', 15169],
+    ]);
+  });
+
+  it('keeps a network’s reasons apart, and ranks by visitors before views', async () => {
+    // Two China Mobile visitors set aside for their window, one view each...
+    await at(NOW - 4 * H, '198.51.100.241', sized('f300000000000001', '/', 1800, 1125), { cf: CHINA_MOBILE });
+    await at(NOW - 4 * H + 1, '198.51.100.242', sized('f300000000000002', '/', 1800, 1125), { cf: CHINA_MOBILE });
+    // ...one more for reading nothing, over three views...
+    for (let i = 0; i < 3; i++) await at(NOW - 3 * H + i, '198.51.100.243', sized(`f30000000000001${i}`, `/p${i}`, 1295, 999), { cf: CHINA_MOBILE });
+    // ...and one Tencent visitor with five views, more than either.
+    for (let i = 0; i < 5; i++) await at(NOW - 2 * H + i, '198.51.100.244', view(`f30000000000002${i}`, `/t${i}`), { cf: TENCENT });
+    expect(await setAside()).toEqual([
+      ['crawler-window', 56046, 2, 2],
+      ['crawler-network', 132203, 1, 5],
+      ['country-nothing-read', 56046, 1, 3],
+    ]);
+  });
+
+  it('judges a visitor on their whole day, though the window starts part-way through it', async () => {
+    // A reader on Google's network read a page before the 7-day window began
+    // and opened one more, unread, inside it. Judged on the in-window row
+    // alone they would be "a data centre, nothing read".
+    const since = NOW - 7 * DAY;
+    await at(since - 2 * H, '198.51.100.251', view('f400000000000001', '/before'), { cf: GOOGLE });
+    await at(since - 2 * H + 30_000, '198.51.100.251', end('f400000000000001', '/before', 30_000), { cf: GOOGLE });
+    await at(since + H, '198.51.100.251', view('f400000000000002', '/after'), { cf: GOOGLE });
+    expect(d1.rows().map((r) => r.visitor).every((v, _, all) => v === all[0])).toBe(true);
+
+    for (const days of [7, 30]) {
+      expect(await setAsideRows(days), `${days} days`).toEqual([]);
+      expect((await visitorDays(days)).length, `${days} days`).toBe(1);
+    }
+    // In the 7-day window only the in-window view is counted.
+    expect((await summaryOf(7)).views).toBe(1);
+  });
+
+  it('counts a crawler’s referrer nowhere, not even under Sources', async () => {
+    // A link checker on Meta's network that followed a link from Facebook.
+    await at(NOW - H, '198.51.100.252', view('f500000000000001', '/', 'http://m.facebook.com'), { cf: net(32934, 'Meta Platforms Ireland Limited') });
+    await at(NOW - H + 1, '198.51.100.253', view('f500000000000002', '/', 'https://duckduckgo.com/'));
+    const $ = await page();
+    const sources = $('section').filter((_, el) => $(el).find('h2').text() === 'Sources');
+    expect(sources.find('tbody tr').toArray().map((tr) => $(tr).find('td').first().text())).toEqual(['duckduckgo.com']);
+    expect(await setAside()).toEqual([['network-nothing-read', 32934, 1, 1]]);
+  });
+
+  it('tallies only the most recent rows past the people-row limit, and the page says so', async () => {
+    for (let i = 0; i < 4; i++) await at(NOW - (4 - i) * H, `198.51.100.${150 + i}`, view(`f60000000000000${i}`, `/p${i}`));
+    const small = buildStatsSql(AUTOMATED_LISTS, { peopleRowLimit: 3 });
+    const rows = await peopleRows(30, NOW, small.people);
+    expect(rows.map((r) => r.path)).toEqual(['/p3', '/p2', '/p1']);
   });
 
   it('sets aside nothing when every list is empty, and counts every visitor as a person', async () => {
     await at(NOW - 2 * H, '198.51.100.201', sized('f000000000000001', '/', 1800, 1125), { cf: TENCENT });
     await at(NOW - H, '198.51.100.202', view('f000000000000002', '/'), { cf: GOOGLE });
     const bare = buildStatsSql({ crawlerNetworks: [], crawlerWindows: [], nothingReadNetworks: [], nothingReadCountries: [] });
-    const summary = await d1.binding.prepare(bare.summary).bind(SITE_KEY, NOW - 30 * DAY).first<Record<string, number>>();
-    expect(summary).toEqual({ views: 2, visitors: 2, pages: 1, automated_visitors: 0, automated_views: 0 });
-    const { results } = await d1.binding.prepare(bare.automated).bind(SITE_KEY, NOW - 30 * DAY).all();
-    expect(results).toEqual([]);
+    expect(tallyPeople(await peopleRows(30, NOW, bare.people)).summary).toEqual({ views: 2, visitors: 2, pages: 1 });
+    expect(await setAsideRows(30, NOW, bare.automated)).toEqual([]);
   });
 
   it('judges a crawler network by its number, whatever name it is registered under', async () => {
@@ -357,7 +461,7 @@ describe('retention, end to end', () => {
 });
 
 describe('the queries themselves', () => {
-  it('run as one batch of seven, each within D1’s limits, none scanning the whole table', async () => {
+  it('run as one batch of two, each within D1’s limits, none scanning the whole table', async () => {
     await at(NOW, HOME_IP, view('9000000000000001', '/'));
     const before = d1.statements.length;
     await page();
@@ -367,7 +471,8 @@ describe('the queries themselves', () => {
     // The shim already throws on more than 100 parameters or a long compound
     // SELECT; this adds that no query reads every row to answer.
     for (const sql of Object.values(STATS_SQL)) {
-      expect(fullScans(sql, [SITE_KEY, 0, 100].slice(0, paramCount(sql))), sql).toEqual([]);
+      expect(paramCount(sql), sql).toBe(2);
+      expect(fullScans(sql, [SITE_KEY, 0]), sql).toEqual([]);
     }
     expect(fullScans(PRUNE_SQL, [0])).toEqual([]);
   });

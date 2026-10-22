@@ -1,7 +1,7 @@
 import { describe, it, expect, afterEach } from 'vitest';
 import { createD1, type TestD1 } from '../helpers/d1';
 import { CRAWLER_NETWORKS, CRAWLER_WINDOWS, NOTHING_READ_COUNTRIES, NOTHING_READ_NETWORKS, SITE_KEY } from '../../src/data/analytics';
-import { automatedCte, STATS_SQL } from '../../src/lib/stats';
+import { AUTOMATED_LISTS, automatedCte, buildStatsSql, setAsideTotals, STATS_SQL, tallyPeople, type AutomatedStat, type VisitRow } from '../../src/lib/stats';
 
 /**
  * INVARIANT — /stats sorts every visitor into exactly one of two piles.
@@ -14,7 +14,9 @@ import { automatedCte, STATS_SQL } from '../../src/lib/stats';
  * other tiers hand-build:
  *
  *   people + set aside = everyone in the window, for visitors and for views,
- *   and no visitor is in both piles.
+ *   no visitor is in both piles, and the set-aside table's rows add up to
+ *   its totals (a table cut short would hide exactly the one-visitor rows a
+ *   misjudged reader makes).
  *
  * The traffic is generated, deliberately inconsistent where real traffic is
  * consistent (a visitor whose network or window changes between views, an
@@ -89,19 +91,40 @@ function seedTraffic(seed: number): TestD1 {
   return db;
 }
 
-async function piles(db: TestD1) {
+type Piles = {
+  all: Array<{ visitor: string; views: number }>;
+  people: VisitRow[];
+  setAsideRows: AutomatedStat[];
+  setAside: Set<string>;
+};
+
+/** The two piles, from the page's own queries (or queries built from other lists, to prove the check can fail). */
+async function piles(db: TestD1, sql = STATS_SQL, cte = automatedCte()): Promise<Piles> {
   const all = db.db
     .prepare('SELECT visitor, COUNT(*) AS views FROM views WHERE site = ?1 AND ts >= ?2 GROUP BY visitor')
     .all(SITE_KEY, SINCE) as Array<{ visitor: string; views: number }>;
-  const summary = (await db.binding.prepare(STATS_SQL.summary).bind(SITE_KEY, SINCE).first<Record<string, number>>())!;
-  // Recent visitors with a limit no window reaches, so it returns every person.
-  const people = (await db.binding.prepare(STATS_SQL.visits).bind(SITE_KEY, SINCE, 100_000).all<{ visitor: string }>()).results;
-  // The set-aside table, ungrouped, with no row limit: the same condition the
-  // page's table uses, asked which visitors it set aside.
-  const setAside = db.db
-    .prepare(`WITH ${automatedCte()} SELECT visitor FROM automated`)
-    .all(SITE_KEY, SINCE) as Array<{ visitor: string }>;
-  return { all, summary, people: new Set(people.map((r) => r.visitor)), setAside: new Set(setAside.map((r) => r.visitor)) };
+  const people = (await db.binding.prepare(sql.people).bind(SITE_KEY, SINCE).all<VisitRow>()).results;
+  const setAsideRows = (await db.binding.prepare(sql.automated).bind(SITE_KEY, SINCE).all<AutomatedStat>()).results;
+  // Which visitors the judgment set aside, to compare identities, not just counts.
+  const setAside = db.db.prepare(`WITH ${cte} SELECT visitor FROM automated`).all(SITE_KEY, SINCE) as Array<{ visitor: string }>;
+  return { all, people, setAsideRows, setAside: new Set(setAside.map((r) => r.visitor)) };
+}
+
+/** Every way the two piles can disagree with the window, as messages. Empty means they agree. */
+function disagreements({ all, people, setAsideRows, setAside }: Piles): string[] {
+  const out: string[] = [];
+  const everyone = new Set(all.map((r) => r.visitor));
+  const tally = tallyPeople(people).summary;
+  const totals = setAsideTotals(setAsideRows);
+  const peopleCodes = new Set(people.map((r) => r.visitor));
+  for (const v of peopleCodes) if (setAside.has(v)) out.push(`${v} in both piles`);
+  for (const v of everyone) if (!peopleCodes.has(v) && !setAside.has(v)) out.push(`${v} in neither pile`);
+  for (const v of [...peopleCodes, ...setAside]) if (!everyone.has(v)) out.push(`${v} counted but not in the window`);
+  if (tally.visitors + totals.visitors !== everyone.size) out.push(`visitors ${tally.visitors} + ${totals.visitors} != ${everyone.size}`);
+  const views = all.reduce((sum, r) => sum + r.views, 0);
+  if (tally.views + totals.views !== views) out.push(`views ${tally.views} + ${totals.views} != ${views}`);
+  if (totals.visitors !== setAside.size) out.push(`set-aside table lists ${totals.visitors} visitors, the judgment ${setAside.size}`);
+  return out;
 }
 
 describe('every visitor in the window is counted once', () => {
@@ -109,18 +132,9 @@ describe('every visitor in the window is counted once', () => {
     let seenBoth = 0;
     for (let seed = 1; seed <= 60; seed++) {
       d1 = seedTraffic(seed);
-      const { all, summary, people, setAside } = await piles(d1);
-
-      for (const visitor of people) expect(setAside.has(visitor), `seed ${seed}: ${visitor} in both piles`).toBe(false);
-      expect(new Set([...people, ...setAside]), `seed ${seed}: a visitor in neither pile`).toEqual(new Set(all.map((r) => r.visitor)));
-
-      const totalViews = all.reduce((sum, r) => sum + r.views, 0);
-      expect(summary.visitors + summary.automated_visitors, `seed ${seed}: visitors`).toBe(all.length);
-      expect(summary.views + summary.automated_views, `seed ${seed}: views`).toBe(totalViews);
-      expect(summary.visitors, `seed ${seed}: summary and Recent visitors disagree`).toBe(people.size);
-      expect(summary.automated_visitors, `seed ${seed}: summary and the set-aside table disagree`).toBe(setAside.size);
-
-      if (people.size && setAside.size) seenBoth++;
+      const p = await piles(d1);
+      expect(disagreements(p), `seed ${seed}`).toEqual([]);
+      if (p.people.length && p.setAside.size) seenBoth++;
       d1.close();
       d1 = undefined;
     }
@@ -128,11 +142,17 @@ describe('every visitor in the window is counted once', () => {
     expect(seenBoth).toBeGreaterThan(40);
   });
 
-  it('can actually fail — a condition that drops a visitor is caught', async () => {
+  it('can actually fail — people judged by one rule and crawlers by another are caught', async () => {
+    // The page's real queries, but the people half forgets the crawler
+    // networks. A crawler-network visitor who "read" in an ordinary window is
+    // set aside by the network rule alone, so it lands in both piles.
     d1 = seedTraffic(7);
-    const { all } = await piles(d1);
-    const leaky = new Set(all.slice(1).map((r) => r.visitor));
-    expect(leaky).not.toEqual(new Set(all.map((r) => r.visitor)));
+    d1.seed({ view: 'eeeeeeeeeeeeeee1', visitor: 'c'.repeat(32), ts: NOW - DAY, path: '/', asn: CRAWLER_NETWORKS[0].asn, viewport_w: 1440, viewport_h: 900, engaged_ms: 60_000 });
+    expect(disagreements(await piles(d1)), 'the real queries agree').toEqual([]);
+
+    const forgetful = buildStatsSql({ ...AUTOMATED_LISTS, crawlerNetworks: [] });
+    const p = await piles(d1, { people: forgetful.people, automated: STATS_SQL.automated });
+    expect(disagreements(p)).toContain(`${'c'.repeat(32)} in both piles`);
   });
 });
 

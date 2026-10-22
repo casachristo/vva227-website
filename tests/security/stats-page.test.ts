@@ -255,6 +255,27 @@ describe('setting visits aside, which anyone could try to steer', () => {
     expect(html).toContain('Nothing was set aside in this window.');
   });
 
+  it('a forged crawler-sized view does not set aside a reader whose only rows have no window size', async () => {
+    // The reader's `view` was lost, so their only row came from an `end`,
+    // which carries no window. One forged crawler-sized view must not decide
+    // that every view they made was crawler-sized.
+    await post({ k: EVENT_END, v: 'dddddddd00000041', p: '/lost-view', e: 30_000 });
+    await post({ k: EVENT_VIEW, v: 'dddddddd00000042', p: '/forged', w: 1800, h: 1125 });
+    const html = await render();
+    expect(html).toContain('/lost-view');
+    expect(html).toContain('Nothing was set aside in this window.');
+  });
+
+  it('a forged unread view does not set aside a reader in a country whose unread visits are set aside', async () => {
+    const china = { country: 'CN', asn: 56046, asOrganization: 'China Mobile Communications Group Co., Ltd.' };
+    await post({ k: EVENT_VIEW, v: 'dddddddd00000051', p: '/read-for-real-cn', w: 390, h: 844 }, shared(china));
+    await post({ k: EVENT_END, v: 'dddddddd00000051', p: '/read-for-real-cn', e: 45_000 }, shared(china));
+    await post({ k: EVENT_VIEW, v: 'dddddddd00000052', p: '/forged-idle-cn', w: 390, h: 844 }, shared(china));
+    const html = await render();
+    expect(html).toContain('/read-for-real-cn');
+    expect(html).toContain('Nothing was set aside in this window.');
+  });
+
   it('can actually set aside: the same posts from a crawler network are set aside', async () => {
     const tencent = { country: 'US', asn: 132203, asOrganization: 'ACEVILLE PTE.LTD.' };
     await post({ k: EVENT_VIEW, v: 'dddddddd00000021', p: '/crawled', w: 390, h: 844 }, shared(tencent));

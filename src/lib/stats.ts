@@ -14,7 +14,14 @@
  * relies on its CSP to be safe becomes unsafe the day the CSP is relaxed.
  */
 
-import { CRAWLER_NETWORKS, CRAWLER_WINDOWS, NOTHING_READ_COUNTRIES, NOTHING_READ_NETWORKS, SITE_HOSTS } from '../data/analytics';
+import {
+  CRAWLER_NETWORKS,
+  CRAWLER_WINDOWS,
+  NOTHING_READ_COUNTRIES,
+  NOTHING_READ_NETWORKS,
+  SALT_PERIOD_DAYS,
+  SITE_HOSTS,
+} from '../data/analytics';
 import { stripQuery } from './beacon';
 import { easternParts } from './eastern';
 
@@ -114,6 +121,18 @@ export function formatNetwork({ as_org: org, asn }: { as_org?: unknown; asn?: un
   return typeof asn === 'number' && Number.isFinite(asn) && asn > 0 ? `AS${asn}` : '-';
 }
 
+/**
+ * The network's name and number, "Verizon Business (AS701)", where the
+ * set-aside table needs both: the registry's lists go by number, and one
+ * network shows up under several names. Falls back as formatNetwork does.
+ */
+export function formatNetworkWithNumber(net: { as_org?: unknown; asn?: unknown } = {}): string {
+  const name = typeof net.as_org === 'string' ? net.as_org.trim() : '';
+  const asn = net.asn;
+  if (name && typeof asn === 'number' && Number.isFinite(asn) && asn > 0) return `${name} (AS${asn})`;
+  return formatNetwork(net);
+}
+
 /** The first six hex characters of a visitor hash — enough to tell rows apart by eye. */
 export function shortVisitor(hash: unknown): string {
   return String(hash ?? '').slice(0, 6);
@@ -207,11 +226,10 @@ const byTimeThenId = (a: VisitRow, b: VisitRow) =>
  * period one hash spans several of the owner's days, and keyed on the hash
  * alone it would be one row covering all of them.
  *
- * Which visitor-days are kept: the `limit` most recently ACTIVE (latest view).
- * That matches the query, which fetches every row for the visitor hashes with
- * the latest activity, and it makes the cut exact — any visitor-day that
- * belongs in the list belongs to a hash the query fetched. They are then shown
- * newest arrival first, so the "first seen" column reads in order.
+ * Which visitor-days are kept: the `limit` most recently ACTIVE (latest view),
+ * cut here from every row of people in the window (STATS_SQL.people). They
+ * are then shown newest arrival first, so the "first seen" column reads in
+ * order.
  *
  * Within a visitor-day:
  *   entry   — the earliest view's path
@@ -348,8 +366,10 @@ function inList(column: string, values: string[]): string {
  * a view under that reader's code: those rules ask for every view (min) or
  * none read (max = 0), which a forged view can only move away from "set aside".
  *
- * A null column never matches: max() and min() skip NULL, so a row the
- * collector could not place counts for nothing either way.
+ * A row with no window size counts AGAINST "every view was crawler-sized"
+ * (the coalesce): otherwise a reader whose only rows have none, such as an
+ * `end` whose `view` was lost, could be set aside by one forged crawler-sized
+ * view. For the "any" rules a NULL simply never matches.
  */
 export function automatedReasonSql(lists: AutomatedLists = AUTOMATED_LISTS): string {
   const crawlerNetworks = inList('asn', lists.crawlerNetworks.map((n) => sqlInt(n.asn)));
@@ -359,107 +379,249 @@ export function automatedReasonSql(lists: AutomatedLists = AUTOMATED_LISTS): str
   const nothingReadCountries = inList('country', lists.nothingReadCountries.map((c) => sqlCountry(c.code)));
   return `CASE
       WHEN max(${crawlerNetworks}) = 1 THEN 'crawler-network'
-      WHEN min(${crawlerWindow}) = 1 THEN 'crawler-window'
+      WHEN min(coalesce(${crawlerWindow}, 0)) = 1 THEN 'crawler-window'
       WHEN max(engaged_ms) = 0 AND max(${nothingReadNetworks}) = 1 THEN 'network-nothing-read'
       WHEN max(engaged_ms) = 0 AND max(${nothingReadCountries}) = 1 THEN 'country-nothing-read'
     END`;
 }
 
 /**
- * The visitors set aside in the window, with their reason, as a named
- * subquery ("automated") every query on the page starts with. Bound as
- * (?1 site, ?2 since), the same as the queries around it.
+ * How far before the window's start a visitor's rows are still read when they
+ * are judged, ms: one visitor code's whole lifetime (SALT_PERIOD_DAYS) plus an
+ * hour for the 25-hour day daylight saving makes once a year. Without it, a
+ * code that began before the window would be judged on its in-window rows
+ * alone, and the same reader could be set aside in one window and counted in
+ * another.
+ */
+export const JUDGE_LOOKBACK_MS = SALT_PERIOD_DAYS * MS_PER_DAY + 60 * 60 * 1000;
+
+/**
+ * Most rows of people one load of the page tallies. Far above this site's
+ * readership; reached only if a crawler the lists do not know floods a long
+ * window, and then the page says so rather than quietly undercounting.
+ */
+export const PEOPLE_ROW_LIMIT = 20_000;
+
+/**
+ * The visitors set aside, one row each, as a named subquery ("automated"):
+ * why, their network (its number and name), and how many of their views fall
+ * in the window. Bound as (?1 site, ?2 since).
  *
- * Judged per visitor code, which is per visitor-day while SALT_PERIOD_DAYS is
- * 1. With a longer period, one code would be judged over all of its days.
+ * Judged on every row of the visitor code (JUDGE_LOOKBACK_MS), kept only if
+ * the code has a view in the window. Judged per code, which is per
+ * visitor-day while SALT_PERIOD_DAYS is 1.
+ *
+ * INDEXED BY views_site_ts keeps the judgment to the window. Left to itself
+ * the planner reads the site's whole history through views_site_visitor_ts,
+ * which grows with the retention period rather than the window.
  */
 export function automatedCte(lists: AutomatedLists = AUTOMATED_LISTS): string {
   return `automated AS (
-      SELECT visitor, reason FROM (
-        SELECT visitor, ${automatedReasonSql(lists)} AS reason
-        FROM views WHERE site = ?1 AND ts >= ?2
+      SELECT visitor, reason, asn, as_org, views FROM (
+        SELECT visitor, ${automatedReasonSql(lists)} AS reason,
+          max(asn) AS asn, max(as_org) AS as_org, sum(ts >= ?2) AS views
+        FROM views INDEXED BY views_site_ts
+        WHERE site = ?1 AND ts >= ?2 - ${JUDGE_LOOKBACK_MS}
         GROUP BY visitor
-      ) WHERE reason IS NOT NULL
+      ) WHERE reason IS NOT NULL AND views > 0
     )`;
 }
 
 /**
- * The page's queries. Bound as (?1 site, ?2 since[, ?3 limit]). Nothing that
- * comes from a request is interpolated: only TABLE_LIMIT and the registry's
- * lists are, and automatedReasonSql checks each list value before writing it.
+ * The page's two queries. Bound as (?1 site, ?2 since). Nothing that comes
+ * from a request is interpolated: only the limits and the registry's lists
+ * are, and automatedReasonSql checks each list value before writing it.
  *
- * Every query but `automated` counts PEOPLE: it starts from the set-aside
- * visitors and leaves them out (A22 in tests/BUSINESS_RULES.md). In `visits`
- * they are left out INSIDE the subquery that picks which visitors to fetch,
- * before its LIMIT, or crawlers arriving later would push people off Recent
- * visitors. tests/invariants/stats-partition.test.ts proves every visitor
- * lands in exactly one of the two piles.
+ * WHY TWO, AND WHY THE TABLES ARE TALLIED IN CODE. Judging visitors means
+ * grouping every row in the window by visitor, and D1 bills that at about four
+ * rows read per row. Each table as its own query would judge again, seven
+ * times a load. Here it is judged twice: once to pick out the people's rows,
+ * which tallyPeople() turns into every table but the last, and once for the
+ * set-aside table, which needs nothing but the judgment. Measured on the
+ * production database (2026-10-22): about 10 rows read per row in the window,
+ * against 11 for the six queries before crawlers were set aside, and 45 for
+ * seven judging queries.
  *
- * Every ORDER BY ends in a tie-breaker, so equal counts do not reshuffle
- * between two loads of the page.
+ * tests/invariants/stats-partition.test.ts proves every visitor lands in
+ * exactly one of the two (A22 in tests/BUSINESS_RULES.md).
  *
  * Kept deliberately plain because D1 is stricter than the SQLite the tests run
  * on: it refuses a compound SELECT of more than five terms and a statement
  * with more than 100 bound parameters, both of which node:sqlite accepts. The
- * recent-visitors query uses a subquery for its visitor list rather than
- * binding up to a hundred hashes for exactly that reason, and the lists are
- * written into the statement rather than bound for the same one.
+ * lists are written into the statement rather than bound for that reason.
  */
-export function buildStatsSql(lists: AutomatedLists = AUTOMATED_LISTS) {
+export function buildStatsSql(lists: AutomatedLists = AUTOMATED_LISTS, { peopleRowLimit = PEOPLE_ROW_LIMIT } = {}) {
   const withAutomated = `WITH ${automatedCte(lists)}`;
-  const people = 'visitor NOT IN (SELECT visitor FROM automated)';
   return {
-    summary: `${withAutomated}
-    SELECT
-      COUNT(CASE WHEN a.visitor IS NULL THEN 1 END) AS views,
-      COUNT(DISTINCT CASE WHEN a.visitor IS NULL THEN v.visitor END) AS visitors,
-      COUNT(DISTINCT CASE WHEN a.visitor IS NULL THEN v.path END) AS pages,
-      COUNT(DISTINCT a.visitor) AS automated_visitors,
-      COUNT(a.visitor) AS automated_views
-    FROM views v LEFT JOIN automated a ON a.visitor = v.visitor
-    WHERE v.site = ?1 AND v.ts >= ?2`,
-    visits: `${withAutomated}
+    // Every view in the window by a visitor not set aside, newest first, so a
+    // window past the limit keeps its most recent rows.
+    people: `${withAutomated}
     SELECT view, visitor, ts, path, referrer, country, city, region, asn, as_org, viewport_w, engaged_ms
     FROM views
-    WHERE site = ?1 AND ts >= ?2 AND visitor IN (
-      SELECT visitor FROM views WHERE site = ?1 AND ts >= ?2 AND ${people}
-      GROUP BY visitor ORDER BY MAX(ts) DESC LIMIT ?3
-    )
-    ORDER BY ts DESC`,
-    pages: `${withAutomated}
-    SELECT path, COUNT(*) AS views, AVG(engaged_ms) AS avg_engaged
-    FROM views WHERE site = ?1 AND ts >= ?2 AND ${people}
-    GROUP BY path ORDER BY views DESC, path LIMIT ${TABLE_LIMIT}`,
-    // Per full referrer, not per host: SQLite cannot parse a URL. Generous
-    // limit, because internal referrers share this list before
-    // summarizeSources() drops them.
-    referrers: `${withAutomated}
-    SELECT referrer, COUNT(*) AS views
-    FROM views WHERE site = ?1 AND ts >= ?2 AND referrer IS NOT NULL AND ${people}
-    GROUP BY referrer ORDER BY views DESC, referrer LIMIT 500`,
-    locations: `${withAutomated}
-    SELECT country, region, city, COUNT(DISTINCT visitor) AS visitors, COUNT(*) AS views
-    FROM views WHERE site = ?1 AND ts >= ?2 AND ${people}
-    GROUP BY country, region, city ORDER BY visitors DESC, views DESC, country, region, city LIMIT ${TABLE_LIMIT}`,
-    // Grouped by number, not name: names drift in spelling between rows and
-    // would split one network across several lines. The name is display only.
-    networks: `${withAutomated}
-    SELECT asn, max(as_org) AS as_org, COUNT(DISTINCT visitor) AS visitors, COUNT(*) AS views
-    FROM views WHERE site = ?1 AND ts >= ?2 AND asn IS NOT NULL AND ${people}
-    GROUP BY asn ORDER BY visitors DESC, views DESC, asn LIMIT ${TABLE_LIMIT}`,
-    // What was set aside, per reason and network, so a misjudged home or
-    // mobile network can be seen. Last, as it is last on the page.
+    WHERE site = ?1 AND ts >= ?2 AND visitor NOT IN (SELECT visitor FROM automated)
+    ORDER BY ts DESC
+    LIMIT ${sqlInt(peopleRowLimit)}`,
+    // What was set aside, per reason and network. Every row, never cut short:
+    // a misjudged person shows up as a one-visitor row, the first a limit
+    // would drop. Its size is bounded by reasons times networks.
     automated: `${withAutomated}
-    SELECT a.reason AS reason, v.asn AS asn, max(v.as_org) AS as_org,
-      COUNT(DISTINCT v.visitor) AS visitors, COUNT(*) AS views
-    FROM views v JOIN automated a ON a.visitor = v.visitor
-    WHERE v.site = ?1 AND v.ts >= ?2
-    GROUP BY a.reason, v.asn
-    ORDER BY visitors DESC, views DESC, a.reason, v.asn LIMIT ${TABLE_LIMIT}`,
+    SELECT reason, asn, max(as_org) AS as_org, COUNT(*) AS visitors, SUM(views) AS views
+    FROM automated
+    GROUP BY reason, asn
+    ORDER BY visitors DESC, views DESC, reason, asn`,
   } as const;
 }
 
 export const STATS_SQL = buildStatsSql();
+
+/**
+ * SQLite's order for the values these tables sort on: NULL first, numbers by
+ * value, text by code point (its default BINARY collation, near enough), so
+ * the tables keep the tie-breaks they had when SQL sorted them.
+ */
+function sqlOrder(a: unknown, b: unknown): number {
+  const nullA = a === null || a === undefined;
+  const nullB = b === null || b === undefined;
+  if (nullA || nullB) return nullA === nullB ? 0 : nullA ? -1 : 1;
+  if (typeof a === 'number' && typeof b === 'number') return a - b;
+  const x = String(a);
+  const y = String(b);
+  return x < y ? -1 : x > y ? 1 : 0;
+}
+
+/** The larger of two names by sqlOrder, skipping NULL, as SQL's max() does. */
+function maxText(a: string | null, b: unknown): string | null {
+  if (typeof b !== 'string') return a;
+  return a === null || sqlOrder(b, a) > 0 ? b : a;
+}
+
+/** Every table but the set-aside one, tallied from the people's rows. */
+export interface PeopleTally {
+  summary: { views: number; visitors: number; pages: number };
+  visitors: VisitorDay[];
+  pages: PageStat[];
+  sources: SourceRow[];
+  locations: LocationStat[];
+  networks: NetworkStat[];
+}
+
+/**
+ * Tally the people's rows into the page's tables: what the summary, Pages,
+ * Locations and Networks queries used to compute, with the same counts,
+ * order and limits (A20).
+ *
+ *   summary   — views, distinct visitor codes, distinct paths
+ *   pages     — views and average reading time per path; by views, then path
+ *   sources   — external hosts, via summarizeSources
+ *   locations — distinct visitors and views per (country, region, city), the
+ *               unknown parts grouped together; by visitors, views, then place
+ *   networks  — per network NUMBER, shown by its (largest) name; rows with no
+ *               number are left out; by visitors, views, then number
+ *   visitors  — groupVisitorDays, which makes the Recent visitors cut itself
+ */
+export function tallyPeople(
+  rows: readonly VisitRow[],
+  { tableLimit = TABLE_LIMIT, visitorLimit = RECENT_VISITORS_LIMIT }: { tableLimit?: number; visitorLimit?: number } = {},
+): PeopleTally {
+  const visitorCodes = new Set<string>();
+  const paths = new Map<string, { views: number; engaged: number }>();
+  const referrers: Array<{ referrer: unknown; views: number }> = [];
+  const places = new Map<string, { country: string | null; region: string | null; city: string | null; visitors: Set<string>; views: number }>();
+  const networks = new Map<number, { as_org: string | null; visitors: Set<string>; views: number }>();
+
+  for (const row of rows) {
+    visitorCodes.add(row.visitor);
+
+    const page = paths.get(row.path) ?? { views: 0, engaged: 0 };
+    page.views += 1;
+    page.engaged += Number(row.engaged_ms) || 0;
+    paths.set(row.path, page);
+
+    if (row.referrer !== null && row.referrer !== undefined) referrers.push({ referrer: row.referrer, views: 1 });
+
+    const place = { country: row.country ?? null, region: row.region ?? null, city: row.city ?? null };
+    const placeKey = JSON.stringify([place.country, place.region, place.city]);
+    const where = places.get(placeKey) ?? { ...place, visitors: new Set<string>(), views: 0 };
+    where.visitors.add(row.visitor);
+    where.views += 1;
+    places.set(placeKey, where);
+
+    if (typeof row.asn === 'number') {
+      const net = networks.get(row.asn) ?? { as_org: null, visitors: new Set<string>(), views: 0 };
+      net.as_org = maxText(net.as_org, row.as_org);
+      net.visitors.add(row.visitor);
+      net.views += 1;
+      networks.set(row.asn, net);
+    }
+  }
+
+  const limit = (n: number) => Math.max(0, n);
+  return {
+    summary: { views: rows.length, visitors: visitorCodes.size, pages: paths.size },
+    visitors: groupVisitorDays(rows, visitorLimit),
+    pages: [...paths]
+      .map(([path, p]) => ({ path, views: p.views, avg_engaged: p.engaged / p.views }))
+      .sort((a, b) => b.views - a.views || sqlOrder(a.path, b.path))
+      .slice(0, limit(tableLimit)),
+    sources: summarizeSources(referrers, tableLimit),
+    locations: [...places.values()]
+      .map((l) => ({ country: l.country, region: l.region, city: l.city, visitors: l.visitors.size, views: l.views }))
+      .sort(
+        (a, b) =>
+          b.visitors - a.visitors ||
+          b.views - a.views ||
+          sqlOrder(a.country, b.country) ||
+          sqlOrder(a.region, b.region) ||
+          sqlOrder(a.city, b.city),
+      )
+      .slice(0, limit(tableLimit)),
+    networks: [...networks]
+      .map(([asn, n]) => ({ asn, as_org: n.as_org, visitors: n.visitors.size, views: n.views }))
+      .sort((a, b) => b.visitors - a.visitors || b.views - a.views || a.asn - b.asn)
+      .slice(0, limit(tableLimit)),
+  };
+}
+
+/** The set-aside totals, from the set-aside table: every visitor is in exactly one of its rows. */
+export function setAsideTotals(rows: readonly AutomatedStat[]): { visitors: number; views: number } {
+  let visitors = 0;
+  let views = 0;
+  for (const row of rows) {
+    visitors += Number(row.visitors) || 0;
+    views += Number(row.views) || 0;
+  }
+  return { visitors, views };
+}
+
+/** Everything the page shows, from what the two queries returned. */
+export function buildStatsPageData({
+  days,
+  generatedAt,
+  people,
+  automated,
+  peopleRowLimit = PEOPLE_ROW_LIMIT,
+}: {
+  days: number;
+  generatedAt: number;
+  people: readonly VisitRow[];
+  automated: readonly AutomatedStat[];
+  peopleRowLimit?: number;
+}): StatsPageData {
+  const tally = tallyPeople(people);
+  const setAside = setAsideTotals(automated);
+  return {
+    days,
+    generatedAt,
+    summary: { ...tally.summary, automated_visitors: setAside.visitors, automated_views: setAside.views },
+    visitors: tally.visitors,
+    pages: tally.pages,
+    sources: tally.sources,
+    locations: tally.locations,
+    networks: tally.networks,
+    automated,
+    peopleCapped: people.length >= peopleRowLimit,
+  };
+}
 
 /** "a", "a and b", "a, b and c". */
 function joinWords(items: readonly string[], conjunction: string): string {
@@ -509,10 +671,13 @@ export function automatedExplanation(lists: AutomatedLists = AUTOMATED_LISTS): s
     : rules.length === 1
       ? `A visitor is set aside when ${rules[0]}.`
       : `A visitor is set aside when ${rules.slice(0, -1).join('; when ')}; or when ${rules[rules.length - 1]}.`;
-  return `Not counted in anything above. ${when} Nothing is deleted. A home or mobile provider here may be a person: the lists are in src/data/analytics.ts.`;
+  const expected = lists.nothingReadCountries.length
+    ? ` Home and mobile networks in ${joinWords(lists.nothingReadCountries.map((c) => c.name), 'or')} are expected here; one anywhere else may be a person.`
+    : ' A home or mobile network here may be a person.';
+  return `Not counted in anything above. ${when} Nothing is deleted.${expected} The lists are in src/data/analytics.ts.`;
 }
 
-/** Rows as the summary, pages, locations, networks and automated queries return them. */
+/** The summary line's counts, and the rows of each table. */
 export type SummaryRow = { views: unknown; visitors: unknown; pages: unknown; automated_visitors?: unknown; automated_views?: unknown };
 export type PageStat = { path: unknown; views: unknown; avg_engaged: unknown };
 export type LocationStat = { country: unknown; region: unknown; city: unknown; visitors: unknown; views: unknown };
@@ -529,6 +694,8 @@ export interface StatsPageData {
   locations: readonly LocationStat[];
   networks: readonly NetworkStat[];
   automated: readonly AutomatedStat[];
+  /** The people's rows reached PEOPLE_ROW_LIMIT, so the tables cover only the most recent. */
+  peopleCapped?: boolean;
 }
 
 /**
@@ -625,7 +792,7 @@ export function renderStatsPage(data: StatsPageData): string {
 
   const automatedRows = data.automated.map((a) => [
     escapeHtml(automatedReasonLabel(a.reason)),
-    escapeHtml(formatNetwork(a)),
+    escapeHtml(formatNetworkWithNumber(a)),
     escapeHtml(formatCount(a.visitors)),
     escapeHtml(formatCount(a.views)),
   ]);
@@ -634,6 +801,9 @@ export function renderStatsPage(data: StatsPageData): string {
   const setAsideVisitors = Number(data.summary.automated_visitors) || 0;
   const setAside = setAsideVisitors
     ? `\n<p class="setaside">Not counted: <strong>${escapeHtml(formatCount(setAsideVisitors))}</strong> visitors (<strong>${escapeHtml(formatCount(data.summary.automated_views))}</strong> views) that look automated, listed at the end of the page.</p>`
+    : '';
+  const capped = data.peopleCapped
+    ? `\n<p class="setaside">This window holds more than ${escapeHtml(formatCount(PEOPLE_ROW_LIMIT))} views counted as people, so the tables cover only the most recent ${escapeHtml(formatCount(PEOPLE_ROW_LIMIT))}. Choose a shorter window; a crawler may be missing from the lists.</p>`
     : '';
 
   return `<!doctype html>
@@ -657,7 +827,7 @@ export function renderStatsPage(data: StatsPageData): string {
 <h1>Visits</h1>
 <p class="meta">Last ${escapeHtml(data.days)} days &middot; generated ${escapeHtml(formatEt(data.generatedAt))} ET</p>
 <p class="windows">${windowLinks}</p>
-<p class="summary"><strong>${escapeHtml(formatCount(data.summary.views))}</strong> views &middot; <strong>${escapeHtml(formatCount(data.summary.visitors))}</strong> visitors &middot; <strong>${escapeHtml(formatCount(data.summary.pages))}</strong> pages</p>${setAside}
+<p class="summary"><strong>${escapeHtml(formatCount(data.summary.views))}</strong> views &middot; <strong>${escapeHtml(formatCount(data.summary.visitors))}</strong> visitors &middot; <strong>${escapeHtml(formatCount(data.summary.pages))}</strong> pages</p>${setAside}${capped}
 <p class="note">Visitor ids reset at midnight Eastern time, so someone who comes back on another day is counted again. Location and network come from Cloudflare, which works them out from the connection as it arrives; IP addresses are never stored. Visits that look automated are left out of every table and listed at the end of the page, with the reason. A company or data-centre name under Network may still be a crawler the lists do not know. All times are Eastern (ET).</p>
 ${table(
   'Recent visitors',

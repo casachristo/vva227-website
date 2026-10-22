@@ -6,6 +6,8 @@ import {
   automatedExplanation,
   automatedReasonLabel,
   automatedReasonSql,
+  buildStatsPageData,
+  buildStatsSql,
   classifyReferrer,
   DEFAULT_DAYS,
   deviceOf,
@@ -15,17 +17,22 @@ import {
   formatDuration,
   formatEt,
   formatNetwork,
+  formatNetworkWithNumber,
   formatPlace,
   groupVisitorDays,
   isSiteHost,
   pageCsp,
   parseWindow,
+  PEOPLE_ROW_LIMIT,
   renderStatsPage,
+  setAsideTotals,
   sha256Base64,
   shortVisitor,
   statsCsp,
   STATS_STYLE,
   summarizeSources,
+  TABLE_LIMIT,
+  tallyPeople,
   WINDOWS,
   type AutomatedLists,
   type StatsPageData,
@@ -66,6 +73,8 @@ const row = (over: Partial<VisitRow> = {}): VisitRow => ({
   engaged_ms: 0,
   ...over,
 });
+
+const STATS_SQL_KEYS = (sql: object) => Object.keys(sql);
 
 const emptyPage = (over: Partial<StatsPageData> = {}): StatsPageData => ({
   days: 30,
@@ -230,6 +239,18 @@ describe('deviceOf, formatPlace, formatNetwork, shortVisitor', () => {
     ['an infinite ASN', { asn: Infinity }, '-'],
   ])('formats a network with %s', (_label, net, expected) => {
     expect(formatNetwork(net)).toBe(expected);
+  });
+
+  it.each([
+    ['a name and a number', { as_org: 'Verizon Business', asn: 701 }, 'Verizon Business (AS701)'],
+    ['only a number', { as_org: null, asn: 701 }, 'AS701'],
+    ['only a name', { as_org: 'Verizon Business', asn: null }, 'Verizon Business'],
+    ['a blank name', { as_org: '  ', asn: 701 }, 'AS701'],
+    ['neither', {}, '-'],
+    ['an infinite number', { as_org: 'X', asn: Infinity }, 'X'],
+    ['a negative number', { as_org: 'X', asn: -1 }, 'X'],
+  ])('formats a network with its number when it has %s', (_label, net, expected) => {
+    expect(formatNetworkWithNumber(net)).toBe(expected);
   });
 
   it('shortens a visitor hash to six characters', () => {
@@ -571,6 +592,124 @@ describe('renderStatsPage', () => {
   });
 });
 
+describe('tallyPeople — every table but the last, from the rows of people', () => {
+  const P = (n: number) => String(n).padStart(32, '0');
+  const r = (over: Partial<VisitRow>) => row({ view: undefined, ...over });
+
+  it('counts views, distinct visitors and distinct pages for the summary', () => {
+    const t = tallyPeople([r({ visitor: P(1), path: '/' }), r({ visitor: P(1), path: '/give' }), r({ visitor: P(2), path: '/' })]);
+    expect(t.summary).toEqual({ views: 3, visitors: 2, pages: 2 });
+  });
+
+  it('ranks pages by views, then by path, with the average reading time', () => {
+    const t = tallyPeople([
+      r({ path: '/zeta', engaged_ms: 60_000 }),
+      r({ path: '/zeta', engaged_ms: 30_000 }),
+      r({ path: '/beta', engaged_ms: 10_000 }),
+      r({ path: '/alpha', engaged_ms: 0 }),
+    ]);
+    expect(t.pages).toEqual([
+      { path: '/zeta', views: 2, avg_engaged: 45_000 },
+      { path: '/alpha', views: 1, avg_engaged: 0 },
+      { path: '/beta', views: 1, avg_engaged: 10_000 },
+    ]);
+  });
+
+  it('keeps each table to its limit, dropping the least seen', () => {
+    const rows = Array.from({ length: TABLE_LIMIT + 2 }, (_, i) => r({ path: `/p-${String(i).padStart(2, '0')}`, asn: 1000 + i, city: `C${i}` }));
+    rows.push(r({ path: '/p-05', asn: 1005, city: 'C5' }));
+    const t = tallyPeople(rows);
+    expect(t.pages).toHaveLength(TABLE_LIMIT);
+    expect(t.pages[0]).toMatchObject({ path: '/p-05', views: 2 });
+    expect(t.pages.map((p) => p.path)).not.toContain(`/p-${TABLE_LIMIT + 1}`);
+    expect(t.locations).toHaveLength(TABLE_LIMIT);
+    expect(t.networks).toHaveLength(TABLE_LIMIT);
+    expect(tallyPeople(rows, { tableLimit: 2 }).pages).toHaveLength(2);
+  });
+
+  it('groups places with their unknown parts together, unknown first among ties, as SQL did', () => {
+    const t = tallyPeople([
+      r({ visitor: P(1), country: 'US', region: 'VA', city: 'Vienna' }),
+      r({ visitor: P(2), country: null, region: null, city: null }),
+      r({ visitor: P(3), country: null, region: null, city: null }),
+      r({ visitor: P(4), country: 'US', region: null, city: null }),
+    ]);
+    expect(t.locations).toEqual([
+      { country: null, region: null, city: null, visitors: 2, views: 2 },
+      { country: 'US', region: null, city: null, visitors: 1, views: 1 },
+      { country: 'US', region: 'VA', city: 'Vienna', visitors: 1, views: 1 },
+    ]);
+  });
+
+  it('groups networks by number, shows the largest name, and leaves out rows with no number', () => {
+    const t = tallyPeople([
+      // The smaller name first, so "keep the first name" and "keep the largest" disagree.
+      r({ visitor: P(1), asn: 701, as_org: 'MCI Communications Services' }),
+      r({ visitor: P(1), asn: 701, as_org: 'Verizon Business' }),
+      r({ visitor: P(2), asn: 701, as_org: null }),
+      r({ visitor: P(3), asn: 7922, as_org: 'Comcast Cable Communications, LLC' }),
+      r({ visitor: P(4), asn: null, as_org: 'No number' }),
+    ]);
+    expect(t.networks).toEqual([
+      { asn: 701, as_org: 'Verizon Business', visitors: 2, views: 3 },
+      { asn: 7922, as_org: 'Comcast Cable Communications, LLC', visitors: 1, views: 1 },
+    ]);
+  });
+
+  it('counts sources from rows that carry a referrer, and only external ones', () => {
+    const t = tallyPeople([
+      r({ referrer: 'https://www.google.com/' }),
+      r({ referrer: 'https://www.google.com/search' }),
+      r({ referrer: 'https://vva227.org/' }),
+      r({ referrer: null }),
+    ]);
+    expect(t.sources).toEqual([{ host: 'www.google.com', views: 2 }]);
+  });
+
+  it('cuts Recent visitors itself, to the most recently active', () => {
+    const rows = [r({ visitor: P(1), ts: NOW - 3_000, path: '/old' }), r({ visitor: P(2), ts: NOW - 2_000, path: '/mid' }), r({ visitor: P(3), ts: NOW - 1_000, path: '/new' })];
+    expect(tallyPeople(rows, { visitorLimit: 2 }).visitors.map((d) => d.entry)).toEqual(['/new', '/mid']);
+  });
+
+  it('tallies nothing into empty tables, and a junk reading time into zero', () => {
+    expect(tallyPeople([])).toEqual({ summary: { views: 0, visitors: 0, pages: 0 }, visitors: [], pages: [], sources: [], locations: [], networks: [] });
+    const junk = tallyPeople([r({ engaged_ms: Number.NaN }), r({ engaged_ms: 'x' as unknown as number })]);
+    expect(junk.pages).toEqual([{ path: '/', views: 2, avg_engaged: 0 }]);
+  });
+
+  it('orders unicode paths by code point, the same way whatever order the rows arrive in', () => {
+    const paths = ['/é', '/z', '/Z', '/a', '/日本'];
+    const forward = tallyPeople(paths.map((path) => r({ path }))).pages.map((p) => p.path);
+    const backward = tallyPeople([...paths].reverse().map((path) => r({ path }))).pages.map((p) => p.path);
+    expect(forward).toEqual(['/Z', '/a', '/z', '/é', '/日本']);
+    expect(backward).toEqual(forward);
+  });
+});
+
+describe('buildStatsPageData and setAsideTotals', () => {
+  const crawler = { reason: 'crawler-network', asn: 136907, as_org: 'Huawei', visitors: 4, views: 9 };
+
+  it('adds up the set-aside rows for the summary, one visitor per row', () => {
+    expect(setAsideTotals([crawler, { ...crawler, asn: 132203, visitors: 2, views: 2 }])).toEqual({ visitors: 6, views: 11 });
+    expect(setAsideTotals([])).toEqual({ visitors: 0, views: 0 });
+    expect(setAsideTotals([{ ...crawler, visitors: 'x', views: null }])).toEqual({ visitors: 0, views: 0 });
+  });
+
+  it('builds the whole page from the two queries, and says when the people rows hit their limit', () => {
+    const people = [row({ visitor: 'a'.repeat(32), path: '/give' })];
+    const data = buildStatsPageData({ days: 30, generatedAt: NOW, people, automated: [crawler] });
+    expect(data.summary).toEqual({ views: 1, visitors: 1, pages: 1, automated_visitors: 4, automated_views: 9 });
+    expect(data.automated).toEqual([crawler]);
+    expect(data.peopleCapped).toBe(false);
+    expect(Object.keys(data).sort()).toEqual(['automated', 'days', 'generatedAt', 'locations', 'networks', 'pages', 'peopleCapped', 'sources', 'summary', 'visitors']);
+
+    const capped = buildStatsPageData({ days: 365, generatedAt: NOW, people, automated: [], peopleRowLimit: 1 });
+    expect(capped.peopleCapped).toBe(true);
+    expect(renderStatsPage(capped)).toContain(`more than ${PEOPLE_ROW_LIMIT} views counted as people`);
+    expect(renderStatsPage(data)).not.toContain('views counted as people');
+  });
+});
+
 describe('visits set aside as likely automated', () => {
   const lists = (over: Partial<AutomatedLists> = {}): AutomatedLists => ({ ...AUTOMATED_LISTS, ...over });
 
@@ -638,15 +777,40 @@ describe('visits set aside as likely automated', () => {
   });
 
   it('explains a changed list in its own words, so the page cannot fall behind the registry', () => {
-    const text = automatedExplanation(
-      lists({ crawlerNetworks: [{ asn: 64500, owner: 'Example Cloud' }], nothingReadCountries: [{ code: 'XX', name: 'Nowhere' }, { code: 'YY', name: 'Elsewhere' }] }),
-    );
-    expect(text).toContain('Example Cloud');
-    expect(text).not.toContain('Tencent');
-    expect(text).toContain('Nowhere or Elsewhere');
+    const text = automatedExplanation({
+      crawlerNetworks: [{ asn: 64500, owner: 'Example Cloud' }],
+      crawlerWindows: [{ width: 640, height: 480 }],
+      nothingReadNetworks: [{ asn: 64501, owner: 'Example DC' }],
+      nothingReadCountries: [{ code: 'XX', name: 'Nowhere' }, { code: 'YY', name: 'Elsewhere' }],
+    });
+    expect(text).toContain('nothing but crawlers (Example Cloud)');
+    expect(text).toContain('a window of exactly 640 × 480, a size only crawlers');
+    expect(text).toContain('came from a Example DC data centre, Nowhere or Elsewhere.');
+    expect(text).toContain('Home and mobile networks in Nowhere or Elsewhere are expected here');
+    for (const gone of ['Tencent', '1800 × 1125', '1024 × 569', 'Microsoft', 'mainland China']) expect(text).not.toContain(gone);
     expect(automatedReasonLabel('country-nothing-read', lists({ nothingReadCountries: [{ code: 'XX', name: 'Nowhere' }] }))).toBe(
       'From Nowhere, nothing read',
     );
+  });
+
+  it('says so when every list is empty, and uses no "or when" for a single rule', () => {
+    const empty = automatedExplanation({ crawlerNetworks: [], crawlerWindows: [], nothingReadNetworks: [], nothingReadCountries: [] });
+    expect(empty).toContain('No visitor is set aside: every list is empty.');
+    expect(empty).not.toContain('set aside when');
+    expect(empty).toContain('A home or mobile network here may be a person.');
+
+    const one = automatedExplanation({ crawlerNetworks: [{ asn: 64500, owner: 'Example Cloud' }], crawlerWindows: [], nothingReadNetworks: [], nothingReadCountries: [] });
+    expect(one).toContain('A visitor is set aside when their network has sent this site nothing but crawlers (Example Cloud).');
+    expect(one).not.toContain('; or when');
+
+    const two = automatedExplanation(lists({ crawlerWindows: [{ width: 1, height: 2 }, { width: 3, height: 4 }] }));
+    expect(two).toContain('1 × 2 or 3 × 4, sizes only crawlers');
+  });
+
+  it('refuses a people-row limit that is not a positive whole number', () => {
+    for (const bad of [0, -5, 2.5, NaN]) expect(() => buildStatsSql(AUTOMATED_LISTS, { peopleRowLimit: bad }), String(bad)).toThrow(/positive whole number/);
+    expect(buildStatsSql(AUTOMATED_LISTS, { peopleRowLimit: 7 }).people).toMatch(/LIMIT 7\s*$/);
+    expect(STATS_SQL_KEYS(buildStatsSql())).toEqual(['people', 'automated']);
   });
 
   it('says how much it set aside under the summary, and only when there is some', () => {
@@ -682,7 +846,7 @@ describe('visits set aside as likely automated', () => {
     expect(section.find('p.note').text()).toBe(automatedExplanation());
     expect(section.find('tr').toArray().map((tr) => $(tr).find('th, td').toArray().map((c) => $(c).text()))).toEqual([
       ['Why', 'Network', 'Visitors', 'Views'],
-      ['Network that sends only crawlers', 'Huawei Cloud Singapore Region', '47', '329'],
+      ['Network that sends only crawlers', 'Huawei Cloud Singapore Region (AS136907)', '47', '329'],
       ['Window size only crawlers use', 'AS4837', '33', '33'],
     ]);
   });

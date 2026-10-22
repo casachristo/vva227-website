@@ -207,7 +207,7 @@ export const CRAWLER_NETWORKS: ReadonlyArray<{ asn: number; owner: string }> = [
  * one of these by chance is still counted.
  */
 export const CRAWLER_WINDOWS: ReadonlyArray<{ width: number; height: number; seenFrom: string }> = [
-  { width: 1800, height: 1125, seenFrom: 'Tencent Cloud, Amazon and Chinese home and mobile networks, never with any reading time' },
+  { width: 1800, height: 1125, seenFrom: 'Tencent Cloud, Amazon and Chinese home and mobile networks; one view in about two hundred recorded any reading time' },
   { width: 1024, height: 569, seenFrom: 'Microsoft data centres only (Bing’s page renderer)' },
 ];
 

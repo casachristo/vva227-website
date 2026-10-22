@@ -81,9 +81,10 @@ but crawlers (Tencent Cloud, Huawei Cloud and China Telecom’s Nanjing data
 centre); when
 every page it opened was in a window size only crawlers have used; or when it
 read no page for any time at all and came from a Google, Microsoft, Amazon or
-Meta data centre, or from mainland China. Nothing is deleted. If a home or
-mobile provider ever shows up in that last table, it may be a person: see
-*Change which visits are set aside* below.
+Meta data centre, or from mainland China. Nothing is deleted, and that last
+table lists every network it set aside, by name and number. Home and mobile
+networks in mainland China are expected there; one from anywhere else may be
+a person: see *Change which visits are set aside* below.
 
 Where Access stands (vva227.org and www.vva227.org, and the project's
 `pages.dev` addresses, previews included, when they are in the same
@@ -334,9 +335,9 @@ errors.
 - **Change the retention period:** change `RETENTION_DAYS`; `/privacy` follows.
 - **Change which visits are set aside:** edit the four lists after
   `CRAWLER_NETWORKS` in [`src/data/analytics.ts`](../src/data/analytics.ts),
-  then deploy. Networks are matched by number (the *Network* column's `AS…`
-  number, or bgp.he.net), never by name: one network shows up under several
-  names. Never add Cloudflare (13335), Akamai (36183) or Fastly (54113), which
+  then deploy. Networks are matched by number (the `AS…` after each name in
+  the set-aside table, or bgp.he.net), never by name: one network shows up
+  under several names. Never add Cloudflare (13335), Akamai (36183) or Fastly (54113), which
   carry iCloud Private Relay users; a test refuses them. Nothing is stored
   differently, so `/privacy` does not change. Look at the last table monthly:
   crawlers move, and the lists were fitted to a few days of traffic.

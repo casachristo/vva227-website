@@ -1,18 +1,12 @@
 import { authorizeStats, type GateVerdict } from '../src/lib/stats-gate';
 import {
-  groupVisitorDays,
+  buildStatsPageData,
   pageCsp,
   parseWindow,
-  RECENT_VISITORS_LIMIT,
   renderStatsPage,
   STATS_SQL,
   statsHeaders,
-  summarizeSources,
   type AutomatedStat,
-  type LocationStat,
-  type NetworkStat,
-  type PageStat,
-  type SummaryRow,
   type VisitRow,
 } from '../src/lib/stats';
 import { SITE_KEY } from '../src/data/analytics';
@@ -98,34 +92,23 @@ export function createStatsHandler(authorize: Authorize = authorizeStats) {
     const { days, since } = parseWindow(new URL(request.url).searchParams, now);
     // Every value is bound. SITE_KEY and the window are the only inputs, and
     // the window is an allowlisted number by the time it gets here.
-    const q = (sql: string, ...extra: unknown[]) => db.prepare(sql).bind(SITE_KEY, since, ...extra);
+    const q = (sql: string) => db.prepare(sql).bind(SITE_KEY, since);
 
     let html: string;
     let csp: string;
     try {
-      const [summary, visits, pages, referrers, locations, networks, automated] = (
-        await db.batch([
-          q(STATS_SQL.summary),
-          q(STATS_SQL.visits, RECENT_VISITORS_LIMIT),
-          q(STATS_SQL.pages),
-          q(STATS_SQL.referrers),
-          q(STATS_SQL.locations),
-          q(STATS_SQL.networks),
-          q(STATS_SQL.automated),
-        ])
-      ).map((r) => r.results ?? []);
+      // Two queries: the people's rows, which every table but the last is
+      // tallied from, and the set-aside table. See buildStatsSql for why.
+      const [people, automated] = (await db.batch([q(STATS_SQL.people), q(STATS_SQL.automated)])).map((r) => r.results ?? []);
 
-      html = renderStatsPage({
-        days,
-        generatedAt: now,
-        summary: (summary[0] as SummaryRow | undefined) ?? { views: 0, visitors: 0, pages: 0, automated_visitors: 0, automated_views: 0 },
-        visitors: groupVisitorDays(visits as unknown as VisitRow[], RECENT_VISITORS_LIMIT),
-        pages: pages as PageStat[],
-        sources: summarizeSources(referrers as Array<{ referrer: unknown; views: unknown }>),
-        locations: locations as LocationStat[],
-        networks: networks as NetworkStat[],
-        automated: automated as AutomatedStat[],
-      });
+      html = renderStatsPage(
+        buildStatsPageData({
+          days,
+          generatedAt: now,
+          people: people as unknown as VisitRow[],
+          automated: automated as AutomatedStat[],
+        }),
+      );
       csp = await pageCsp();
     } catch (err) {
       // The owner is past the gate, so an honest 500 is useful to them. The

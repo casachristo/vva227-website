@@ -354,7 +354,8 @@ describe('docs/analytics.md, on visits set aside as likely automated', () => {
   it('tells the owner that the tables count people and where the rest are listed', () => {
     expect(doc).toContain('every table counts people only');
     expect(doc).toContain('*Set aside as likely automated*');
-    expect(doc).toContain('Nothing is deleted.');
+    expect(doc).toContain('Nothing is deleted');
+    expect(doc).toContain('lists every network it set aside, by name and number');
   });
 
   it('names every network owner and country the lists hold, so the docs follow the registry', () => {
