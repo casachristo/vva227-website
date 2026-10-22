@@ -5,7 +5,11 @@ import { defineConfig } from 'astro/config';
 // Cloudflare's edge. This is deliberate: the chapter should never have to patch
 // a server, and the old ColdFusion site's worst failures were runtime failures.
 export default defineConfig({
-  site: 'https://vva227-refresh.pages.dev',
+  // The production domain. Every page's canonical, og:url and og:image are
+  // built from this, so it tells search engines and Facebook which address to
+  // credit. It named the staging copy until 2026-10-22; see "the address pages
+  // advertise" in tests/integration/build-output.test.ts.
+  site: 'https://vva227.org',
   output: 'static',
   trailingSlash: 'never',
   build: {
