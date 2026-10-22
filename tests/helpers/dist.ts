@@ -11,6 +11,14 @@ export const PUBLIC_IMAGES = join(process.cwd(), 'public', 'images');
 export const SITE_ORIGIN = new URL(astroConfig.site!).origin;
 
 /**
+ * The address visitors use and search engines should credit, stated here
+ * independently of astro.config.mjs on purpose. Every other test derives the
+ * origin FROM the config, so when the config named the staging copy, every
+ * page advertised that copy as the real address and every test agreed.
+ */
+export const PRODUCTION_ORIGIN = 'https://vva227.org';
+
+/**
  * Re-exported from the source of truth rather than restated. See src/lib/links.ts
  * for why naming this site absolutely is a defect and not a style preference.
  */
