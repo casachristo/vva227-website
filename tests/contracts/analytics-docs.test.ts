@@ -2,7 +2,15 @@ import { describe, it, expect } from 'vitest';
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { ACCESS_REFUSAL_REASONS } from '../../src/lib/access';
-import { BEACON_ENDPOINT, COLLECT_HOSTS, RETENTION_DAYS, RETENTION_MONTHS } from '../../src/data/analytics';
+import {
+  BEACON_ENDPOINT,
+  COLLECT_HOSTS,
+  CRAWLER_NETWORKS,
+  NOTHING_READ_COUNTRIES,
+  NOTHING_READ_NETWORKS,
+  RETENTION_DAYS,
+  RETENTION_MONTHS,
+} from '../../src/data/analytics';
 import { DEFAULT_DAYS, WINDOWS } from '../../src/lib/stats';
 import * as plan from '../../tools/lib/setup-analytics-plan.mjs';
 import { ACCOUNT, nextSteps, SESSION_DURATION, TOKEN_FILE, TOKEN_PERMISSIONS } from '../../tools/lib/setup-analytics-plan.mjs';
@@ -337,6 +345,35 @@ describe('docs/analytics.md', () => {
     expect(flat).not.toContain('on every hostname, `/stats` is a plain');
     expect(flat).toContain("anyone not signed in sees Cloudflare's sign-in page, and only the listed addresses get past it");
     expect(flat).toContain('On any address Access does not cover, `/stats` is a plain `Not found`.');
+  });
+});
+
+describe('docs/analytics.md, on visits set aside as likely automated', () => {
+  const change = bulletAt(doc, 'Change which visits are set aside:');
+
+  it('tells the owner that the tables count people and where the rest are listed', () => {
+    expect(doc).toContain('every table counts people only');
+    expect(doc).toContain('*Set aside as likely automated*');
+    expect(doc).toContain('Nothing is deleted.');
+  });
+
+  it('names every network owner and country the lists hold, so the docs follow the registry', () => {
+    const intro = doc.slice(doc.indexOf('Most recorded visits are not people.'), doc.indexOf('*Change which visits are set aside* below.'));
+    expect(intro.length).toBeGreaterThan(100);
+    const words = intro.replace(/\s+/g, ' ');
+    for (const { owner } of [...CRAWLER_NETWORKS, ...NOTHING_READ_NETWORKS]) expect(words, owner).toContain(owner);
+    for (const { name } of NOTHING_READ_COUNTRIES) expect(words, name).toContain(name);
+  });
+
+  it('says how to change the lists: by number, never a private-relay network, and no /privacy change', () => {
+    expect(change).toContain('src/data/analytics.ts');
+    expect(change).toContain('by number');
+    for (const asn of ['13335', '36183', '54113']) expect(change).toContain(asn);
+    expect(change).toContain('`/privacy` does not change');
+  });
+
+  it('can actually fail: a missing bullet reads as empty', () => {
+    expect(bulletAt(doc, 'A bullet nobody wrote:')).toBe('');
   });
 });
 

@@ -2,6 +2,10 @@ import { describe, it, expect, beforeAll, vi } from 'vitest';
 import { createHash } from 'node:crypto';
 import * as cheerio from 'cheerio';
 import {
+  AUTOMATED_LISTS,
+  automatedExplanation,
+  automatedReasonLabel,
+  automatedReasonSql,
   classifyReferrer,
   DEFAULT_DAYS,
   deviceOf,
@@ -23,13 +27,14 @@ import {
   STATS_STYLE,
   summarizeSources,
   WINDOWS,
+  type AutomatedLists,
   type StatsPageData,
   type VisitRow,
 } from '../../src/lib/stats';
 import { ACCESS_JWT_HEADER, authorizeStats, createAccessGate } from '../../src/lib/stats-gate';
 import { accessSetting } from '../../src/lib/access';
 import { accessEnv, AUD, certsServer, claimsFor, createSigner, TEAM, type Signer } from '../helpers/access-jwt';
-import { SITE_HOSTS } from '../../src/data/analytics';
+import { CRAWLER_NETWORKS, CRAWLER_WINDOWS, NOTHING_READ_COUNTRIES, NOTHING_READ_NETWORKS, SITE_HOSTS } from '../../src/data/analytics';
 
 /**
  * UNIT — the stats page's pure pieces: windows, time zones, referrer
@@ -65,12 +70,13 @@ const row = (over: Partial<VisitRow> = {}): VisitRow => ({
 const emptyPage = (over: Partial<StatsPageData> = {}): StatsPageData => ({
   days: 30,
   generatedAt: NOW,
-  summary: { views: 0, visitors: 0, pages: 0 },
+  summary: { views: 0, visitors: 0, pages: 0, automated_visitors: 0, automated_views: 0 },
   visitors: [],
   pages: [],
   sources: [],
   locations: [],
   networks: [],
+  automated: [],
   ...over,
 });
 
@@ -491,6 +497,7 @@ describe('renderStatsPage', () => {
         pages: [{ path: '/<script>alert(1)</script>', views: 1, avg_engaged: 0 }],
         sources: [{ host: '"><img src=x onerror=alert(1)>', views: 1 }],
         networks: [{ asn: 1, as_org: '<b>bold</b>', visitors: 1, views: 1 }],
+        automated: [{ reason: '<i>why</i>', asn: 2, as_org: '<u>crawler</u>', visitors: 1, views: 1 }],
       }),
     );
     expect(html).not.toContain('<script>alert(1)</script>');
@@ -498,6 +505,9 @@ describe('renderStatsPage', () => {
     // The page renders no images at all, so any <img> is injected markup.
     expect(html).not.toMatch(/<img/i);
     expect(html).not.toContain('<b>bold</b>');
+    expect(html).not.toContain('<i>why</i>');
+    expect(html).not.toContain('<u>crawler</u>');
+    expect(html).toContain('&lt;u&gt;crawler&lt;/u&gt;');
   });
 
   it('can actually fail — the assertions above would catch unescaped output', () => {
@@ -522,11 +532,12 @@ describe('renderStatsPage', () => {
       sources: [{ host: 'www.google.com', views: 1 }],
       locations: [{ country: 'US', region: 'VA', city: 'Fairfax', visitors: 1, views: 2 }],
       networks: [{ asn: 701, as_org: 'Verizon Business', visitors: 1, views: 2 }],
+      automated: [{ reason: 'crawler-network', asn: 132203, as_org: 'ACEVILLE PTE.LTD.', visitors: 4, views: 9 }],
     });
 
   it('puts nothing between the cells of a table, or between the window links', () => {
     const $ = cheerio.load(renderStatsPage(fullPage()));
-    expect($('table')).toHaveLength(5);
+    expect($('table')).toHaveLength(6);
     const stray = $('.scroll, table, thead, tbody, tr, .windows')
       .contents()
       .toArray()
@@ -546,6 +557,7 @@ describe('renderStatsPage', () => {
       ['Sources', [[1], [1]]],
       ['Locations', [[1, 2], [1, 2]]],
       ['Networks', [[1, 2], [1, 2]]],
+      ['Set aside as likely automated', [[2, 3], [2, 3]]],
     ]);
     expect(STATS_STYLE).toContain('td.n,th.n{text-align:right}');
   });
@@ -556,6 +568,131 @@ describe('renderStatsPage', () => {
     expect(blocks).toHaveLength(1);
     expect(blocks[0][1]).toBe(STATS_STYLE);
     expect(html).not.toMatch(/\sstyle=/i);
+  });
+});
+
+describe('visits set aside as likely automated', () => {
+  const lists = (over: Partial<AutomatedLists> = {}): AutomatedLists => ({ ...AUTOMATED_LISTS, ...over });
+
+  it('takes its lists from the registry, not a copy', () => {
+    expect(AUTOMATED_LISTS).toEqual({
+      crawlerNetworks: CRAWLER_NETWORKS,
+      crawlerWindows: CRAWLER_WINDOWS,
+      nothingReadNetworks: NOTHING_READ_NETWORKS,
+      nothingReadCountries: NOTHING_READ_COUNTRIES,
+    });
+  });
+
+  it('writes every listed network, window and country into the condition', () => {
+    const sql = automatedReasonSql();
+    for (const { asn } of [...CRAWLER_NETWORKS, ...NOTHING_READ_NETWORKS]) expect(sql).toMatch(new RegExp(`\\b${asn}\\b`));
+    for (const { width, height } of CRAWLER_WINDOWS) {
+      expect(sql).toContain(`viewport_w = ${width} AND viewport_h = ${height}`);
+    }
+    for (const { code } of NOTHING_READ_COUNTRIES) expect(sql).toContain(`'${code}'`);
+  });
+
+  it('refuses a list entry that is not a positive whole number', () => {
+    // The numbers are written into the statement rather than bound, so this
+    // check is what keeps the statement a statement.
+    for (const bad of [0, -1, 1.5, NaN, Infinity, 2 ** 53, '7922', null, '1) OR (1=1']) {
+      const n = bad as unknown as number;
+      expect(() => automatedReasonSql(lists({ crawlerNetworks: [{ asn: n, owner: 'x' }] })), String(bad)).toThrow(/positive whole number/);
+      expect(() => automatedReasonSql(lists({ nothingReadNetworks: [{ asn: n, owner: 'x' }] })), String(bad)).toThrow(/positive whole number/);
+      expect(() => automatedReasonSql(lists({ crawlerWindows: [{ width: n, height: 600 }] })), String(bad)).toThrow(/positive whole number/);
+      expect(() => automatedReasonSql(lists({ crawlerWindows: [{ width: 800, height: n }] })), String(bad)).toThrow(/positive whole number/);
+    }
+  });
+
+  it('refuses a country that is not a two-letter code', () => {
+    for (const bad of ['cn', 'CHN', 'C', '', "C'", "CN') OR ('1'='1", 'C\u0000']) {
+      expect(() => automatedReasonSql(lists({ nothingReadCountries: [{ code: bad, name: 'x' }] })), bad).toThrow(/two-letter/);
+    }
+  });
+
+  it('writes no empty IN () for an empty list, which some engines refuse', () => {
+    const sql = automatedReasonSql({ crawlerNetworks: [], crawlerWindows: [], nothingReadNetworks: [], nothingReadCountries: [] });
+    expect(sql).not.toMatch(/IN\s*\(\s*\)/);
+    expect(sql).not.toMatch(/\(\s*\)/);
+  });
+
+  it('labels each reason in plain words, and shows an unknown one as it is', () => {
+    expect(automatedReasonLabel('crawler-network')).toBe('Network that sends only crawlers');
+    expect(automatedReasonLabel('crawler-window')).toBe('Window size only crawlers use');
+    expect(automatedReasonLabel('network-nothing-read')).toBe('Company data centre, nothing read');
+    expect(automatedReasonLabel('country-nothing-read')).toBe('From mainland China, nothing read');
+    expect(automatedReasonLabel('something-new')).toBe('something-new');
+    expect(automatedReasonLabel(null)).toBe('-');
+    expect(automatedReasonLabel(undefined)).toBe('-');
+  });
+
+  it('explains every rule from the lists themselves', () => {
+    const text = automatedExplanation();
+    for (const { owner } of [...CRAWLER_NETWORKS, ...NOTHING_READ_NETWORKS]) expect(text).toContain(owner);
+    for (const { width, height } of CRAWLER_WINDOWS) expect(text).toContain(`${width} × ${height}`);
+    for (const { name } of NOTHING_READ_COUNTRIES) expect(text).toContain(name);
+    expect(text).toContain('Nothing is deleted');
+    // One mention per owner, however many networks it has.
+    expect(text.split('Tencent Cloud')).toHaveLength(2);
+    expect(text.split('Amazon')).toHaveLength(2);
+  });
+
+  it('explains a changed list in its own words, so the page cannot fall behind the registry', () => {
+    const text = automatedExplanation(
+      lists({ crawlerNetworks: [{ asn: 64500, owner: 'Example Cloud' }], nothingReadCountries: [{ code: 'XX', name: 'Nowhere' }, { code: 'YY', name: 'Elsewhere' }] }),
+    );
+    expect(text).toContain('Example Cloud');
+    expect(text).not.toContain('Tencent');
+    expect(text).toContain('Nowhere or Elsewhere');
+    expect(automatedReasonLabel('country-nothing-read', lists({ nothingReadCountries: [{ code: 'XX', name: 'Nowhere' }] }))).toBe(
+      'From Nowhere, nothing read',
+    );
+  });
+
+  it('says how much it set aside under the summary, and only when there is some', () => {
+    const none = cheerio.load(renderStatsPage(emptyPage()));
+    expect(none('.setaside')).toHaveLength(0);
+
+    const some = cheerio.load(
+      renderStatsPage(emptyPage({ summary: { views: 3, visitors: 2, pages: 2, automated_visitors: 179, automated_views: 520 } })),
+    );
+    expect(some('.summary').text()).toBe('3 views · 2 visitors · 2 pages');
+    expect(some('.setaside').text()).toBe('Not counted: 179 visitors (520 views) that look automated, listed at the end of the page.');
+  });
+
+  it('treats a summary without the set-aside counts as none set aside', () => {
+    const $ = cheerio.load(renderStatsPage(emptyPage({ summary: { views: 1, visitors: 1, pages: 1 } })));
+    expect($('.setaside')).toHaveLength(0);
+    expect($('.summary').text()).toBe('1 views · 1 visitors · 1 pages');
+  });
+
+  it('lists what it set aside, last, with the reason in words and the network by name or number', () => {
+    const $ = cheerio.load(
+      renderStatsPage(
+        emptyPage({
+          automated: [
+            { reason: 'crawler-network', asn: 136907, as_org: 'Huawei Cloud Singapore Region', visitors: 47, views: 329 },
+            { reason: 'crawler-window', asn: 4837, as_org: null, visitors: 33, views: 33 },
+          ],
+        }),
+      ),
+    );
+    const section = $('section').last();
+    expect(section.find('h2').text()).toBe('Set aside as likely automated');
+    expect(section.find('p.note').text()).toBe(automatedExplanation());
+    expect(section.find('tr').toArray().map((tr) => $(tr).find('th, td').toArray().map((c) => $(c).text()))).toEqual([
+      ['Why', 'Network', 'Visitors', 'Views'],
+      ['Network that sends only crawlers', 'Huawei Cloud Singapore Region', '47', '329'],
+      ['Window size only crawlers use', 'AS4837', '33', '33'],
+    ]);
+  });
+
+  it('says so, and still explains the rule, when nothing was set aside', () => {
+    const $ = cheerio.load(renderStatsPage(emptyPage()));
+    const section = $('section').last();
+    expect(section.find('h2').text()).toBe('Set aside as likely automated');
+    expect(section.find('p.note').text()).toBe(automatedExplanation());
+    expect(section.find('.empty').text()).toBe('Nothing was set aside in this window.');
   });
 });
 

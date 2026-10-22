@@ -4,8 +4,9 @@ import { onRequest as collect } from '../../functions/api/e';
 import { createStatsHandler } from '../../functions/stats';
 import { beaconRequest, createD1, createEnv, ORIGIN, type BeaconRequestOptions, type TestD1 } from '../helpers/d1';
 import { expectAccepted, expectStatsPageHeaders, expectViewRow } from '../helpers/analytics';
-import { EVENT_END, EVENT_VIEW, RETENTION_DAYS, SITE_KEY, STATS_PATH } from '../../src/data/analytics';
-import { groupVisitorDays, RECENT_VISITORS_LIMIT, shortVisitor, STATS_SQL, TABLE_LIMIT, type VisitRow } from '../../src/lib/stats';
+import { CRAWLER_NETWORKS, EVENT_END, EVENT_VIEW, RETENTION_DAYS, SITE_KEY, STATS_PATH } from '../../src/data/analytics';
+import { buildStatsSql, groupVisitorDays, RECENT_VISITORS_LIMIT, shortVisitor, STATS_SQL, TABLE_LIMIT, type VisitRow } from '../../src/lib/stats';
+import type { CfProperties } from '../../src/lib/runtime';
 import { PRUNE_SQL } from '../../src/lib/beacon';
 
 /**
@@ -155,7 +156,7 @@ describe('a visit, collected and then reported', () => {
     expect(days[0]).toMatchObject({ day: '2026-10-14', source: 'www.google.com', entry: '/', views: 2 });
 
     const summary = await d1.binding.prepare(STATS_SQL.summary).bind(SITE_KEY, NOW - 30 * DAY).first<Record<string, number>>();
-    expect(summary).toEqual({ views: 2, visitors: 1, pages: 2 });
+    expect(summary).toEqual({ views: 2, visitors: 1, pages: 2, automated_visitors: 0, automated_views: 0 });
   });
 });
 
@@ -222,6 +223,126 @@ describe('the upsert, as the owner sees it', () => {
   });
 });
 
+describe('crawlers, set aside from the people', () => {
+  // Networks and places as Cloudflare attaches them, under its own field names.
+  const net = (asn: number, asOrganization: string, place: Partial<CfProperties> = {}): CfProperties => ({
+    country: 'US',
+    asn,
+    asOrganization,
+    ...place,
+  });
+  const TENCENT = net(132203, 'ACEVILLE PTE.LTD.', { city: 'Ashburn', regionCode: 'VA' });
+  const UNICOM = net(4837, 'China Unicom Jiangsu province network', { country: 'CN', city: 'Nanjing' });
+  const CHINA_MOBILE = net(56046, 'China Mobile Communications Group Co., Ltd.', { country: 'CN', city: 'Suzhou' });
+  const GOOGLE = net(15169, 'Google LLC', { city: 'Council Bluffs', regionCode: 'IA' });
+  const PRIVATE_RELAY = net(13335, 'Cloudflare, Inc.', { city: 'Fairfax', regionCode: 'VA' });
+
+  const sized = (v: string, p: string, w: number, h: number) => ({ k: EVENT_VIEW, v, p, w, h });
+
+  async function setAside() {
+    const { results } = await d1.binding.prepare(STATS_SQL.automated).bind(SITE_KEY, NOW - 30 * DAY).all<Record<string, unknown>>();
+    return results.map((r) => [r.reason, r.asn, r.visitors, r.views]);
+  }
+
+  it('keeps a person on Recent visitors however many crawlers came after them', async () => {
+    // The live log on 2026-10-21: the one visitor who came from Google had
+    // been pushed to 144th of 186, past the 100 the table lists, by crawlers
+    // that arrived after them.
+    await at(NOW - 5 * H, HOME_IP, view('d000000000000001', '/about', 'https://www.google.com/'));
+    await at(NOW - 5 * H + 114_000, HOME_IP, end('d000000000000001', '/about', 114_000));
+    const crawlers = RECENT_VISITORS_LIMIT + 5;
+    for (let i = 0; i < crawlers; i++) {
+      await at(NOW - 4 * H + i * 60_000, `10.9.${Math.floor(i / 256)}.${i % 256}`, view(`d1${String(i).padStart(14, '0')}`, `/old-${i}`), { cf: TENCENT });
+    }
+
+    const days = await visitorDays();
+    expect(days.map((d) => [d.entry, d.source, d.engagedMs])).toEqual([['/about', 'www.google.com', 114_000]]);
+
+    const summary = await d1.binding.prepare(STATS_SQL.summary).bind(SITE_KEY, NOW - 30 * DAY).first<Record<string, number>>();
+    expect(summary).toEqual({ views: 1, visitors: 1, pages: 1, automated_visitors: crawlers, automated_views: crawlers });
+    expect(await setAside()).toEqual([['crawler-network', 132203, crawlers, crawlers]]);
+  });
+
+  it('sets aside each kind of crawler, through the real collector, and keeps the people beside them', async () => {
+    const ip = (n: number) => `198.51.100.${100 + n}`;
+    // A crawler network, set aside whatever it did: even 60s of "reading".
+    await at(NOW - 9 * H, ip(1), view('e000000000000001', '/view-calendar'), { cf: TENCENT });
+    await at(NOW - 9 * H + 60_000, ip(1), end('e000000000000001', '/view-calendar', 60_000), { cf: TENCENT });
+    // A crawler-sized window on a home network, on every view it made.
+    await at(NOW - 8 * H, ip(2), sized('e000000000000002', '/PTSD', 1800, 1125), { cf: UNICOM });
+    await at(NOW - 8 * H + 1, ip(2), sized('e000000000000003', '/Surveys', 1800, 1125), { cf: UNICOM });
+    // A person who happened to be in that size once, then resized: counted.
+    await at(NOW - 7 * H, ip(3), sized('e000000000000004', '/', 1800, 1125));
+    await at(NOW - 7 * H + 1, ip(3), sized('e000000000000005', '/give', 1440, 900));
+    // Google's data centre: loaded and left is a crawler; reading is a person.
+    await at(NOW - 6 * H, ip(4), view('e000000000000006', '/'), { cf: GOOGLE });
+    await at(NOW - 5 * H, ip(5), view('e000000000000007', '/events'), { cf: GOOGLE });
+    await at(NOW - 5 * H + 30_000, ip(5), end('e000000000000007', '/events', 30_000), { cf: GOOGLE });
+    // Mainland China: loaded and left is set aside; reading is counted.
+    await at(NOW - 4 * H, ip(6), sized('e000000000000008', '/news-stories', 1295, 999), { cf: CHINA_MOBILE });
+    await at(NOW - 3 * H, ip(7), view('e000000000000009', '/about'), { cf: CHINA_MOBILE });
+    await at(NOW - 3 * H + 20_000, ip(7), end('e000000000000009', '/about', 20_000), { cf: CHINA_MOBILE });
+    // A person whose last flush never arrived: no reading time, still a person.
+    await at(NOW - 2 * H, ip(8), view('e000000000000010', '/get-help'));
+    // iCloud Private Relay leaves through Cloudflare's network: a person.
+    await at(NOW - H, ip(9), view('e000000000000011', '/join'), { cf: PRIVATE_RELAY });
+    for (const row of d1.rows()) expectViewRow(row);
+
+    expect(await setAside()).toEqual([
+      ['crawler-window', 4837, 1, 2],
+      ['country-nothing-read', 56046, 1, 1],
+      ['crawler-network', 132203, 1, 1],
+      ['network-nothing-read', 15169, 1, 1],
+    ]);
+    expect((await visitorDays()).map((d) => d.entry).sort()).toEqual(['/', '/about', '/events', '/get-help', '/join']);
+
+    const summary = await d1.binding.prepare(STATS_SQL.summary).bind(SITE_KEY, NOW - 30 * DAY).first<Record<string, number>>();
+    expect(summary).toEqual({ views: 6, visitors: 5, pages: 6, automated_visitors: 4, automated_views: 5 });
+
+    // The other tables count only the people.
+    const $ = await page();
+    const table = (caption: string) =>
+      $('section')
+        .filter((_, el) => $(el).find('h2').text() === caption)
+        .find('tbody tr')
+        .toArray()
+        .map((tr) => $(tr).find('td').toArray().map((c) => $(c).text()));
+    expect(table('Pages').map((r) => r[0]).sort()).toEqual(['/', '/about', '/events', '/get-help', '/give', '/join']);
+    expect(table('Networks').map((r) => r[0]).sort()).toEqual([
+      'China Mobile Communications Group Co., Ltd.',
+      'Cloudflare, Inc.',
+      'Comcast Cable Communications, LLC',
+      'Google LLC',
+    ]);
+    expect(table('Set aside as likely automated').map((r) => r[1])).toEqual([
+      'China Unicom Jiangsu province network',
+      'China Mobile Communications Group Co., Ltd.',
+      'ACEVILLE PTE.LTD.',
+      'Google LLC',
+    ]);
+  });
+
+  it('sets aside nothing when every list is empty, and counts every visitor as a person', async () => {
+    await at(NOW - 2 * H, '198.51.100.201', sized('f000000000000001', '/', 1800, 1125), { cf: TENCENT });
+    await at(NOW - H, '198.51.100.202', view('f000000000000002', '/'), { cf: GOOGLE });
+    const bare = buildStatsSql({ crawlerNetworks: [], crawlerWindows: [], nothingReadNetworks: [], nothingReadCountries: [] });
+    const summary = await d1.binding.prepare(bare.summary).bind(SITE_KEY, NOW - 30 * DAY).first<Record<string, number>>();
+    expect(summary).toEqual({ views: 2, visitors: 2, pages: 1, automated_visitors: 0, automated_views: 0 });
+    const { results } = await d1.binding.prepare(bare.automated).bind(SITE_KEY, NOW - 30 * DAY).all();
+    expect(results).toEqual([]);
+  });
+
+  it('judges a crawler network by its number, whatever name it is registered under', async () => {
+    // Tencent's addresses come back as "ACEVILLE PTE.LTD.", "16 COLLYER QUAY"
+    // and "6 COLLYER QUAY"; only the number is the same.
+    for (const [i, name] of ['ACEVILLE PTE.LTD.', '16 COLLYER QUAY # 18-29 INCOME AT RAFFLES', '6 COLLYER QUAY'].entries()) {
+      await at(NOW - H + i, `198.51.100.${210 + i}`, view(`f10000000000000${i}`, '/'), { cf: net(132203, name) });
+    }
+    expect(await setAside()).toEqual([['crawler-network', 132203, 3, 3]]);
+    expect(CRAWLER_NETWORKS.map((n) => n.asn)).toContain(132203);
+  });
+});
+
 describe('retention, end to end', () => {
   it('a view prunes only expired rows, and the page never shows them', async () => {
     d1.seed({ view: '8000000000000001', visitor: 'e'.repeat(32), ts: NOW - (RETENTION_DAYS + 1) * DAY, path: '/expired' });
@@ -236,7 +357,7 @@ describe('retention, end to end', () => {
 });
 
 describe('the queries themselves', () => {
-  it('run as one batch of six, each within D1’s limits, none scanning the whole table', async () => {
+  it('run as one batch of seven, each within D1’s limits, none scanning the whole table', async () => {
     await at(NOW, HOME_IP, view('9000000000000001', '/'));
     const before = d1.statements.length;
     await page();

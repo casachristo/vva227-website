@@ -8,6 +8,7 @@ import {
   STATS_SQL,
   statsHeaders,
   summarizeSources,
+  type AutomatedStat,
   type LocationStat,
   type NetworkStat,
   type PageStat,
@@ -102,7 +103,7 @@ export function createStatsHandler(authorize: Authorize = authorizeStats) {
     let html: string;
     let csp: string;
     try {
-      const [summary, visits, pages, referrers, locations, networks] = (
+      const [summary, visits, pages, referrers, locations, networks, automated] = (
         await db.batch([
           q(STATS_SQL.summary),
           q(STATS_SQL.visits, RECENT_VISITORS_LIMIT),
@@ -110,18 +111,20 @@ export function createStatsHandler(authorize: Authorize = authorizeStats) {
           q(STATS_SQL.referrers),
           q(STATS_SQL.locations),
           q(STATS_SQL.networks),
+          q(STATS_SQL.automated),
         ])
       ).map((r) => r.results ?? []);
 
       html = renderStatsPage({
         days,
         generatedAt: now,
-        summary: (summary[0] as SummaryRow | undefined) ?? { views: 0, visitors: 0, pages: 0 },
+        summary: (summary[0] as SummaryRow | undefined) ?? { views: 0, visitors: 0, pages: 0, automated_visitors: 0, automated_views: 0 },
         visitors: groupVisitorDays(visits as unknown as VisitRow[], RECENT_VISITORS_LIMIT),
         pages: pages as PageStat[],
         sources: summarizeSources(referrers as Array<{ referrer: unknown; views: unknown }>),
         locations: locations as LocationStat[],
         networks: networks as NetworkStat[],
+        automated: automated as AutomatedStat[],
       });
       csp = await pageCsp();
     } catch (err) {

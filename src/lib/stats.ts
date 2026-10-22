@@ -14,7 +14,7 @@
  * relies on its CSP to be safe becomes unsafe the day the CSP is relaxed.
  */
 
-import { SITE_HOSTS } from '../data/analytics';
+import { CRAWLER_NETWORKS, CRAWLER_WINDOWS, NOTHING_READ_COUNTRIES, NOTHING_READ_NETWORKS, SITE_HOSTS } from '../data/analytics';
 import { stripQuery } from './beacon';
 import { easternParts } from './eastern';
 
@@ -298,9 +298,102 @@ export function summarizeSources(
     .slice(0, Math.max(0, limit));
 }
 
+/** Why a visitor-day was set aside, as the automated query names it. */
+export type AutomatedReason = 'crawler-network' | 'crawler-window' | 'network-nothing-read' | 'country-nothing-read';
+
+/** The lists the rule is built from. A parameter, so a test can build the rule from other lists. */
+export interface AutomatedLists {
+  crawlerNetworks: ReadonlyArray<{ asn: number; owner: string }>;
+  crawlerWindows: ReadonlyArray<{ width: number; height: number }>;
+  nothingReadNetworks: ReadonlyArray<{ asn: number; owner: string }>;
+  nothingReadCountries: ReadonlyArray<{ code: string; name: string }>;
+}
+
+/** The registry's lists. See CRAWLER_NETWORKS in src/data/analytics.ts for why each exists. */
+export const AUTOMATED_LISTS: AutomatedLists = {
+  crawlerNetworks: CRAWLER_NETWORKS,
+  crawlerWindows: CRAWLER_WINDOWS,
+  nothingReadNetworks: NOTHING_READ_NETWORKS,
+  nothingReadCountries: NOTHING_READ_COUNTRIES,
+};
+
+/** A list value as SQL text. Written into the statement, not bound, so it is checked here. */
+function sqlInt(value: unknown): string {
+  if (typeof value !== 'number' || !Number.isSafeInteger(value) || value <= 0) {
+    throw new Error(`automated lists: ${String(value)} is not a positive whole number`);
+  }
+  return String(value);
+}
+
+function sqlCountry(value: unknown): string {
+  if (typeof value !== 'string' || !/^[A-Z]{2}$/.test(value)) {
+    throw new Error(`automated lists: ${JSON.stringify(value)} is not a two-letter country code`);
+  }
+  return `'${value}'`;
+}
+
+/** "column IN (…)", or a condition that is false for every row when the list is empty. */
+function inList(column: string, values: string[]): string {
+  return values.length ? `${column} IN (${values.join(', ')})` : '0';
+}
+
 /**
- * The page's queries. Bound as (?1 site, ?2 since[, ?3 limit]); nothing is
- * interpolated.
+ * The reason a visitor-day is set aside, as an SQL expression over one
+ * visitor's rows (it runs under GROUP BY visitor), or NULL for a person.
+ *
+ * max() means "on any view", min() means "on every view". Network and country
+ * come from Cloudflare and are the same on every row of one visitor code (one
+ * IP), so "any" is safe for them. The window and the reading time are posted
+ * by the browser, so anyone sharing a reader's network and browser could post
+ * a view under that reader's code: those rules ask for every view (min) or
+ * none read (max = 0), which a forged view can only move away from "set aside".
+ *
+ * A null column never matches: max() and min() skip NULL, so a row the
+ * collector could not place counts for nothing either way.
+ */
+export function automatedReasonSql(lists: AutomatedLists = AUTOMATED_LISTS): string {
+  const crawlerNetworks = inList('asn', lists.crawlerNetworks.map((n) => sqlInt(n.asn)));
+  const windows = lists.crawlerWindows.map((w) => `(viewport_w = ${sqlInt(w.width)} AND viewport_h = ${sqlInt(w.height)})`);
+  const crawlerWindow = windows.length ? windows.join(' OR ') : '0';
+  const nothingReadNetworks = inList('asn', lists.nothingReadNetworks.map((n) => sqlInt(n.asn)));
+  const nothingReadCountries = inList('country', lists.nothingReadCountries.map((c) => sqlCountry(c.code)));
+  return `CASE
+      WHEN max(${crawlerNetworks}) = 1 THEN 'crawler-network'
+      WHEN min(${crawlerWindow}) = 1 THEN 'crawler-window'
+      WHEN max(engaged_ms) = 0 AND max(${nothingReadNetworks}) = 1 THEN 'network-nothing-read'
+      WHEN max(engaged_ms) = 0 AND max(${nothingReadCountries}) = 1 THEN 'country-nothing-read'
+    END`;
+}
+
+/**
+ * The visitors set aside in the window, with their reason, as a named
+ * subquery ("automated") every query on the page starts with. Bound as
+ * (?1 site, ?2 since), the same as the queries around it.
+ *
+ * Judged per visitor code, which is per visitor-day while SALT_PERIOD_DAYS is
+ * 1. With a longer period, one code would be judged over all of its days.
+ */
+export function automatedCte(lists: AutomatedLists = AUTOMATED_LISTS): string {
+  return `automated AS (
+      SELECT visitor, reason FROM (
+        SELECT visitor, ${automatedReasonSql(lists)} AS reason
+        FROM views WHERE site = ?1 AND ts >= ?2
+        GROUP BY visitor
+      ) WHERE reason IS NOT NULL
+    )`;
+}
+
+/**
+ * The page's queries. Bound as (?1 site, ?2 since[, ?3 limit]). Nothing that
+ * comes from a request is interpolated: only TABLE_LIMIT and the registry's
+ * lists are, and automatedReasonSql checks each list value before writing it.
+ *
+ * Every query but `automated` counts PEOPLE: it starts from the set-aside
+ * visitors and leaves them out (A22 in tests/BUSINESS_RULES.md). In `visits`
+ * they are left out INSIDE the subquery that picks which visitors to fetch,
+ * before its LIMIT, or crawlers arriving later would push people off Recent
+ * visitors. tests/invariants/stats-partition.test.ts proves every visitor
+ * lands in exactly one of the two piles.
  *
  * Every ORDER BY ends in a tie-breaker, so equal counts do not reshuffle
  * between two loads of the page.
@@ -309,42 +402,122 @@ export function summarizeSources(
  * on: it refuses a compound SELECT of more than five terms and a statement
  * with more than 100 bound parameters, both of which node:sqlite accepts. The
  * recent-visitors query uses a subquery for its visitor list rather than
- * binding up to a hundred hashes for exactly that reason.
+ * binding up to a hundred hashes for exactly that reason, and the lists are
+ * written into the statement rather than bound for the same one.
  */
-export const STATS_SQL = {
-  summary: `SELECT COUNT(*) AS views, COUNT(DISTINCT visitor) AS visitors, COUNT(DISTINCT path) AS pages
-    FROM views WHERE site = ?1 AND ts >= ?2`,
-  visits: `SELECT view, visitor, ts, path, referrer, country, city, region, asn, as_org, viewport_w, engaged_ms
+export function buildStatsSql(lists: AutomatedLists = AUTOMATED_LISTS) {
+  const withAutomated = `WITH ${automatedCte(lists)}`;
+  const people = 'visitor NOT IN (SELECT visitor FROM automated)';
+  return {
+    summary: `${withAutomated}
+    SELECT
+      COUNT(CASE WHEN a.visitor IS NULL THEN 1 END) AS views,
+      COUNT(DISTINCT CASE WHEN a.visitor IS NULL THEN v.visitor END) AS visitors,
+      COUNT(DISTINCT CASE WHEN a.visitor IS NULL THEN v.path END) AS pages,
+      COUNT(DISTINCT a.visitor) AS automated_visitors,
+      COUNT(a.visitor) AS automated_views
+    FROM views v LEFT JOIN automated a ON a.visitor = v.visitor
+    WHERE v.site = ?1 AND v.ts >= ?2`,
+    visits: `${withAutomated}
+    SELECT view, visitor, ts, path, referrer, country, city, region, asn, as_org, viewport_w, engaged_ms
     FROM views
     WHERE site = ?1 AND ts >= ?2 AND visitor IN (
-      SELECT visitor FROM views WHERE site = ?1 AND ts >= ?2
+      SELECT visitor FROM views WHERE site = ?1 AND ts >= ?2 AND ${people}
       GROUP BY visitor ORDER BY MAX(ts) DESC LIMIT ?3
     )
     ORDER BY ts DESC`,
-  pages: `SELECT path, COUNT(*) AS views, AVG(engaged_ms) AS avg_engaged
-    FROM views WHERE site = ?1 AND ts >= ?2
+    pages: `${withAutomated}
+    SELECT path, COUNT(*) AS views, AVG(engaged_ms) AS avg_engaged
+    FROM views WHERE site = ?1 AND ts >= ?2 AND ${people}
     GROUP BY path ORDER BY views DESC, path LIMIT ${TABLE_LIMIT}`,
-  // Per full referrer, not per host: SQLite cannot parse a URL. Generous
-  // limit, because internal referrers share this list before
-  // summarizeSources() drops them.
-  referrers: `SELECT referrer, COUNT(*) AS views
-    FROM views WHERE site = ?1 AND ts >= ?2 AND referrer IS NOT NULL
+    // Per full referrer, not per host: SQLite cannot parse a URL. Generous
+    // limit, because internal referrers share this list before
+    // summarizeSources() drops them.
+    referrers: `${withAutomated}
+    SELECT referrer, COUNT(*) AS views
+    FROM views WHERE site = ?1 AND ts >= ?2 AND referrer IS NOT NULL AND ${people}
     GROUP BY referrer ORDER BY views DESC, referrer LIMIT 500`,
-  locations: `SELECT country, region, city, COUNT(DISTINCT visitor) AS visitors, COUNT(*) AS views
-    FROM views WHERE site = ?1 AND ts >= ?2
+    locations: `${withAutomated}
+    SELECT country, region, city, COUNT(DISTINCT visitor) AS visitors, COUNT(*) AS views
+    FROM views WHERE site = ?1 AND ts >= ?2 AND ${people}
     GROUP BY country, region, city ORDER BY visitors DESC, views DESC, country, region, city LIMIT ${TABLE_LIMIT}`,
-  // Grouped by number, not name: names drift in spelling between rows and
-  // would split one network across several lines. The name is display only.
-  networks: `SELECT asn, max(as_org) AS as_org, COUNT(DISTINCT visitor) AS visitors, COUNT(*) AS views
-    FROM views WHERE site = ?1 AND ts >= ?2 AND asn IS NOT NULL
+    // Grouped by number, not name: names drift in spelling between rows and
+    // would split one network across several lines. The name is display only.
+    networks: `${withAutomated}
+    SELECT asn, max(as_org) AS as_org, COUNT(DISTINCT visitor) AS visitors, COUNT(*) AS views
+    FROM views WHERE site = ?1 AND ts >= ?2 AND asn IS NOT NULL AND ${people}
     GROUP BY asn ORDER BY visitors DESC, views DESC, asn LIMIT ${TABLE_LIMIT}`,
-} as const;
+    // What was set aside, per reason and network, so a misjudged home or
+    // mobile network can be seen. Last, as it is last on the page.
+    automated: `${withAutomated}
+    SELECT a.reason AS reason, v.asn AS asn, max(v.as_org) AS as_org,
+      COUNT(DISTINCT v.visitor) AS visitors, COUNT(*) AS views
+    FROM views v JOIN automated a ON a.visitor = v.visitor
+    WHERE v.site = ?1 AND v.ts >= ?2
+    GROUP BY a.reason, v.asn
+    ORDER BY visitors DESC, views DESC, a.reason, v.asn LIMIT ${TABLE_LIMIT}`,
+  } as const;
+}
 
-/** Rows as the summary, pages, locations and networks queries return them. */
-export type SummaryRow = { views: unknown; visitors: unknown; pages: unknown };
+export const STATS_SQL = buildStatsSql();
+
+/** "a", "a and b", "a, b and c". */
+function joinWords(items: readonly string[], conjunction: string): string {
+  if (items.length <= 1) return items.join('');
+  return `${items.slice(0, -1).join(', ')} ${conjunction} ${items[items.length - 1]}`;
+}
+
+const owners = (networks: ReadonlyArray<{ owner: string }>) => [...new Set(networks.map((n) => n.owner))];
+
+/** A set-aside reason in plain words. An unknown one is shown as it is (the renderer escapes it). */
+export function automatedReasonLabel(reason: unknown, lists: AutomatedLists = AUTOMATED_LISTS): string {
+  switch (reason) {
+    case 'crawler-network':
+      return 'Network that sends only crawlers';
+    case 'crawler-window':
+      return 'Window size only crawlers use';
+    case 'network-nothing-read':
+      return 'Company data centre, nothing read';
+    case 'country-nothing-read':
+      return `From ${joinWords(lists.nothingReadCountries.map((c) => c.name), 'or')}, nothing read`;
+    default:
+      return typeof reason === 'string' && reason ? reason : '-';
+  }
+}
+
+/**
+ * The rule, in the owner's words, generated from the same lists as the SQL
+ * so the explanation on the page cannot fall behind the registry.
+ */
+export function automatedExplanation(lists: AutomatedLists = AUTOMATED_LISTS): string {
+  const windows = lists.crawlerWindows.map((w) => `${w.width} × ${w.height}`);
+  const where = [
+    ...(lists.nothingReadNetworks.length ? [`a ${joinWords(owners(lists.nothingReadNetworks), 'or')} data centre`] : []),
+    ...lists.nothingReadCountries.map((c) => c.name),
+  ];
+  const rules = [
+    ...(lists.crawlerNetworks.length
+      ? [`their network has sent this site nothing but crawlers (${joinWords(owners(lists.crawlerNetworks), 'and')})`]
+      : []),
+    ...(windows.length
+      ? [`every page they opened was in a window of exactly ${joinWords(windows, 'or')}, ${windows.length > 1 ? 'sizes' : 'a size'} only crawlers have used here`]
+      : []),
+    ...(where.length ? [`they read no page for any time at all and came from ${joinWords(where, 'or')}`] : []),
+  ];
+  const when = !rules.length
+    ? 'No visitor is set aside: every list is empty.'
+    : rules.length === 1
+      ? `A visitor is set aside when ${rules[0]}.`
+      : `A visitor is set aside when ${rules.slice(0, -1).join('; when ')}; or when ${rules[rules.length - 1]}.`;
+  return `Not counted in anything above. ${when} Nothing is deleted. A home or mobile provider here may be a person: the lists are in src/data/analytics.ts.`;
+}
+
+/** Rows as the summary, pages, locations, networks and automated queries return them. */
+export type SummaryRow = { views: unknown; visitors: unknown; pages: unknown; automated_visitors?: unknown; automated_views?: unknown };
 export type PageStat = { path: unknown; views: unknown; avg_engaged: unknown };
 export type LocationStat = { country: unknown; region: unknown; city: unknown; visitors: unknown; views: unknown };
 export type NetworkStat = { asn: unknown; as_org: unknown; visitors: unknown; views: unknown };
+export type AutomatedStat = { reason: unknown; asn: unknown; as_org: unknown; visitors: unknown; views: unknown };
 
 export interface StatsPageData {
   days: number;
@@ -355,6 +528,7 @@ export interface StatsPageData {
   sources: SourceRow[];
   locations: readonly LocationStat[];
   networks: readonly NetworkStat[];
+  automated: readonly AutomatedStat[];
 }
 
 /**
@@ -372,7 +546,7 @@ h1{margin:0 0 .25rem;font-size:1.75rem}
 h2{margin:2rem 0 .5rem;font-size:1.2rem;color:#2b3e30}
 p{margin:.5rem 0}
 a{color:#3c5541}
-.meta,.note,.empty{color:#4e463b}
+.meta,.note,.empty,.setaside{color:#4e463b}
 .note{max-width:46rem;font-size:.95rem}
 .windows a,.windows strong{margin-right:.75rem}
 .summary{font-size:1.1rem}
@@ -385,13 +559,14 @@ code{font-size:.85em;word-break:break-all}
 `;
 
 /** One table, with an empty-state sentence instead of an empty grid. */
-function table(caption: string, headers: string[], rows: string[][], emptyNote: string, numeric: number[] = []): string {
+function table(caption: string, headers: string[], rows: string[][], emptyNote: string, numeric: number[] = [], intro = ''): string {
   const cls = (i: number) => (numeric.includes(i) ? ' class="n"' : '');
+  const head = `<section><h2>${escapeHtml(caption)}</h2>${intro ? `<p class="note">${escapeHtml(intro)}</p>` : ''}`;
   if (!rows.length) {
-    return `<section><h2>${escapeHtml(caption)}</h2><p class="empty">${escapeHtml(emptyNote)}</p></section>`;
+    return `${head}<p class="empty">${escapeHtml(emptyNote)}</p></section>`;
   }
   return [
-    `<section><h2>${escapeHtml(caption)}</h2><div class="scroll"><table>`,
+    `${head}<div class="scroll"><table>`,
     `<thead><tr>${headers.map((h, i) => `<th${cls(i)}>${escapeHtml(h)}</th>`).join('')}</tr></thead>`,
     '<tbody>',
     ...rows.map((cells) => `<tr>${cells.map((c, i) => `<td${cls(i)}>${c}</td>`).join('')}</tr>`),
@@ -448,6 +623,19 @@ export function renderStatsPage(data: StatsPageData): string {
     escapeHtml(formatCount(n.views)),
   ]);
 
+  const automatedRows = data.automated.map((a) => [
+    escapeHtml(automatedReasonLabel(a.reason)),
+    escapeHtml(formatNetwork(a)),
+    escapeHtml(formatCount(a.visitors)),
+    escapeHtml(formatCount(a.views)),
+  ]);
+
+  // Only when something was set aside, so an empty window reads as it did.
+  const setAsideVisitors = Number(data.summary.automated_visitors) || 0;
+  const setAside = setAsideVisitors
+    ? `\n<p class="setaside">Not counted: <strong>${escapeHtml(formatCount(setAsideVisitors))}</strong> visitors (<strong>${escapeHtml(formatCount(data.summary.automated_views))}</strong> views) that look automated, listed at the end of the page.</p>`
+    : '';
+
   return `<!doctype html>
 <html lang="en">
 <head>
@@ -469,8 +657,8 @@ export function renderStatsPage(data: StatsPageData): string {
 <h1>Visits</h1>
 <p class="meta">Last ${escapeHtml(data.days)} days &middot; generated ${escapeHtml(formatEt(data.generatedAt))} ET</p>
 <p class="windows">${windowLinks}</p>
-<p class="summary"><strong>${escapeHtml(formatCount(data.summary.views))}</strong> views &middot; <strong>${escapeHtml(formatCount(data.summary.visitors))}</strong> visitors &middot; <strong>${escapeHtml(formatCount(data.summary.pages))}</strong> pages</p>
-<p class="note">Visitor ids reset at midnight Eastern time, so someone who comes back on another day is counted again. Location and network come from Cloudflare, which works them out from the connection as it arrives; IP addresses are never stored. A company or datacentre name under Network, where you would expect a home or mobile provider, usually means an automated crawler. All times are Eastern (ET).</p>
+<p class="summary"><strong>${escapeHtml(formatCount(data.summary.views))}</strong> views &middot; <strong>${escapeHtml(formatCount(data.summary.visitors))}</strong> visitors &middot; <strong>${escapeHtml(formatCount(data.summary.pages))}</strong> pages</p>${setAside}
+<p class="note">Visitor ids reset at midnight Eastern time, so someone who comes back on another day is counted again. Location and network come from Cloudflare, which works them out from the connection as it arrives; IP addresses are never stored. Visits that look automated are left out of every table and listed at the end of the page, with the reason. A company or data-centre name under Network may still be a crawler the lists do not know. All times are Eastern (ET).</p>
 ${table(
   'Recent visitors',
   ['First seen (ET)', 'Visitor', 'Where', 'Network', 'Device', 'Came from', 'Entry page', 'Pages viewed', 'Read time'],
@@ -482,6 +670,14 @@ ${table('Pages', ['Page', 'Views', 'Average read'], pageRows, 'No pages viewed i
 ${table('Sources', ['Came from', 'Arrivals'], sourceRows, 'No visitors arrived from another site in this window.', [1])}
 ${table('Locations', ['Where', 'Visitors', 'Views'], locationRows, 'No locations in this window.', [1, 2])}
 ${table('Networks', ['Network', 'Visitors', 'Views'], networkRows, 'No networks in this window.', [1, 2])}
+${table(
+  'Set aside as likely automated',
+  ['Why', 'Network', 'Visitors', 'Views'],
+  automatedRows,
+  'Nothing was set aside in this window.',
+  [2, 3],
+  automatedExplanation(),
+)}
 <p><a href="/">&larr; VVA Chapter 227</a></p>
 </main>
 </body>

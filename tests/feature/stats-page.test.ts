@@ -9,7 +9,7 @@ import { STATS_PATH } from '../../src/data/analytics';
 import { ACCESS_REFUSAL_REASONS } from '../../src/lib/access';
 import { ACCESS_JWT_HEADER } from '../../src/lib/stats-gate';
 import type { D1Like } from '../../src/lib/runtime';
-import { RECENT_VISITORS_LIMIT, shortVisitor, WINDOWS } from '../../src/lib/stats';
+import { automatedExplanation, RECENT_VISITORS_LIMIT, shortVisitor, WINDOWS } from '../../src/lib/stats';
 
 /**
  * FEATURE — the /stats page, run whole: rows in the database, a signed-in
@@ -86,7 +86,7 @@ function seedTraffic() {
   d1.seed({ view: '1000000000000001', visitor: A, ts: NOW - 3 * H, path: '/', referrer: 'https://www.google.com/', viewport_w: 390, viewport_h: 844, engaged_ms: 30_000, ...fairfax });
   d1.seed({ view: '1000000000000002', visitor: A, ts: NOW - 3 * H + 2 * 60_000, path: '/give', referrer: 'https://vva227.org/', viewport_w: 390, viewport_h: 844, engaged_ms: 90_000, ...fairfax });
   d1.seed({ view: '1000000000000003', visitor: B, ts: NOW - H, path: '/about', referrer: null, viewport_w: 1440, viewport_h: 900, engaged_ms: 45_000, country: 'US', region: 'VA', city: 'Arlington', asn: 701, as_org: 'Verizon Business' });
-  d1.seed({ view: '1000000000000004', visitor: C, ts: NOW - 10 * DAY, path: '/contact', referrer: 'https://l.facebook.com/', country: 'CA', asn: 15169, engaged_ms: 0 });
+  d1.seed({ view: '1000000000000004', visitor: C, ts: NOW - 10 * DAY, path: '/contact', referrer: 'https://l.facebook.com/', country: 'CA', asn: 812, engaged_ms: 0 });
   d1.seed({ view: '1000000000000005', site: 'some-other-site', visitor: 'd4'.repeat(16), ts: NOW - H, path: '/not-ours', country: 'FR' });
 }
 
@@ -168,7 +168,7 @@ describe('happy path — a populated page', () => {
       // Two views, one visitor-day; came from Google, not from its own internal
       // second hop; entry is the earlier page; read time is the sum.
       ['2026-10-17 09:00', shortVisitor(A), 'Fairfax, VA, US', 'Comcast Cable Communications, LLC', 'mobile', 'www.google.com', '/', '2', '2m'],
-      ['2026-10-07 12:00', shortVisitor(C), 'CA', 'AS15169', '-', 'l.facebook.com', '/contact', '1', '0s'],
+      ['2026-10-07 12:00', shortVisitor(C), 'CA', 'AS812', '-', 'l.facebook.com', '/contact', '1', '0s'],
     ]);
   });
 
@@ -203,7 +203,7 @@ describe('happy path — a populated page', () => {
       ['Network', 'Visitors', 'Views'],
       ['Comcast Cable Communications, LLC', '1', '2'],
       ['Verizon Business', '1', '1'],
-      ['AS15169', '1', '1'],
+      ['AS812', '1', '1'],
     ]);
   });
 
@@ -249,6 +249,79 @@ describe('happy path — a populated page', () => {
   });
 });
 
+describe('crawlers, set aside', () => {
+  /**
+   * A day shaped like the live log of 2026-10-21: two people among crawlers
+   * of every kind the rule knows. seedTraffic's visitors have no crawler
+   * signal, so on their own they prove nothing about the rule.
+   */
+  function seedCrawlers() {
+    const person = { country: 'US', region: 'KS', city: 'Manhattan', asn: 7018, as_org: 'AT&T Enterprises, LLC' };
+    d1.seed({ view: '6000000000000001', visitor: A, ts: NOW - 5 * H, path: '/about', referrer: 'https://www.google.com/', viewport_w: 376, viewport_h: 690, engaged_ms: 114_000, ...person });
+    d1.seed({ view: '6000000000000002', visitor: B, ts: NOW - 4 * H, path: '/', viewport_w: 1434, viewport_h: 937, engaged_ms: 5_000, country: 'US', region: 'VA', city: 'Herndon', asn: 701, as_org: 'Verizon Business' });
+    d1.seed({ view: '6000000000000003', visitor: B, ts: NOW - 4 * H + 6_000, path: '/about', referrer: 'https://vva227.org/', viewport_w: 1434, viewport_h: 937, engaged_ms: 120_000, country: 'US', region: 'VA', city: 'Herndon', asn: 701, as_org: 'Verizon Business' });
+    const huawei = { country: 'SG', city: 'Singapore', asn: 136907, as_org: 'Huawei Cloud Singapore Region', viewport_w: 1280, viewport_h: 800, engaged_ms: 9_000 };
+    for (let i = 0; i < 3; i++) d1.seed({ view: `700000000000000${i}`, visitor: `${i}h`.repeat(16), ts: NOW - 3 * H + i, path: `/get_Calendar_details.cfm`, ...huawei });
+    for (let i = 0; i < 2; i++) d1.seed({ view: `710000000000000${i}`, visitor: `${i}u`.repeat(16), ts: NOW - 2 * H + i, path: '/PTSD', country: 'CN', city: 'Nanjing', asn: 4837, as_org: 'China Unicom Jiangsu province network', viewport_w: 1800, viewport_h: 1125 });
+    d1.seed({ view: '7200000000000001', visitor: 'g'.repeat(32), ts: NOW - H, path: '/', country: 'US', region: 'IA', city: 'Council Bluffs', asn: 396982, as_org: 'Google LLC', viewport_w: 800, viewport_h: 600 });
+    d1.seed({ view: '7300000000000001', visitor: 'm'.repeat(32), ts: NOW - H + 1, path: '/news-stories', country: 'CN', city: 'Changsha', asn: 56047, as_org: 'China Mobile Communications Corporation', viewport_w: 1288, viewport_h: 1079 });
+  }
+
+  it('counts only people above, and lists what it set aside, with the reason and network, at the end', async () => {
+    seedCrawlers();
+    const $ = cheerio.load(await (await get()).text());
+
+    expect($('.summary').text()).toBe('3 views · 2 visitors · 2 pages');
+    expect($('.setaside').text()).toBe('Not counted: 7 visitors (7 views) that look automated, listed at the end of the page.');
+
+    expect(tableOf($, 'Recent visitors')).toEqual([
+      ['First seen (ET)', 'Visitor', 'Where', 'Network', 'Device', 'Came from', 'Entry page', 'Pages viewed', 'Read time'],
+      ['2026-10-17 08:00', shortVisitor(B), 'Herndon, VA, US', 'Verizon Business', 'desktop', '(direct)', '/', '2', '2m 5s'],
+      ['2026-10-17 07:00', shortVisitor(A), 'Manhattan, KS, US', 'AT&T Enterprises, LLC', 'mobile', 'www.google.com', '/about', '1', '1m 54s'],
+    ]);
+    expect(tableOf($, 'Pages')).toEqual([
+      ['Page', 'Views', 'Average read'],
+      ['/about', '2', '1m 57s'],
+      ['/', '1', '5s'],
+    ]);
+    expect(tableOf($, 'Sources')).toEqual([
+      ['Came from', 'Arrivals'],
+      ['www.google.com', '1'],
+    ]);
+    expect(tableOf($, 'Locations')).toEqual([
+      ['Where', 'Visitors', 'Views'],
+      ['Herndon, VA, US', '1', '2'],
+      ['Manhattan, KS, US', '1', '1'],
+    ]);
+    expect(tableOf($, 'Networks')).toEqual([
+      ['Network', 'Visitors', 'Views'],
+      ['Verizon Business', '1', '2'],
+      ['AT&T Enterprises, LLC', '1', '1'],
+    ]);
+
+    // Last on the page, after the tables it was taken out of.
+    expect($('section h2').last().text()).toBe('Set aside as likely automated');
+    expect($('section').last().find('p.note').text()).toBe(automatedExplanation());
+    expect(tableOf($, 'Set aside as likely automated')).toEqual([
+      ['Why', 'Network', 'Visitors', 'Views'],
+      ['Network that sends only crawlers', 'Huawei Cloud Singapore Region', '3', '3'],
+      ['Window size only crawlers use', 'China Unicom Jiangsu province network', '2', '2'],
+      ['From mainland China, nothing read', 'China Mobile Communications Corporation', '1', '1'],
+      ['Company data centre, nothing read', 'Google LLC', '1', '1'],
+    ]);
+  });
+
+  it('narrows what it set aside to the chosen window too', async () => {
+    seedCrawlers();
+    d1.seed({ view: '7400000000000001', visitor: 'o'.repeat(32), ts: NOW - 20 * DAY, path: '/old', country: 'SG', asn: 136907, as_org: 'Huawei Cloud Singapore Region' });
+    const month = cheerio.load(await (await get()).text());
+    expect(month('.setaside').text()).toContain('8 visitors (8 views)');
+    const week = cheerio.load(await (await get('?days=7')).text());
+    expect(week('.setaside').text()).toContain('7 visitors (7 views)');
+    expect(tableOf(week, 'Set aside as likely automated')[1]).toEqual(['Network that sends only crawlers', 'Huawei Cloud Singapore Region', '3', '3']);
+  });
+});
+
 describe('more visitors than Recent visitors lists', () => {
   it(`shows the ${RECENT_VISITORS_LIMIT} most recently active, the earliest arrival among them if still active, while the summary counts all`, async () => {
     // One reader arrived before everyone, the same day, and was still reading
@@ -286,6 +359,7 @@ describe('sad path', () => {
       'No visitors arrived from another site in this window.',
       'No locations in this window.',
       'No networks in this window.',
+      'Nothing was set aside in this window.',
     ]);
   });
 
@@ -311,7 +385,7 @@ describe('sad path', () => {
     const $ = cheerio.load(await res.text());
     expect($('.summary').text()).toBe('0 views · 0 visitors · 0 pages');
     expect($('table')).toHaveLength(0);
-    expect($('.empty')).toHaveLength(5);
+    expect($('.empty')).toHaveLength(6);
   });
 
   it('answers 500 without describing the schema when a query fails', async () => {

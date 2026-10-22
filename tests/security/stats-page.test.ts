@@ -1,10 +1,11 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { createHash } from 'node:crypto';
+import * as cheerio from 'cheerio';
 import { onRequest, createStatsHandler } from '../../functions/stats';
 import { onRequest as collect } from '../../functions/api/e';
 import { beaconRequest, createD1, createEnv, ORIGIN, type TestD1 } from '../helpers/d1';
 import { expectStatsNotFound, expectStatsPageHeaders } from '../helpers/analytics';
-import { EVENT_VIEW, STATS_PATH } from '../../src/data/analytics';
+import { EVENT_END, EVENT_VIEW, STATS_PATH } from '../../src/data/analytics';
 import type { D1Like } from '../../src/lib/runtime';
 import type { GateVerdict } from '../../src/lib/stats-gate';
 
@@ -213,6 +214,62 @@ describe('hostile values posted to the collector, then shown to the owner', () =
     expect(csp).toContain(`'sha256-${createHash('sha256').update(styles[0]).digest('base64')}'`);
     expect(csp).not.toContain('unsafe-inline');
     expect(csp).not.toContain('script-src');
+  });
+});
+
+describe('setting visits aside, which anyone could try to steer', () => {
+  // One IP and one browser string make one visitor code for the day. Someone
+  // on the same network with the same browser can post views under a real
+  // reader's code; the rule must not let them make that reader disappear.
+  const shared = (cf: Parameters<typeof beaconRequest>[1]['cf'] = undefined) => ({
+    headers: { 'CF-Connecting-IP': '198.51.100.7', 'User-Agent': 'Mozilla/5.0 (shared)' },
+    ...(cf === undefined ? {} : { cf }),
+  });
+  const post = async (body: Record<string, unknown>, opts = shared()) => {
+    const res = await collect({ request: beaconRequest(body, opts), env: createEnv(d1.binding) });
+    expect(res.status).toBe(204);
+  };
+  const render = async () => (await createStatsHandler(allow)({ request: request(), env: createEnv(d1.binding) })).text();
+
+  it('a forged crawler-sized view does not set aside the person whose network and browser it copies', async () => {
+    await post({ k: EVENT_VIEW, v: 'dddddddd00000001', p: '/a-real-reader', w: 390, h: 844 });
+    await post({ k: EVENT_VIEW, v: 'dddddddd00000002', p: '/forged', w: 1800, h: 1125 });
+    const [forged, real] = d1.rows().filter((r) => r.path !== SECRET_PATH);
+    expect(forged.visitor).toBe(real.visitor);
+
+    const html = await render();
+    expect(html).toContain('/a-real-reader');
+    expect(html).toContain('Nothing was set aside in this window.');
+  });
+
+  it('a forged zero reading time does not set aside a reader on a big company network', async () => {
+    const google = { country: 'US', asn: 15169, asOrganization: 'Google LLC' };
+    await post({ k: EVENT_VIEW, v: 'dddddddd00000011', p: '/read-for-real', w: 390, h: 844 }, shared(google));
+    await post({ k: EVENT_END, v: 'dddddddd00000011', p: '/read-for-real', e: 45_000 }, shared(google));
+    // A late "0 seconds" for that same view, and a new view that read nothing.
+    await post({ k: EVENT_END, v: 'dddddddd00000011', p: '/read-for-real', e: 0 }, shared(google));
+    await post({ k: EVENT_VIEW, v: 'dddddddd00000012', p: '/forged-idle', w: 390, h: 844 }, shared(google));
+
+    const html = await render();
+    expect(html).toContain('/read-for-real');
+    expect(html).toContain('Nothing was set aside in this window.');
+  });
+
+  it('can actually set aside: the same posts from a crawler network are set aside', async () => {
+    const tencent = { country: 'US', asn: 132203, asOrganization: 'ACEVILLE PTE.LTD.' };
+    await post({ k: EVENT_VIEW, v: 'dddddddd00000021', p: '/crawled', w: 390, h: 844 }, shared(tencent));
+    const $ = cheerio.load(await render());
+    const section = (caption: string) => $('section').filter((_, el) => $(el).find('h2').text() === caption).text();
+    expect(section('Set aside as likely automated')).toContain('ACEVILLE PTE.LTD.');
+    expect(section('Networks')).not.toContain('ACEVILLE PTE.LTD.');
+    expect(section('Recent visitors')).not.toContain('/crawled');
+  });
+
+  it('renders a hostile network name in the set-aside table as text', async () => {
+    await post({ k: EVENT_VIEW, v: 'dddddddd00000031', p: '/x', w: 390, h: 844 }, shared({ asn: 132203, asOrganization: '<script>alert(3)</script>' }));
+    const html = await render();
+    expect(html).not.toMatch(/<script/i);
+    expect(html).toContain('&lt;script&gt;alert(3)&lt;/script&gt;');
   });
 });
 

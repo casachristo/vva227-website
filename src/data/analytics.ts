@@ -168,6 +168,71 @@ export const SITE_HOSTS: readonly string[] = [
 export const COLLECT_HOSTS: readonly string[] = [...PRODUCTION_HOSTS, ...LOCAL_HOSTS];
 
 /**
+ * Visits /stats sets aside as likely automated, rather than counting as people.
+ *
+ * Measured, not guessed. In the log's first four and a half days (2026-10-18
+ * to 22), 336 visitor-days were recorded and about seven looked like people.
+ * The rest were crawlers that run JavaScript, so they set off the beacon as a
+ * reader would. Counted as people, they pushed the one visitor who arrived
+ * from Google off Recent visitors and made every total meaningless.
+ *
+ * Nothing is deleted and nothing new is stored: /stats sorts the rows it
+ * already has, and lists what it set aside, with the reason and the network,
+ * at the end of the page, where a misjudged visit can be seen. A visit is set
+ * aside only on evidence Cloudflare supplies (the network, the country) or
+ * that EVERY view of the day carries (the window, no reading time), so a
+ * hand-built post can set aside nobody's visits but its own.
+ *
+ * NEVER list a network that carries private-relay users: Cloudflare (13335),
+ * Akamai (36183) and Fastly (54113) carry iCloud Private Relay and WARP, which
+ * is to say ordinary readers. tests/invariants/stats-partition.test.ts holds it.
+ *
+ * Group and match by network NUMBER. The name Cloudflare reports is whoever
+ * registered that block of addresses, so one network shows up under several
+ * names (Tencent's as "Aceville Pte Ltd" and "16 Collyer Quay").
+ */
+
+/** Networks that have sent this site nothing but crawlers. Any visit from one is set aside. Owners from bgp.he.net and ipinfo.io, 2026-10-21. */
+export const CRAWLER_NETWORKS: ReadonlyArray<{ asn: number; owner: string }> = [
+  { asn: 132203, owner: 'Tencent Cloud' },
+  { asn: 45090, owner: 'Tencent Cloud' },
+  { asn: 136907, owner: 'Huawei Cloud' },
+  { asn: 55990, owner: 'Huawei Cloud' },
+  { asn: 134756, owner: 'China Telecom’s Nanjing data centre' },
+];
+
+/**
+ * Browser window sizes only crawlers have used here. A visitor-day is set aside
+ * when EVERY view it made had one of them, so a reader who resized a window to
+ * one of these by chance is still counted.
+ */
+export const CRAWLER_WINDOWS: ReadonlyArray<{ width: number; height: number; seenFrom: string }> = [
+  { width: 1800, height: 1125, seenFrom: 'Tencent Cloud, Amazon and Chinese home and mobile networks, never with any reading time' },
+  { width: 1024, height: 569, seenFrom: 'Microsoft data centres only (Bing’s page renderer)' },
+];
+
+/**
+ * Big companies' data-centre networks. Their staff browse from some of them
+ * too, so a visit from one is set aside only when no view recorded any
+ * reading time: a crawler or link checker that loaded the page and left.
+ */
+export const NOTHING_READ_NETWORKS: ReadonlyArray<{ asn: number; owner: string }> = [
+  { asn: 15169, owner: 'Google' },
+  { asn: 396982, owner: 'Google' },
+  { asn: 8075, owner: 'Microsoft' },
+  { asn: 16509, owner: 'Amazon' },
+  { asn: 14618, owner: 'Amazon' },
+  { asn: 32934, owner: 'Meta' },
+];
+
+/**
+ * Countries the crawlers come from and the chapter's readers do not. A visit
+ * from one is set aside only when no view recorded any reading time. Cloudflare's
+ * two-letter codes.
+ */
+export const NOTHING_READ_COUNTRIES: ReadonlyArray<{ code: string; name: string }> = [{ code: 'CN', name: 'mainland China' }];
+
+/**
  * The time zone the stats page shows times and calendar days in.
  *
  * The chapter is in Northern Virginia. Stored timestamps stay UTC
