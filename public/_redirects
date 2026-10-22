@@ -1,9 +1,20 @@
 # Legacy URL map — every page of the old ColdFusion site sent to its nearest
 # replacement, so no existing link, bookmark or search result breaks.
 #
-# 50 legacy URLs. Where a page was consolidated into a section of a larger page,
+# The first 50 rules are the pages crawled on the legacy site in 2026. The rest,
+# added 2026-10-22, are older addresses the Wayback Machine knows, which still
+# get requested. Where a page was consolidated into a section of a larger page,
 # the redirect points at the page that absorbed it. Where a page was empty, it
 # points at the page that now carries the content it should have had.
+#
+# Matching is exact and case-sensitive, and the old IIS server was not: so
+# every mixed-case address also has its lower-case form, in the last section.
+# tests/integration/build-output.test.ts fails if one is missing.
+#
+# Deliberately NOT redirected, so they stay honest 404s until the chapter
+# decides: the Vietnam Medal of Honor honor roll (/Vietnam-MOH-Recipients and
+# eight citation pages) and the Vince Kaspar prizes (/vkea.html,
+# /Excellence-in-the-Arts), whose content has no page on the new site.
 #
 # Format: /source  /destination  status
 
@@ -32,8 +43,8 @@
 /2021-year-in-review                           /give/impact                   301
 /2020-year-in-review                           /give/impact                   301
 
-# ---- Governance and internal records (the Chapter Documents page that once
-#      absorbed these was removed 2026-09-01; nearest remaining page is About) ----
+# ---- Governance and internal records (now the Governance & Documents
+#      section of About) ----
 /Chapter-227-By-Laws                           /about                         301
 /Board-Meeting-Minutes                         /about                         301
 /Members-Information                           /about                         301
@@ -88,3 +99,148 @@
 # ---- Retired 1990s artifacts ----
 /Browser-and-Email-Settings                    /                              301
 /fancybox.cfm                                  /                              301
+
+# ---- Pages whose content moved (Wayback, checked 2026-10-22) ----
+/About-Us                                                 /about                         301
+/Dean-K-Phillips                                          /about/dean-k-phillips         301
+/dean.html                                                /about/dean-k-phillips         301
+/chapter-BYLaws                                           /about                         301
+/Contact-List                                             /about                         301
+/template_officers_print.cfm                              /about                         301
+/Advocacies                                               /about                         301
+/who.html                                                 /about                         301
+/Contact-Us                                               /contact                       301
+/Email-Form                                               /contact                       301
+/Join-Us                                                  /join                          301
+/Memberships                                              /join                          301
+/fileaccess.cfm                                           /join                          301
+/Chapter-Programs                                         /programs                      301
+/vets.html                                                /get-help/vet-center           301
+/2020-in-review                                           /give/impact                   301
+/donations                                                /give                          301
+/photos.html                                              /about                         301
+/members                                                  /about                         301
+/Members-Only                                             /about                         301
+
+# ---- Old help pages: empty placeholders, or a links list the new site does not keep (Wayback, checked 2026-10-22) ----
+/PTSD                                                     /get-help                      301
+/Agent-Orange                                             /get-help                      301
+/Health-Services                                          /get-help                      301
+/Vet-Organizations                                        /get-help                      301
+/Veterans-Affairs                                         /get-help                      301
+/Resources                                                /get-help                      301
+/Important-Links                                          /get-help                      301
+/Guide-for-disabled-veterans-VA-and-other-resource-guide  /get-help                      301
+/links.html                                               /get-help                      301
+
+# ---- Past meeting and event notices (Wayback, checked 2026-10-22) ----
+/view-calendar                                            /events                        301
+/get_calendar_details.cfm                                 /events                        301
+/activities.html                                          /events                        301
+/Upcoming-Events                                          /events                        301
+/Upcoming-noteworthy-events                               /events                        301
+/membership-meeting                                       /events                        301
+/15-July-2021-Chapter-Membership-Meeting                  /events                        301
+/16-February-Meeting                                      /events                        301
+/16-September-2021-Membership-Meeting                     /events                        301
+/17-November-luncheon-membership-meeting                  /events                        301
+/18-March-2021-Chapter-Meeting                            /events                        301
+/19-August-2021-Chapter-Membership-Meeting                /events                        301
+/19-November-membership-meeting                           /events                        301
+/20-April-Chapter-Membership-Meeting                      /events                        301
+/20-May-2021-Chapter-Membership-Meeting                   /events                        301
+/20-October-anniversary-membership-meeting                /events                        301
+/Our-September-17th-membership-meeting                    /events                        301
+/Vietnam-50th-Events                                      /events                        301
+/news_stories_archive.cfm                                 /events                        301
+/news                                                     /events                        301
+/news-stories                                             /events                        301
+/17-June-2021Chapter-Membership-Meeting                   /about                         301
+/Our-15-October-membership-meeting                        /about                         301
+
+# ---- Programs the chapter has retired (nearest page) (Wayback, checked 2026-10-22) ----
+/Speakers-Panel                                           /programs                      301
+/speakers.html                                            /programs                      301
+/Scholarships                                             /programs                      301
+/Newsletters                                              /events                        301
+/news.html                                                /events                        301
+
+# ---- Lower-case forms of the mixed-case addresses above ----
+/chapter-basics                                           /about                         301
+/photos                                                   /about                         301
+/member-stories                                           /about                         301
+/chapter-officers                                         /about                         301
+/presidents-corner                                        /give/impact                   301
+/chapter-227-by-laws                                      /about                         301
+/board-meeting-minutes                                    /about                         301
+/members-information                                      /about                         301
+/chapter-information-to-members                           /about                         301
+/chapter-publications                                     /about                         301
+/veteran-and-family-support                               /get-help                      301
+/chapter-227-key-mission                                  /get-help                      301
+/working-with-vet-reps                                    /get-help                      301
+/alexandria-vet-center                                    /get-help/vet-center           301
+/fairfax-court                                            /get-help/treatment-court      301
+/presentation-to-chapter-227-nov-2024                     /get-help/treatment-court      301
+/community-support                                        /programs                      301
+/community-outreach                                       /programs                      301
+/more-details-coming                                      /programs                      301
+/support-to-va-vash                                       /programs                      301
+/donation                                                 /give                          301
+/cash-and-check-donations-to-the-chapter                  /give                          301
+/clothing-and-furniture                                   /give                          301
+/vehicles                                                 /give                          301
+/veteran-and-family-support-funds                         /give/impact                   301
+/membership                                               /join                          301
+/vva-227-chapter-membership                               /join                          301
+/membership-invitation                                    /join                          301
+/chapter-marketing                                        /join                          301
+/individual-one-on-one                                    /join                          301
+/avva-chapter-membership                                  /join/avva                     301
+/activities                                               /events                        301
+/monthly-meetings                                         /events                        301
+/calendar                                                 /events                        301
+/ceremonies-and-parties                                   /events                        301
+/christmas-party                                          /events                        301
+/working-with-mission-bbq                                 /events                        301
+/marketing-at-the-american-wartime-tank-farm              /events                        301
+/newsletter                                               /events                        301
+/privacy-policy                                           /privacy                       301
+/browser-and-email-settings                               /                              301
+/about-us                                                 /about                         301
+/dean-k-phillips                                          /about/dean-k-phillips         301
+/chapter-bylaws                                           /about                         301
+/contact-list                                             /about                         301
+/advocacies                                               /about                         301
+/contact-us                                               /contact                       301
+/join-us                                                  /join                          301
+/memberships                                              /join                          301
+/chapter-programs                                         /programs                      301
+/members-only                                             /about                         301
+/ptsd                                                     /get-help                      301
+/agent-orange                                             /get-help                      301
+/health-services                                          /get-help                      301
+/vet-organizations                                        /get-help                      301
+/veterans-affairs                                         /get-help                      301
+/resources                                                /get-help                      301
+/important-links                                          /get-help                      301
+/guide-for-disabled-veterans-va-and-other-resource-guide  /get-help                      301
+/upcoming-events                                          /events                        301
+/upcoming-noteworthy-events                               /events                        301
+/15-july-2021-chapter-membership-meeting                  /events                        301
+/16-february-meeting                                      /events                        301
+/16-september-2021-membership-meeting                     /events                        301
+/17-november-luncheon-membership-meeting                  /events                        301
+/18-march-2021-chapter-meeting                            /events                        301
+/19-august-2021-chapter-membership-meeting                /events                        301
+/19-november-membership-meeting                           /events                        301
+/20-april-chapter-membership-meeting                      /events                        301
+/20-may-2021-chapter-membership-meeting                   /events                        301
+/20-october-anniversary-membership-meeting                /events                        301
+/our-september-17th-membership-meeting                    /events                        301
+/vietnam-50th-events                                      /events                        301
+/17-june-2021chapter-membership-meeting                   /about                         301
+/our-15-october-membership-meeting                        /about                         301
+/speakers-panel                                           /programs                      301
+/scholarships                                             /programs                      301
+/newsletters                                              /events                        301
