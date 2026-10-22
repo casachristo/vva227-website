@@ -9,6 +9,7 @@ import {
   srcFiles,
   DIST,
   SITE_ORIGIN,
+  PRODUCTION_ORIGIN,
   SELF_ORIGINS,
   SELF_ORIGIN_ALLOWLIST,
 } from '../helpers/dist';
@@ -286,6 +287,57 @@ describe('self-referential links', () => {
       });
     }
     expect(outside, `legacy-host links outside the allowlist:\n${outside.join('\n')}`).toEqual([]);
+  });
+});
+
+/**
+ * The address every page advertises as its own.
+ *
+ * canonical, og:url and og:image tell search engines and Facebook where a page
+ * really lives. Until 2026-10-22 they named the staging copy,
+ * vva227-refresh.pages.dev: Google was told to credit an address that runs no
+ * visit log, Search Console could not show the real domain's traffic, and a
+ * shared link previewed the staging copy's image.
+ *
+ * TIER JUSTIFICATION: only the built head shows what a crawler reads. The
+ * config, the layout and every other test agreed with each other the whole
+ * time, because they all derive the origin from the same wrong setting.
+ */
+describe('the address pages advertise', () => {
+  const ADVERTISED: ReadonlyArray<[string, string, string]> = [
+    ['canonical', 'link[rel="canonical"]', 'href'],
+    ['og:url', 'meta[property="og:url"]', 'content'],
+    ['og:image', 'meta[property="og:image"]', 'content'],
+  ];
+
+  /** On the production domain itself: not www, not a staging copy, not a lookalike host. */
+  const onProduction = (url: string) => url.startsWith(`${PRODUCTION_ORIGIN}/`);
+
+  it('is the production domain on every page, the 404 page included', () => {
+    const wrong: string[] = [];
+    for (const page of pages) {
+      for (const [field, selector, attr] of ADVERTISED) {
+        const url = page.$(selector).attr(attr) ?? '';
+        if (!onProduction(url)) wrong.push(`${page.route} ${field} = ${url || '(missing)'}`);
+      }
+    }
+    expect(wrong, `pages advertising another address:\n${wrong.join('\n')}`).toEqual([]);
+    expect(pages.some((p) => p.route === '/404'), 'the 404 page was not inspected').toBe(true);
+  });
+
+  it('comes from the configured origin, which is the production domain', () => {
+    expect(SITE_ORIGIN).toBe(PRODUCTION_ORIGIN);
+  });
+
+  it('can actually fail — staging, www and lookalike hosts are refused', () => {
+    expect(onProduction(`${PRODUCTION_ORIGIN}/`)).toBe(true);
+    expect(onProduction(`${PRODUCTION_ORIGIN}/images/og-default.jpg`)).toBe(true);
+    expect(onProduction('https://vva227-refresh.pages.dev/')).toBe(false);
+    expect(onProduction('https://vva227-refresh-12g.pages.dev/')).toBe(false);
+    expect(onProduction('https://www.vva227.org/')).toBe(false);
+    expect(onProduction('http://vva227.org/')).toBe(false);
+    expect(onProduction('https://vva227.org.evil.example/')).toBe(false);
+    expect(onProduction('')).toBe(false);
   });
 });
 
