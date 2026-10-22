@@ -175,7 +175,12 @@ computer, use the analytics setup's API token:
 (see step 5 of [docs/analytics.md](./docs/analytics.md), which also gives the
 Windows forms).
 
-Target project: `vva227-refresh` → https://vva227-refresh.pages.dev -- url deprecated
+Target project: `vva227-refresh` in the chapter's "Ch 227" Cloudflare account. It serves
+https://vva227.org (and answers on https://vva227-refresh-12g.pages.dev). The
+production address is `site` in `astro.config.mjs`: every page's canonical URL and
+social preview are built from it, so it must stay `https://vva227.org`.
+https://vva227-refresh.pages.dev is the retired review mock, in another account:
+never use it as an address.
 
 `public/_redirects` maps every legacy URL. It is written for the real domain,
 so it becomes active the moment the site is pointed at `vva227.org`; no existing

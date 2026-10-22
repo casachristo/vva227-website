@@ -63,6 +63,28 @@ describe('the bug this exists for', () => {
     expect(classifyLink('https://vva227.org', SELF)).toBe('self-absolute');
   });
 
+  it('flags the address the live site is served from, and every preview of it', () => {
+    // The Pages project that serves vva227.org answers on its own pages.dev
+    // name, and each deployment on a fresh <hash>. subdomain of it. A link
+    // pasted from a deployment's URL is the same defect as one to the domain.
+    expect(classifyLink('https://vva227-refresh-12g.pages.dev/give', SELF)).toBe('self-absolute');
+    expect(classifyLink('https://3f2a9c1d.vva227-refresh-12g.pages.dev/give', SELF)).toBe('self-absolute');
+    expect(classifyLink('https://F335FFEE.VVA227-REFRESH-12G.PAGES.DEV/', SELF)).toBe('self-absolute');
+    expect(classifyLink('https://abc123.vva227-refresh.pages.dev/', SELF)).toBe('self-absolute');
+  });
+
+  it('keeps lookalikes of those addresses external', () => {
+    for (const href of [
+      'https://vva227-refresh-12gx.pages.dev/',
+      'https://xvva227-refresh-12g.pages.dev/',
+      'https://vva227-refresh-12g.pages.dev.evil.example/',
+      'https://pages.dev/',
+      'https://other-project.pages.dev/',
+    ]) {
+      expect(classifyLink(href, SELF), href).toBe('external');
+    }
+  });
+
   it('flags the fully-qualified form with a trailing dot', () => {
     // "vva227.org." resolves to the same server. Compared as a literal string
     // it is a different host, so one dot would have walked a self-absolute link
