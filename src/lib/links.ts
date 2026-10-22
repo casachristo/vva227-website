@@ -28,14 +28,22 @@ export type LinkKind =
   | 'self-absolute';
 
 /**
- * Every origin that IS this site: the staging origin it is previewed on, and
- * the real domain it is pointed at. One list, imported by the data validator
- * and by the test helpers, so the rule cannot drift between them.
+ * Every origin that IS this site: the real domain and its www form; the
+ * Pages project that serves it (vva227-refresh-12g.pages.dev, in the chapter's
+ * Cloudflare account), with every deployment's <hash>. preview of it; and the
+ * retired staging copy, vva227-refresh.pages.dev, with its previews. One list,
+ * imported by the data validator and by the test helpers, so the rule cannot
+ * drift between them.
+ *
+ * A leading "*." means any subdomain of what follows, and not the name itself.
  */
 export const SELF_ORIGINS: readonly string[] = [
-  'https://vva227-refresh.pages.dev',
   'https://vva227.org',
   'https://www.vva227.org',
+  'https://vva227-refresh-12g.pages.dev',
+  'https://*.vva227-refresh-12g.pages.dev',
+  'https://vva227-refresh.pages.dev',
+  'https://*.vva227-refresh.pages.dev',
 ];
 
 /** Parsing base. Never surfaces: it only exists so relative inputs parse at all. */
@@ -55,8 +63,9 @@ function normalizeHost(host: string): string {
  * Classify one `href`.
  *
  * @param href        the raw attribute value, exactly as authored
- * @param selfOrigins every origin that IS this site — the staging origin, the
- *                    real domain, and its www form. Compared host-for-host, so
+ * @param selfOrigins every origin that IS this site — the real domain, its www
+ *                    form, the pages.dev addresses, and "*." for any
+ *                    subdomain of one. Compared host-for-host, so
  *                    `vva227.org.evil.com` and `vva227.orgx` stay external.
  */
 export function classifyLink(href: string, selfOrigins: readonly string[]): LinkKind {
@@ -82,17 +91,20 @@ export function classifyLink(href: string, selfOrigins: readonly string[]): Link
   // A relative input that parsed against PARSE_BASE is not an absolute link.
   if (url.host === new URL(PARSE_BASE).host && !/^(https?:)?\/\//i.test(raw)) return 'non-http';
 
-  const selfHosts = new Set(
-    selfOrigins
-      .map((origin) => {
-        try {
-          return normalizeHost(new URL(origin).host);
-        } catch {
-          return '';
-        }
-      })
-      .filter(Boolean),
-  );
+  const host = normalizeHost(url.host);
+  const isSelf = selfOrigins.some((origin) => {
+    let self: string;
+    try {
+      self = normalizeHost(new URL(origin).host);
+    } catch {
+      return false;
+    }
+    if (!self.startsWith('*.')) return host === self;
+    // "*.x": any subdomain of x. The suffix keeps its dot, so "xvva227-..."
+    // and x itself do not match.
+    const suffix = self.slice(1);
+    return host.length > suffix.length && host.endsWith(suffix);
+  });
 
-  return selfHosts.has(normalizeHost(url.host)) ? 'self-absolute' : 'external';
+  return isSelf ? 'self-absolute' : 'external';
 }
