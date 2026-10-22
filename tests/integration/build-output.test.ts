@@ -125,6 +125,69 @@ describe('legacy redirects', () => {
     expect(loops, `self-redirects: ${loops.map((r) => r.from).join(', ')}`).toEqual([]);
   });
 
+  it('sends every old page whose content moved to the page that now holds it', () => {
+    // Checked against the Wayback Machine's copies on 2026-10-22: each old
+    // page's substance (names, numbers, the help it gave) is on the target.
+    const moved: Array<[string, string]> = [
+      ['/About-Us', '/about'],
+      ['/Dean-K-Phillips', '/about/dean-k-phillips'],
+      ['/dean.html', '/about/dean-k-phillips'],
+      ['/chapter-BYLaws', '/about'],
+      ['/Contact-List', '/about'],
+      ['/Contact-Us', '/contact'],
+      ['/Email-Form', '/contact'],
+      ['/Join-Us', '/join'],
+      ['/Memberships', '/join'],
+      ['/view-calendar', '/events'],
+      ['/vets.html', '/get-help/vet-center'],
+      ['/template_officers_print.cfm', '/about'],
+      ['/fileaccess.cfm', '/join'],
+    ];
+    const to = new Map(rules.map((r) => [r.from, r.to]));
+    const wrong = moved.filter(([from, dest]) => to.get(from) !== dest).map(([from, dest]) => `${from} -> ${to.get(from) ?? '(404)'}, want ${dest}`);
+    expect(wrong).toEqual([]);
+  });
+
+  it('sends the old help pages to /get-help, where the crisis line is', () => {
+    // The old site's PTSD, Agent Orange and similar pages were empty
+    // placeholders; someone following a link to one is looking for help.
+    const to = new Map(rules.map((r) => [r.from, r.to]));
+    for (const from of ['/PTSD', '/ptsd', '/Agent-Orange', '/Health-Services', '/Vet-Organizations', '/Veterans-Affairs', '/Resources', '/Important-Links']) {
+      expect(to.get(from), from).toBe('/get-help');
+    }
+  });
+
+  it('answers the lower-case form of every mixed-case old address', () => {
+    // The old IIS server ignored case and its own pages linked both forms;
+    // Cloudflare's rules match case exactly, so /chapter-publications, as a
+    // search engine indexed it, was a 404 while /Chapter-Publications worked.
+    const to = new Map(rules.map((r) => [r.from, r.to]));
+    const missing = rules
+      .filter((r) => r.from !== r.from.toLowerCase())
+      .filter((r) => to.get(r.from.toLowerCase()) !== r.to)
+      .map((r) => `${r.from.toLowerCase()} (want ${r.to}, have ${to.get(r.from.toLowerCase()) ?? 'nothing'})`);
+    expect(missing).toEqual([]);
+    expect(rules.filter((r) => r.from !== r.from.toLowerCase()).length, 'no mixed-case rule inspected').toBeGreaterThan(40);
+  });
+
+  it('never shadows a page the build emits, and states each old address once', () => {
+    const shadowing = rules.filter((r) => routes.has(r.from)).map((r) => r.from);
+    expect(shadowing).toEqual([]);
+    const seen = new Set<string>();
+    const twice = rules.filter((r) => (seen.has(r.from) ? true : (seen.add(r.from), false))).map((r) => r.from);
+    expect(twice).toEqual([]);
+  });
+
+  it('leaves 404 the old pages whose content is missing until the chapter decides', () => {
+    // The Vietnam Medal of Honor honor roll and the Vince Kaspar prizes have
+    // no page on the new site and no recorded decision. A redirect would
+    // pretend they moved.
+    const froms = new Set(rules.map((r) => r.from));
+    for (const from of ['/Vietnam-MOH-Recipients', '/Wesley-L-Fox', '/Michael-F-Folland', '/vkea.html', '/Excellence-in-the-Arts']) {
+      expect(froms.has(from), from).toBe(false);
+    }
+  });
+
   it('covers the specific legacy URLs most likely to be bookmarked', () => {
     const froms = new Set(rules.map((r) => r.from));
     for (const legacy of ['/Donation', '/Membership', '/Newsletter', '/Chapter-Officers', '/email-form']) {
