@@ -52,8 +52,9 @@ visitor somewhere they did not mean to go — so that is what the rules are abou
 | L4 | No image ships that no page references, except those listed with a reason. The list can only shrink. | `tests/integration/build-output.test.ts` — *ships no image that no page references* |
 | L5 | No source file carries a build-generated scope attribute — the fingerprint of markup pasted out of a deployed page. | `tests/integration/build-output.test.ts` — *authors no build-generated scope attributes by hand* |
 | L6 | Words set into an image are transcribed into its alt text. | `tests/feature/nvvvf-section.test.ts`; `tests/system/nvvvf.spec.ts` |
-| L7 | Pages that belong together link to each other from their content, not only from the global footer. A page reachable solely through site furniture is a page nobody reads. | `tests/integration/build-output.test.ts` — *links each page to the other from inside its content*; `tests/system/nvvvf.spec.ts` — *from the body of the page a donor is actually reading* |
+| L7 | Pages that belong together link to each other from their content, not only from the global footer. A page reachable solely through site furniture is a page nobody reads. | `tests/integration/build-output.test.ts` — *links each page to the other from inside its content* |
 | L8 | No page ships a `<script>`. Asserted against raw HTML, because the test helper strips script elements from its parsed document — the version of this rule that used the parsed document could not fail. | `tests/security/output-safety.test.ts` — *ships no script elements at all*, *can actually fail* |
+| L9 | `/give/nvvvf` stays built and opens by its address, but no page links to it — not the body, header or footer, in any spelling of the address (chapter's request, 2026-10-25). | `tests/integration/build-output.test.ts` — *still builds each page*, *links to none of them from any page*, *can actually fail*; `tests/system/nvvvf.spec.ts` — *no page that used to link to it still does*, *and it still opens by its address* |
 
 ## Rendering
 
