@@ -407,15 +407,12 @@ describe('the address pages advertise', () => {
 describe('cross-references between pages', () => {
   // A page nothing links to is a page nobody reads. The global footer carries a
   // link to every nav route on all 25 pages, so any test that only asks "is
-  // /give/nvvvf linked from somewhere" passes from site furniture alone and
-  // proves nothing — hence `main`.
+  // /get-help linked from somewhere" passes from site furniture alone and
+  // proves nothing — hence `main`. Nothing links *to* /give/nvvvf any more; see
+  // the unlinked-pages block below.
   const IN_BODY: ReadonlyArray<{ from: string; to: string; why: string }> = [
-    { from: '/give', to: '/give/nvvvf', why: 'a donor choosing between two payees' },
-    { from: '/give/impact', to: '/give/nvvvf', why: 'the Foundation partnership behind emergency assistance' },
-    { from: '/programs', to: '/give/nvvvf', why: 'how emergency aid is funded' },
     { from: '/give/nvvvf', to: '/get-help', why: 'a veteran who lands on the donor page' },
     { from: '/give/nvvvf', to: '/give', why: 'giving to the chapter rather than the Foundation' },
-    { from: '/get-help', to: '/give/nvvvf', why: 'the review note recording the contradiction' },
   ];
 
   it('links each page to the other from inside its content, not from the footer', () => {
@@ -436,13 +433,71 @@ describe('cross-references between pages', () => {
   it('can actually fail — the selector excludes the footer that links everything', () => {
     // Anti-vacuity, and the specific reason this test is written against main:
     // every page's header and footer link /join (it's a top-level nav item),
-    // so a document-wide selector would be green even with all seven in-body
-    // references deleted. /about no longer serves this role since the home
+    // so a document-wide selector would be green even with every in-body
+    // reference deleted. /about no longer serves this role since the home
     // page's own hero now links there (2026-08-28) — /join, still in NAV and
     // not linked from home's rebuilt body, plays the same role instead.
     const home = pages.find((p) => p.route === '/')!;
     expect(home.$(`a[href="/join"]`).length, 'the header/footer should link it everywhere').toBeGreaterThan(0);
     expect(home.$(`main a[href="/join"]`).length, 'the home page deliberately does not').toBe(0);
+  });
+});
+
+describe('pages kept but unlinked', () => {
+  // The chapter asked (2026-10-25) for every link to /give/nvvvf to come out
+  // while the page itself stays up, reachable only by its address. Every
+  // element counts here, header and footer included — the opposite of the
+  // `main`-only check above, because a stray footer link is still a link.
+  const UNLINKED = ['/give/nvvvf'];
+
+  /** True when `href`, written on the page at `route`, takes a reader to `target`. */
+  function leadsTo(href: string, route: string, target: string): boolean {
+    if (href.startsWith('#')) return false; // in-page jump on the page itself
+    let url: URL;
+    try {
+      url = new URL(href, `${SITE_ORIGIN}${route}`);
+    } catch {
+      return false;
+    }
+    if (url.origin !== SITE_ORIGIN && !SELF_ORIGINS.includes(url.origin)) return false;
+    return url.pathname.replace(/\/+$/, '') === target;
+  }
+
+  it('still builds each page', () => {
+    for (const route of UNLINKED) {
+      expect(pages.some((p) => p.route === route), `${route} was not built`).toBe(true);
+    }
+  });
+
+  it('links to none of them from any page', () => {
+    const found: string[] = [];
+    for (const page of pages) {
+      page.$('a[href]').each((_, el) => {
+        const href = page.$(el).attr('href')!;
+        for (const target of UNLINKED) {
+          if (leadsTo(href, page.route, target)) found.push(`${page.route} -> ${href}`);
+        }
+      });
+    }
+    expect(found, `links to pages that are meant to be unlinked:\n${found.join('\n')}`).toEqual([]);
+  });
+
+  it('can actually fail — every way of writing the address is caught', () => {
+    const target = '/give/nvvvf';
+    for (const href of [
+      '/give/nvvvf',
+      '/give/nvvvf/',
+      '/give/nvvvf#figures',
+      '/give/nvvvf?from=give',
+      'nvvvf', // relative, written on /give/impact
+      `${SITE_ORIGIN}/give/nvvvf`,
+      ...SELF_ORIGINS.map((o) => `${o}/give/nvvvf`),
+    ]) {
+      expect(leadsTo(href, '/give/impact', target), href).toBe(true);
+    }
+    for (const href of ['#main', '/give', '/give/nvvvf-old', '/foundation', 'https://nvvvf.org/give/nvvvf', 'http://[']) {
+      expect(leadsTo(href, '/give/nvvvf', target), JSON.stringify(href)).toBe(false);
+    }
   });
 });
 

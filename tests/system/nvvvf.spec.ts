@@ -132,23 +132,23 @@ test.describe('the links leave the page correctly', () => {
     await expect(page.locator('h1')).toContainText('Get Help');
   });
 
-  test('it is reachable from the site navigation, not only by its URL', async ({ page, isMobile }) => {
-    await page.goto('/give');
-    if (isMobile) {
-      await page.locator('details.menu summary').click();
+  test('no page that used to link to it still does, menu open or closed', async ({ page, isMobile }) => {
+    // The chapter asked (2026-10-25) for every link here to come out while the
+    // page stays up. These four carried one; the rendered DOM is checked with
+    // the phone menu open too, so a link that only the open menu reveals counts.
+    for (const route of ['/give', '/give/impact', '/programs', '/get-help']) {
+      await page.goto(route);
+      if (isMobile) {
+        await page.locator('details.menu summary').click();
+      }
+      await expect(page.locator('a[href*="/give/nvvvf"]'), route).toHaveCount(0);
+      await expect(page.locator('main'), route).toContainText('Foundation');
     }
-    const link = page.locator(`${isMobile ? '.menu__panel' : 'footer'} a[href="/give/nvvvf"]`).first();
-    await expect(link).toBeVisible();
   });
 
-  test('and from the body of the page a donor is actually reading', async ({ page }) => {
-    // The footer links every nav route on every page, so the assertion above is
-    // satisfied by site furniture. This one is not.
-    await page.goto('/give');
-    const inBody = page.locator('main a[href="/give/nvvvf"]');
-    await expect(inBody).toHaveCount(1);
-    await inBody.click();
-    await expect(page).toHaveURL(/\/give\/nvvvf$/);
+  test('and it still opens by its address', async ({ page }) => {
+    const response = await page.goto('/give/nvvvf');
+    expect(response?.status()).toBe(200);
     await expect(page.locator('h1')).toContainText('Northern Virginia Vietnam Veterans Foundation');
   });
 });
