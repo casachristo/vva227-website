@@ -22,7 +22,7 @@
     "test:system": "playwright test",
     "test:runtime": "playwright test -c playwright.runtime.config.ts",
     "setup:analytics": "node tools/setup-analytics.mjs",
-    "deploy": "astro build && wrangler pages deploy dist --project-name=vva227-refresh --branch=main --commit-dirty=true"
+    "deploy": "node tools/check-synced.mjs && astro build && wrangler pages deploy dist --project-name=vva227-refresh --branch=main --commit-dirty=true"
   },
   "dependencies": {
     "@fontsource/source-sans-3": "^5.2.5",

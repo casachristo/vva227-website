@@ -168,6 +168,12 @@ create, the setup, how to read the logs, and what each refusal in them means.
 npm run deploy     # builds and pushes to Cloudflare Pages
 ```
 
+More than one person commits to and deploys this site, and each deploy replaces
+whatever is live. So `npm run deploy` first runs `tools/check-synced.mjs`, which
+stops the deploy if GitHub has changes this copy lacks. Run `git pull` at the start
+of any work and before deploying, and `git push` after a deploy, so GitHub always
+matches what is live.
+
 That deploys to whatever account the computer's Cloudflare login (or
 wrangler's memory) picks. To deploy to the chapter's "Ch 227" account from any
 computer, use the analytics setup's API token:
