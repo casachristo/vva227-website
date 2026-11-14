@@ -4,14 +4,18 @@
  *
  * Rebuilt 2026-08-31 around two distinct giving PATHS — Chapter 227 itself, or
  * veteran financial assistance through NVVVF — rather than a list of payment
- * methods. PayPal (never independently reconfirmed), Venmo (handle never
- * published as text) and the vehicle/household-goods programs (each described
- * on the legacy site with no phone number, link or form to actually start one)
- * are not carried forward: none of them currently gives a visitor a way to
- * complete a gift. The chapter can add any of them back once it has a
- * confirmed, working way for a donor to follow through. The only Chapter 227
- * giving method with no open question attached — a check by mail — anchors
- * the "Support Chapter 227" path instead.
+ * methods. PayPal (never independently reconfirmed) and the vehicle/household-
+ * goods programs (each described on the legacy site with no phone number, link
+ * or form to actually start one) are not carried forward: none of them
+ * currently gives a visitor a way to complete a gift. The chapter can add any
+ * of them back once it has a confirmed, working way for a donor to follow
+ * through. A check by mail anchors the "Support Chapter 227" path.
+ *
+ * Venmo was restored at the chapter's request once it had a working way to
+ * follow through: the profile link https://venmo.com/u/VVA227 (confirmed to
+ * open the chapter's Venmo page) and a QR code generated from that same link.
+ * The QR supplied earlier encoded a pics.venmo.com image address that does not
+ * resolve, so it was not used.
  */
 import PageLayout from '../../layouts/PageLayout.astro';
 import HeroBand from '../../components/HeroBand.astro';
@@ -99,7 +103,7 @@ const postal = addressLine([a.line1, a.city, `${a.state} ${a.zip}`]);
     <div class="container">
       <h2>How to Give to Chapter 227</h2>
 
-      <div class="reach-cards reach-cards--pair">
+      <div class="reach-cards reach-cards--trio">
         <div class="reach-card">
           <div class="reach-card__icon">
             <ProcessIcon name="letter" />
@@ -122,6 +126,25 @@ const postal = addressLine([a.line1, a.city, `${a.state} ${a.zip}`]);
             fund.
           </p>
           <a class="reach-card__link" href="/events">When and where we meet &rarr;</a>
+        </div>
+
+        <div class="reach-card">
+          <div class="reach-card__icon">
+            <ProcessIcon name="heart" />
+          </div>
+          <p class="reach-card__label">Donate with Venmo</p>
+          <p class="reach-card__body">Scan with your phone&rsquo;s camera, or tap the link below if you are on your phone.</p>
+          <img
+            class="reach-card__qr"
+            src="/images/venmo-qr.png"
+            width="600"
+            height="600"
+            alt="QR code that opens the Chapter 227 Venmo page, @VVA227."
+            loading="lazy"
+            decoding="async"
+          />
+          <a class="reach-card__link" href="https://venmo.com/u/VVA227" rel="noopener">Pay @VVA227 on Venmo &rarr;</a>
+          <p class="reach-card__fine">Venmo asks you to sign in to your own Venmo account to send a gift.</p>
         </div>
       </div>
 
@@ -284,9 +307,48 @@ const postal = addressLine([a.line1, a.city, `${a.state} ${a.zip}`]);
     gap: var(--s-5);
   }
 
-  .reach-cards--pair {
-    max-width: 48rem;
+  .reach-cards--trio {
+    max-width: 66rem;
     margin-inline: auto;
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  @media (max-width: 60rem) {
+    .reach-cards--trio {
+      grid-template-columns: repeat(2, 1fr);
+    }
+
+    .reach-cards--trio .reach-card:last-child {
+      grid-column: 1 / -1;
+      justify-self: center;
+      inline-size: calc(50% - var(--s-5) / 2);
+    }
+  }
+
+  @media (max-width: 36rem) {
+    .reach-cards--trio {
+      grid-template-columns: 1fr;
+    }
+
+    .reach-cards--trio .reach-card:last-child {
+      inline-size: auto;
+    }
+  }
+
+  .reach-card__qr {
+    display: block;
+    inline-size: 11rem;
+    block-size: auto;
+    margin: var(--s-4) auto 0;
+    background: #fff;
+    border: 1px solid var(--c-border);
+    border-radius: var(--r-sm);
+  }
+
+  .reach-card__fine {
+    margin-block-start: var(--s-3);
+    font-size: var(--t-sm);
+    color: var(--c-ink-faint);
   }
 
   .reach-card {
