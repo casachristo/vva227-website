@@ -9,6 +9,7 @@ import {
   srcFiles,
   DIST,
   SITE_ORIGIN,
+  PRODUCTION_ORIGIN,
   SELF_ORIGINS,
   SELF_ORIGIN_ALLOWLIST,
 } from '../helpers/dist';
@@ -123,6 +124,69 @@ describe('legacy redirects', () => {
   it('never redirects a page to itself', () => {
     const loops = rules.filter((r) => r.from === r.to);
     expect(loops, `self-redirects: ${loops.map((r) => r.from).join(', ')}`).toEqual([]);
+  });
+
+  it('sends every old page whose content moved to the page that now holds it', () => {
+    // Checked against the Wayback Machine's copies on 2026-10-22: each old
+    // page's substance (names, numbers, the help it gave) is on the target.
+    const moved: Array<[string, string]> = [
+      ['/About-Us', '/about'],
+      ['/Dean-K-Phillips', '/about/dean-k-phillips'],
+      ['/dean.html', '/about/dean-k-phillips'],
+      ['/chapter-BYLaws', '/about'],
+      ['/Contact-List', '/about'],
+      ['/Contact-Us', '/contact'],
+      ['/Email-Form', '/contact'],
+      ['/Join-Us', '/join'],
+      ['/Memberships', '/join'],
+      ['/view-calendar', '/events'],
+      ['/vets.html', '/get-help/vet-center'],
+      ['/template_officers_print.cfm', '/about'],
+      ['/fileaccess.cfm', '/join'],
+    ];
+    const to = new Map(rules.map((r) => [r.from, r.to]));
+    const wrong = moved.filter(([from, dest]) => to.get(from) !== dest).map(([from, dest]) => `${from} -> ${to.get(from) ?? '(404)'}, want ${dest}`);
+    expect(wrong).toEqual([]);
+  });
+
+  it('sends the old help pages to /get-help, where the crisis line is', () => {
+    // The old site's PTSD, Agent Orange and similar pages were empty
+    // placeholders; someone following a link to one is looking for help.
+    const to = new Map(rules.map((r) => [r.from, r.to]));
+    for (const from of ['/PTSD', '/ptsd', '/Agent-Orange', '/Health-Services', '/Vet-Organizations', '/Veterans-Affairs', '/Resources', '/Important-Links']) {
+      expect(to.get(from), from).toBe('/get-help');
+    }
+  });
+
+  it('answers the lower-case form of every mixed-case old address', () => {
+    // The old IIS server ignored case and its own pages linked both forms;
+    // Cloudflare's rules match case exactly, so /chapter-publications, as a
+    // search engine indexed it, was a 404 while /Chapter-Publications worked.
+    const to = new Map(rules.map((r) => [r.from, r.to]));
+    const missing = rules
+      .filter((r) => r.from !== r.from.toLowerCase())
+      .filter((r) => to.get(r.from.toLowerCase()) !== r.to)
+      .map((r) => `${r.from.toLowerCase()} (want ${r.to}, have ${to.get(r.from.toLowerCase()) ?? 'nothing'})`);
+    expect(missing).toEqual([]);
+    expect(rules.filter((r) => r.from !== r.from.toLowerCase()).length, 'no mixed-case rule inspected').toBeGreaterThan(40);
+  });
+
+  it('never shadows a page the build emits, and states each old address once', () => {
+    const shadowing = rules.filter((r) => routes.has(r.from)).map((r) => r.from);
+    expect(shadowing).toEqual([]);
+    const seen = new Set<string>();
+    const twice = rules.filter((r) => (seen.has(r.from) ? true : (seen.add(r.from), false))).map((r) => r.from);
+    expect(twice).toEqual([]);
+  });
+
+  it('leaves 404 the old pages whose content is missing until the chapter decides', () => {
+    // The Vietnam Medal of Honor honor roll and the Vince Kaspar prizes have
+    // no page on the new site and no recorded decision. A redirect would
+    // pretend they moved.
+    const froms = new Set(rules.map((r) => r.from));
+    for (const from of ['/Vietnam-MOH-Recipients', '/Wesley-L-Fox', '/Michael-F-Folland', '/vkea.html', '/Excellence-in-the-Arts']) {
+      expect(froms.has(from), from).toBe(false);
+    }
   });
 
   it('covers the specific legacy URLs most likely to be bookmarked', () => {
@@ -289,18 +353,66 @@ describe('self-referential links', () => {
   });
 });
 
+/**
+ * The address every page advertises as its own.
+ *
+ * canonical, og:url and og:image tell search engines and Facebook where a page
+ * really lives. Until 2026-10-22 they named the staging copy,
+ * vva227-refresh.pages.dev: Google was told to credit an address that runs no
+ * visit log, Search Console could not show the real domain's traffic, and a
+ * shared link previewed the staging copy's image.
+ *
+ * TIER JUSTIFICATION: only the built head shows what a crawler reads. The
+ * config, the layout and every other test agreed with each other the whole
+ * time, because they all derive the origin from the same wrong setting.
+ */
+describe('the address pages advertise', () => {
+  const ADVERTISED: ReadonlyArray<[string, string, string]> = [
+    ['canonical', 'link[rel="canonical"]', 'href'],
+    ['og:url', 'meta[property="og:url"]', 'content'],
+    ['og:image', 'meta[property="og:image"]', 'content'],
+  ];
+
+  /** On the production domain itself: not www, not a staging copy, not a lookalike host. */
+  const onProduction = (url: string) => url.startsWith(`${PRODUCTION_ORIGIN}/`);
+
+  it('is the production domain on every page, the 404 page included', () => {
+    const wrong: string[] = [];
+    for (const page of pages) {
+      for (const [field, selector, attr] of ADVERTISED) {
+        const url = page.$(selector).attr(attr) ?? '';
+        if (!onProduction(url)) wrong.push(`${page.route} ${field} = ${url || '(missing)'}`);
+      }
+    }
+    expect(wrong, `pages advertising another address:\n${wrong.join('\n')}`).toEqual([]);
+    expect(pages.some((p) => p.route === '/404'), 'the 404 page was not inspected').toBe(true);
+  });
+
+  it('comes from the configured origin, which is the production domain', () => {
+    expect(SITE_ORIGIN).toBe(PRODUCTION_ORIGIN);
+  });
+
+  it('can actually fail — staging, www and lookalike hosts are refused', () => {
+    expect(onProduction(`${PRODUCTION_ORIGIN}/`)).toBe(true);
+    expect(onProduction(`${PRODUCTION_ORIGIN}/images/og-default.jpg`)).toBe(true);
+    expect(onProduction('https://vva227-refresh.pages.dev/')).toBe(false);
+    expect(onProduction('https://vva227-refresh-12g.pages.dev/')).toBe(false);
+    expect(onProduction('https://www.vva227.org/')).toBe(false);
+    expect(onProduction('http://vva227.org/')).toBe(false);
+    expect(onProduction('https://vva227.org.evil.example/')).toBe(false);
+    expect(onProduction('')).toBe(false);
+  });
+});
+
 describe('cross-references between pages', () => {
   // A page nothing links to is a page nobody reads. The global footer carries a
   // link to every nav route on all 25 pages, so any test that only asks "is
-  // /give/nvvvf linked from somewhere" passes from site furniture alone and
-  // proves nothing — hence `main`.
+  // /get-help linked from somewhere" passes from site furniture alone and
+  // proves nothing — hence `main`. Nothing links *to* /give/nvvvf any more; see
+  // the unlinked-pages block below.
   const IN_BODY: ReadonlyArray<{ from: string; to: string; why: string }> = [
-    { from: '/give', to: '/give/nvvvf', why: 'a donor choosing between two payees' },
-    { from: '/give/impact', to: '/give/nvvvf', why: 'the Foundation partnership behind emergency assistance' },
-    { from: '/programs', to: '/give/nvvvf', why: 'how emergency aid is funded' },
     { from: '/give/nvvvf', to: '/get-help', why: 'a veteran who lands on the donor page' },
     { from: '/give/nvvvf', to: '/give', why: 'giving to the chapter rather than the Foundation' },
-    { from: '/get-help', to: '/give/nvvvf', why: 'the review note recording the contradiction' },
   ];
 
   it('links each page to the other from inside its content, not from the footer', () => {
@@ -321,13 +433,71 @@ describe('cross-references between pages', () => {
   it('can actually fail — the selector excludes the footer that links everything', () => {
     // Anti-vacuity, and the specific reason this test is written against main:
     // every page's header and footer link /join (it's a top-level nav item),
-    // so a document-wide selector would be green even with all seven in-body
-    // references deleted. /about no longer serves this role since the home
+    // so a document-wide selector would be green even with every in-body
+    // reference deleted. /about no longer serves this role since the home
     // page's own hero now links there (2026-08-28) — /join, still in NAV and
     // not linked from home's rebuilt body, plays the same role instead.
     const home = pages.find((p) => p.route === '/')!;
     expect(home.$(`a[href="/join"]`).length, 'the header/footer should link it everywhere').toBeGreaterThan(0);
     expect(home.$(`main a[href="/join"]`).length, 'the home page deliberately does not').toBe(0);
+  });
+});
+
+describe('pages kept but unlinked', () => {
+  // The chapter asked (2026-10-25) for every link to /give/nvvvf to come out
+  // while the page itself stays up, reachable only by its address. Every
+  // element counts here, header and footer included — the opposite of the
+  // `main`-only check above, because a stray footer link is still a link.
+  const UNLINKED = ['/give/nvvvf'];
+
+  /** True when `href`, written on the page at `route`, takes a reader to `target`. */
+  function leadsTo(href: string, route: string, target: string): boolean {
+    if (href.startsWith('#')) return false; // in-page jump on the page itself
+    let url: URL;
+    try {
+      url = new URL(href, `${SITE_ORIGIN}${route}`);
+    } catch {
+      return false;
+    }
+    if (url.origin !== SITE_ORIGIN && !SELF_ORIGINS.includes(url.origin)) return false;
+    return url.pathname.replace(/\/+$/, '') === target;
+  }
+
+  it('still builds each page', () => {
+    for (const route of UNLINKED) {
+      expect(pages.some((p) => p.route === route), `${route} was not built`).toBe(true);
+    }
+  });
+
+  it('links to none of them from any page', () => {
+    const found: string[] = [];
+    for (const page of pages) {
+      page.$('a[href]').each((_, el) => {
+        const href = page.$(el).attr('href')!;
+        for (const target of UNLINKED) {
+          if (leadsTo(href, page.route, target)) found.push(`${page.route} -> ${href}`);
+        }
+      });
+    }
+    expect(found, `links to pages that are meant to be unlinked:\n${found.join('\n')}`).toEqual([]);
+  });
+
+  it('can actually fail — every way of writing the address is caught', () => {
+    const target = '/give/nvvvf';
+    for (const href of [
+      '/give/nvvvf',
+      '/give/nvvvf/',
+      '/give/nvvvf#figures',
+      '/give/nvvvf?from=give',
+      'nvvvf', // relative, written on /give/impact
+      `${SITE_ORIGIN}/give/nvvvf`,
+      ...SELF_ORIGINS.map((o) => `${o}/give/nvvvf`),
+    ]) {
+      expect(leadsTo(href, '/give/impact', target), href).toBe(true);
+    }
+    for (const href of ['#main', '/give', '/give/nvvvf-old', '/foundation', 'https://nvvvf.org/give/nvvvf', 'http://[']) {
+      expect(leadsTo(href, '/give/nvvvf', target), JSON.stringify(href)).toBe(false);
+    }
   });
 });
 

@@ -4,6 +4,9 @@ const PORT = 4321;
 
 export default defineConfig({
   testDir: './tests/system',
+  // The Pages-runtime spec has its own config, playwright.runtime.config.ts,
+  // so this run never starts wrangler. `npm run test:runtime` runs it.
+  testIgnore: /runtime\.spec\.ts$/,
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
